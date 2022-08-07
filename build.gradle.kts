@@ -14,7 +14,10 @@ repositories {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web:2.7.2")
 
+    compileOnly("org.projectlombok:lombok:1.18.24")
 
+    testImplementation("org.springframework.boot:spring-boot-starter-test:2.7.2")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
     testImplementation(kotlin("test"))
 }
 
