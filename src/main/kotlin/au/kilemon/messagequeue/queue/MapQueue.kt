@@ -1,14 +1,12 @@
 package au.kilemon.messagequeue.queue
 
-import au.kilemon.messagequeue.message.Message
-import au.kilemon.messagequeue.message.MessageType
 import au.kilemon.messagequeue.message.MultiQueue
+import au.kilemon.messagequeue.message.QueueMessage
 import lombok.extern.slf4j.Slf4j
 import org.springframework.stereotype.Component
-import java.io.Serializable
-import java.util.*
 import java.util.Queue
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
  *
@@ -17,25 +15,25 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Slf4j
 @Component
-open class Queue<T: Serializable> : MultiQueue<Message<T>>
+open class MapQueue: MultiQueue<QueueMessage>
 {
-    private val messageQueue: ConcurrentHashMap<String, Queue<Message<T>>> = ConcurrentHashMap()
+    private val messageQueue: ConcurrentHashMap<String, Queue<QueueMessage>> = ConcurrentHashMap()
 
     override var size: Int = 0
 
-    private fun getQueueForType(messageType: MessageType): Queue<Message<T>>
+    private fun getQueueForType(queueTypeProvider: QueueTypeProvider): Queue<QueueMessage>
     {
-        var queueForType: Queue<Message<T>>? = messageQueue[messageType.getIdentifier()]
+        var queueForType: Queue<QueueMessage>? = messageQueue[queueTypeProvider.getIdentifier()]
         if (queueForType == null)
         {
-            queueForType = LinkedList()
+            queueForType = ConcurrentLinkedQueue()
         }
         return queueForType
     }
 
-    override fun add(element: Message<T>): Boolean
+    override fun add(element: QueueMessage): Boolean
     {
-        val queueForType: Queue<Message<T>> = getQueueForType(element.type)
+        val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
         val wasAdded = queueForType.add(element)
         if (wasAdded)
         {
@@ -44,10 +42,10 @@ open class Queue<T: Serializable> : MultiQueue<Message<T>>
         return wasAdded
     }
 
-    override fun addAll(elements: Collection<Message<T>>): Boolean
+    override fun addAll(elements: Collection<QueueMessage>): Boolean
     {
         var wasAdded = false
-        for (element: Message<T> in elements)
+        for (element: QueueMessage in elements)
         {
             wasAdded = wasAdded || add(element)
         }
@@ -60,9 +58,9 @@ open class Queue<T: Serializable> : MultiQueue<Message<T>>
         size = 0
     }
 
-    override fun clearForType(messageType: MessageType)
+    override fun clearForType(queueTypeProvider: QueueTypeProvider)
     {
-        val queueForType: Queue<Message<T>>? = messageQueue[messageType.getIdentifier()]
+        val queueForType: Queue<QueueMessage>? = messageQueue[queueTypeProvider.getIdentifier()]
         if (queueForType != null)
         {
             size -= queueForType.size
@@ -70,15 +68,15 @@ open class Queue<T: Serializable> : MultiQueue<Message<T>>
         }
     }
 
-    override fun retainAll(elements: Collection<Message<T>>): Boolean
+    override fun retainAll(elements: Collection<QueueMessage>): Boolean
     {
         var anyWasRemoved = false
         for (key: String in messageQueue.keys())
         {
-            val queueForKey: Queue<Message<T>>? = messageQueue[key]
+            val queueForKey: Queue<QueueMessage>? = messageQueue[key]
             if (queueForKey != null)
             {
-                for(entry: Message<T> in queueForKey)
+                for(entry: QueueMessage in queueForKey)
                 {
                     if (!elements.contains(entry))
                     {
@@ -90,19 +88,19 @@ open class Queue<T: Serializable> : MultiQueue<Message<T>>
         return anyWasRemoved
     }
 
-    override fun removeAll(elements: Collection<Message<T>>): Boolean
+    override fun removeAll(elements: Collection<QueueMessage>): Boolean
     {
         var wasRemoved = false
-        for (element: Message<T> in elements)
+        for (element: QueueMessage in elements)
         {
             wasRemoved = wasRemoved || remove(element)
         }
         return wasRemoved
     }
 
-    override fun remove(element: Message<T>): Boolean
+    override fun remove(element: QueueMessage): Boolean
     {
-        val queueForType: Queue<Message<T>> = getQueueForType(element.type)
+        val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
         val wasRemoved = queueForType.remove(element)
         if (wasRemoved)
         {
@@ -116,15 +114,15 @@ open class Queue<T: Serializable> : MultiQueue<Message<T>>
         return messageQueue.isEmpty()
     }
 
-    override fun isEmptyForType(messageType: MessageType): Boolean
+    override fun isEmptyForType(queueTypeProvider: QueueTypeProvider): Boolean
     {
-        val queueForType: Queue<Message<T>> = getQueueForType(messageType)
+        val queueForType: Queue<QueueMessage> = getQueueForType(queueTypeProvider)
         return queueForType.isEmpty()
     }
 
-    override fun pollForType(messageType: MessageType): Message<T>?
+    override fun pollForType(queueTypeProvider: QueueTypeProvider): QueueMessage?
     {
-        val queueForType: Queue<Message<T>> = getQueueForType(messageType)
+        val queueForType: Queue<QueueMessage> = getQueueForType(queueTypeProvider)
         val head = queueForType.poll()
         if (head != null)
         {
@@ -133,25 +131,25 @@ open class Queue<T: Serializable> : MultiQueue<Message<T>>
         return head
     }
 
-    override fun peekForType(messageType: MessageType): Message<T>?
+    override fun peekForType(queueTypeProvider: QueueTypeProvider): QueueMessage?
     {
-        val queueForType: Queue<Message<T>> = getQueueForType(messageType)
+        val queueForType: Queue<QueueMessage> = getQueueForType(queueTypeProvider)
         return queueForType.peek()
     }
 
-    override fun containsAll(elements: Collection<Message<T>>): Boolean
+    override fun containsAll(elements: Collection<QueueMessage>): Boolean
     {
         var allContained = true
-        for (element: Message<T> in elements)
+        for (element: QueueMessage in elements)
         {
             allContained = allContained && contains(element)
         }
         return allContained
     }
 
-    override fun contains(element: Message<T>): Boolean
+    override fun contains(element: QueueMessage): Boolean
     {
-        val queueForType: Queue<Message<T>> = getQueueForType(element.type)
+        val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
         return queueForType.contains(element)
     }
 }

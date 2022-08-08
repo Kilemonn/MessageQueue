@@ -1,8 +1,7 @@
 package au.kilemon.messagequeue.queue
 
 import au.kilemon.messagequeue.Payload
-import au.kilemon.messagequeue.message.Message
-import au.kilemon.messagequeue.message.MessageType
+import au.kilemon.messagequeue.message.QueueMessage
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertAll
@@ -12,12 +11,12 @@ import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 
 /**
- * A test class for the [Queue] Component class.
+ * A test class for the [MapQueue] Component class.
  *
  * @author github.com/KyleGonzalez
  */
 @SpringBootTest
-class QueueTest
+class MapQueueTest
 {
     companion object
     {
@@ -30,15 +29,15 @@ class QueueTest
         open class TestContextConfiguration
         {
             @Bean
-            open fun getQueue(): Queue<Message<Payload>>
+            open fun getQueue(): MapQueue
             {
-                return Queue()
+                return MapQueue()
             }
         }
     }
 
     @Autowired
-    lateinit var queue: Queue<Payload>
+    lateinit var mapQueue: MapQueue
 
     /**
      * Ensure that all applicable methods throw an [UnsupportedOperationException].
@@ -50,37 +49,37 @@ class QueueTest
             {
                 assertThrows(UnsupportedOperationException::class.java)
                 {
-                    queue.peek()
+                    mapQueue.peek()
                 }
             },
             {
                 assertThrows(UnsupportedOperationException::class.java)
                 {
-                    queue.offer(Message(Payload("test data"), MessageType("test type")))
+                    mapQueue.offer(QueueMessage(Payload("test data"), QueueType("test type")))
                 }
             },
             {
                 assertThrows(UnsupportedOperationException::class.java)
                 {
-                    queue.element()
+                    mapQueue.element()
                 }
             },
             {
                 assertThrows(UnsupportedOperationException::class.java)
                 {
-                    queue.poll()
+                    mapQueue.poll()
                 }
             },
             {
                 assertThrows(UnsupportedOperationException::class.java)
                 {
-                    queue.remove()
+                    mapQueue.remove()
                 }
             },
             {
                 assertThrows(UnsupportedOperationException::class.java)
                 {
-                    queue.iterator()
+                    mapQueue.iterator()
                 }
             }
         )

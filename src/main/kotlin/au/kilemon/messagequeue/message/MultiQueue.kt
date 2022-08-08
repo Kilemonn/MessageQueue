@@ -1,11 +1,12 @@
 package au.kilemon.messagequeue.message
 
+import au.kilemon.messagequeue.queue.QueueTypeProvider
 import java.io.Serializable
 import java.util.*
 
 /**
  * A [MultiQueue] interface, which extends [Queue].
- * It contains various extra methods for interfacing with the [MultiQueue] using the [MessageType] and [Message]
+ * It contains various extra methods for interfacing with the [MultiQueue] using the [QueueType] and [QueueMessage]
  * to manipulate the appropriate underlying [Queue]s.
  *
  * @author github.com/KyleGonzalez
@@ -22,37 +23,37 @@ interface MultiQueue<T: Serializable>: Queue<T>
      */
 
     /**
-     * Clears the underlying [Queue] for the provided [MessageType]. By calling [Queue.clear].
+     * Clears the underlying [Queue] for the provided [QueueTypeProvider]. By calling [Queue.clear].
      *
-     * @param messageType the [MessageType] of the [Queue] to clear
+     * @param queueTypeProvider the [QueueTypeProvider] of the [Queue] to clear
      */
-    fun clearForType(messageType: MessageType)
+    fun clearForType(queueTypeProvider: QueueTypeProvider)
 
     /**
-     * Indicates whether the underlying [Queue] for the provided [MessageType] is empty. By calling [Queue.isEmpty].
+     * Indicates whether the underlying [Queue] for the provided [QueueTypeProvider] is empty. By calling [Queue.isEmpty].
      *
-     * @param messageType the [MessageType] of the [Queue] to check whether it is empty
-     * @return `true` if the [Queue] for the [MessageType] is empty, otherwise `false`
+     * @param queueTypeProvider the [QueueTypeProvider] of the [Queue] to check whether it is empty
+     * @return `true` if the [Queue] for the [QueueTypeProvider] is empty, otherwise `false`
      */
-    fun isEmptyForType(messageType: MessageType): Boolean
+    fun isEmptyForType(queueTypeProvider: QueueTypeProvider): Boolean
 
     /**
-     * Calls [Queue.poll] on the underlying [Queue] for the provided [MessageType].
+     * Calls [Queue.poll] on the underlying [Queue] for the provided [QueueTypeProvider].
      * This will retrieve **AND** remove the head element of the [Queue].
      *
-     * @param messageType [MessageType] of the [Queue] to poll
+     * @param queueTypeProvider [QueueTypeProvider] of the [Queue] to poll
      * @return the head element or `null`
      */
-    fun pollForType(messageType: MessageType): T?
+    fun pollForType(queueTypeProvider: QueueTypeProvider): T?
 
     /**
-     * Calls [Queue.peek] on the underlying [Queue] for the provided [MessageType].
+     * Calls [Queue.peek] on the underlying [Queue] for the provided [QueueTypeProvider].
      * This will retrieve the head element of the [Queue] without removing it.
      *
-     * @param messageType [MessageType] of the [Queue] to peek
+     * @param queueTypeProvider [QueueTypeProvider] of the [Queue] to peek
      * @return the head element or `null`
      */
-    fun peekForType(messageType: MessageType): T?
+    fun peekForType(queueTypeProvider: QueueTypeProvider): T?
 
     /**
      * Any unsupported methods from the [Queue] interface that are not implemented.
