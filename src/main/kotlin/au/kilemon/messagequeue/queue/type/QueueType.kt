@@ -1,4 +1,4 @@
-package au.kilemon.messagequeue.queue
+package au.kilemon.messagequeue.queue.type
 
 /**
  * Wraps a provided [String]. This is used as a unique identifier in the [MultiQueue] to determine which `MapQueue` the provided [QueueMessage] will be placed into.

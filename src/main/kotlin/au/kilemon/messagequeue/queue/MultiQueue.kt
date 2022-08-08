@@ -1,6 +1,6 @@
-package au.kilemon.messagequeue.message
+package au.kilemon.messagequeue.queue
 
-import au.kilemon.messagequeue.queue.QueueTypeProvider
+import au.kilemon.messagequeue.queue.type.QueueTypeProvider
 import java.io.Serializable
 import java.util.*
 

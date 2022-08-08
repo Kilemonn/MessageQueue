@@ -1,4 +1,4 @@
-package au.kilemon.messagequeue.queue
+package au.kilemon.messagequeue.queue.type
 
 /**
  * An interface marking an object that is capable of providing a unique identifier for a specific queue.

@@ -1,7 +1,7 @@
 package au.kilemon.messagequeue.queue
 
-import au.kilemon.messagequeue.message.MultiQueue
 import au.kilemon.messagequeue.message.QueueMessage
+import au.kilemon.messagequeue.queue.type.QueueTypeProvider
 import lombok.extern.slf4j.Slf4j
 import org.springframework.stereotype.Component
 import java.util.Queue

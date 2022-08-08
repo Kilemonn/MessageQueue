@@ -1,6 +1,6 @@
 package au.kilemon.messagequeue.message
 
-import au.kilemon.messagequeue.queue.QueueTypeProvider
+import au.kilemon.messagequeue.queue.type.QueueTypeProvider
 import lombok.EqualsAndHashCode
 import java.io.Serializable
 
