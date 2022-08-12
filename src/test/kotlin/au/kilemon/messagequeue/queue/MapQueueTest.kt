@@ -3,6 +3,7 @@ package au.kilemon.messagequeue.queue
 import au.kilemon.messagequeue.Payload
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.type.QueueType
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertAll
@@ -39,6 +40,28 @@ class MapQueueTest
 
     @Autowired
     lateinit var mapQueue: MapQueue
+
+    /**
+     * Ensure that when a new entry is added, that the [MapQueue] is no longer empty and reports the correct size.
+     */
+    @Test
+    fun testAdd()
+    {
+        Assertions.assertTrue(mapQueue.isEmpty())
+        val type = QueueType("type")
+        val data = Integer(12345)
+        val message = QueueMessage(data, type)
+        Assertions.assertTrue(mapQueue.add(message))
+        Assertions.assertFalse(mapQueue.isEmpty())
+        Assertions.assertEquals(1, mapQueue.size)
+
+        val retrievedMessage = mapQueue.pollForType(type)
+        Assertions.assertTrue(mapQueue.isEmpty())
+        Assertions.assertEquals(0, mapQueue.size)
+
+        Assertions.assertNotNull(retrievedMessage)
+        Assertions.assertEquals(data, retrievedMessage!!.data)
+    }
 
     /**
      * Ensure that all applicable methods throw an [UnsupportedOperationException].

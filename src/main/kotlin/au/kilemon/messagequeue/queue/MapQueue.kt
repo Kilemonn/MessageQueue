@@ -1,6 +1,7 @@
 package au.kilemon.messagequeue.queue
 
 import au.kilemon.messagequeue.message.QueueMessage
+import au.kilemon.messagequeue.queue.type.QueueType
 import au.kilemon.messagequeue.queue.type.QueueTypeProvider
 import lombok.extern.slf4j.Slf4j
 import org.springframework.stereotype.Component
@@ -9,7 +10,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
- *
+ * The MapQueue which implements the [MultiQueue]. It holds a [ConcurrentHashMap] with [Queue] entries.
+ * Using the provided [QueueTypeProvider], specific entries in the queue can be manipulated and changed as needed.
  *
  * @author github.com/KyleGonzalez
  */
@@ -21,12 +23,21 @@ open class MapQueue: MultiQueue<QueueMessage>
 
     override var size: Int = 0
 
+    /**
+     * Retrieves or creates a new [Queue] of type [QueueMessage] for the provided [QueueTypeProvider].
+     * If the underlying [Queue] does not exist for the provided [QueueTypeProvider] then a new [Queue] will
+     * be created and stored in the [ConcurrentHashMap] under the provided [QueueTypeProvider].
+     *
+     * @param queueTypeProvider the provider used to get the correct underlying [Queue]
+     * @return the [Queue] matching the provided [QueueTypeProvider]
+     */
     private fun getQueueForType(queueTypeProvider: QueueTypeProvider): Queue<QueueMessage>
     {
         var queueForType: Queue<QueueMessage>? = messageQueue[queueTypeProvider.getIdentifier()]
         if (queueForType == null)
         {
             queueForType = ConcurrentLinkedQueue()
+            messageQueue[queueTypeProvider.getIdentifier()] = queueForType
         }
         return queueForType
     }
@@ -111,7 +122,7 @@ open class MapQueue: MultiQueue<QueueMessage>
 
     override fun isEmpty(): Boolean
     {
-        return messageQueue.isEmpty()
+        return messageQueue.isEmpty() || messageQueue.keys.stream().allMatch{ key -> this.isEmptyForType(QueueType(key)) }
     }
 
     override fun isEmptyForType(queueTypeProvider: QueueTypeProvider): Boolean
@@ -139,12 +150,7 @@ open class MapQueue: MultiQueue<QueueMessage>
 
     override fun containsAll(elements: Collection<QueueMessage>): Boolean
     {
-        var allContained = true
-        for (element: QueueMessage in elements)
-        {
-            allContained = allContained && contains(element)
-        }
-        return allContained
+        return elements.stream().allMatch{ element -> this.contains(element) }
     }
 
     override fun contains(element: QueueMessage): Boolean

@@ -6,7 +6,7 @@ import java.util.*
 
 /**
  * A [MultiQueue] interface, which extends [Queue].
- * It contains various extra methods for interfacing with the [MultiQueue] using the [QueueType] and [QueueMessage]
+ * It contains various extra methods for interfacing with the [MultiQueue] using the [QueueTypeProvider]
  * to manipulate the appropriate underlying [Queue]s.
  *
  * @author github.com/KyleGonzalez
