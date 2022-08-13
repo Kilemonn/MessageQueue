@@ -73,7 +73,8 @@ abstract class AbstractMultiQueueTest<T: MultiQueue<QueueMessage>>
         return Stream.of(
             Arguments.of(1234),
             Arguments.of("a string"),
-            Arguments.of(listOf("element1", "element2", "element3"))
+            Arguments.of(listOf("element1", "element2", "element3")),
+            Arguments.of(true)
         )
     }
 
@@ -272,7 +273,32 @@ abstract class AbstractMultiQueueTest<T: MultiQueue<QueueMessage>>
     @Test
     fun testRetainAll()
     {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val type = QueueType("type1")
+        val type2 = QueueType("type2")
+        val data = Payload("some payload")
+        val data2 = Payload("some more data")
+        val list = listOf(QueueMessage(data, type), QueueMessage(data, type2), QueueMessage(data2, type), QueueMessage(data2, type2))
 
+        Assertions.assertTrue(multiQueue.addAll(list))
+        Assertions.assertEquals(4, multiQueue.size)
+
+        val toRetain = ArrayList<QueueMessage>()
+        toRetain.addAll(list.subList(0, 2))
+        Assertions.assertEquals(2, toRetain.size)
+        // No elements of this type to cover all branches of code
+        val type3 = QueueType("type3")
+        val type3Message = QueueMessage(Payload("type3 data"), type3)
+        toRetain.add(type3Message)
+        Assertions.assertEquals(3, toRetain.size)
+
+        Assertions.assertTrue(multiQueue.retainAll(toRetain))
+        Assertions.assertEquals(2, multiQueue.size)
+        Assertions.assertTrue(multiQueue.contains(list[0]))
+        Assertions.assertTrue(multiQueue.contains(list[1]))
+
+        Assertions.assertFalse(multiQueue.contains(list[2]))
+        Assertions.assertFalse(multiQueue.contains(list[3]))
     }
 
     /**
