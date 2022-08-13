@@ -59,7 +59,7 @@ open class InMemoryMultiQueue: MultiQueue<QueueMessage>
         var wasAdded = false
         for (element: QueueMessage in elements)
         {
-            wasAdded = wasAdded || add(element)
+            wasAdded = add(element) || wasAdded
         }
         return wasAdded
     }
@@ -92,7 +92,7 @@ open class InMemoryMultiQueue: MultiQueue<QueueMessage>
                 {
                     if (!elements.contains(entry))
                     {
-                        anyWasRemoved = anyWasRemoved || queueForKey.remove(entry)
+                        anyWasRemoved = queueForKey.remove(entry) || anyWasRemoved
                     }
                 }
             }
@@ -105,7 +105,7 @@ open class InMemoryMultiQueue: MultiQueue<QueueMessage>
         var wasRemoved = false
         for (element: QueueMessage in elements)
         {
-            wasRemoved = wasRemoved || remove(element)
+            wasRemoved = remove(element) || wasRemoved
         }
         return wasRemoved
     }
@@ -123,7 +123,7 @@ open class InMemoryMultiQueue: MultiQueue<QueueMessage>
 
     override fun isEmpty(): Boolean
     {
-        return messageQueue.isEmpty() || messageQueue.keys.stream().allMatch{ key -> this.isEmptyForType(QueueType(key)) }
+        return size == 0
     }
 
     override fun isEmptyForType(queueTypeProvider: QueueTypeProvider): Boolean
