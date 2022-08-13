@@ -22,16 +22,4 @@ class MessageQueueSettings
      */
     @Value("#{environment.MESSAGE_QUEUE_TYPE} || 'IN_MEMORY'")
     lateinit var multiQueueType: MultiQueueType
-
-    @Bean
-    fun getMultiQueue(): MultiQueue
-    {
-        return if (multiQueueType == MultiQueueType.IN_MEMORY)
-        {
-            InMemoryMultiQueue()
-        } else
-        {
-            InMemoryMultiQueue()
-        }
-    }
 }
