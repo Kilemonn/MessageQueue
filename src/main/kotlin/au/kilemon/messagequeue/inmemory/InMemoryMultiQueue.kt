@@ -1,6 +1,7 @@
-package au.kilemon.messagequeue.queue
+package au.kilemon.messagequeue.inmemory
 
 import au.kilemon.messagequeue.message.QueueMessage
+import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.type.QueueType
 import au.kilemon.messagequeue.queue.type.QueueTypeProvider
 import lombok.extern.slf4j.Slf4j
@@ -10,14 +11,14 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
- * The MapQueue which implements the [MultiQueue]. It holds a [ConcurrentHashMap] with [Queue] entries.
+ * The InMemoryMultiQueue which implements the [MultiQueue]. It holds a [ConcurrentHashMap] with [Queue] entries.
  * Using the provided [QueueTypeProvider], specific entries in the queue can be manipulated and changed as needed.
  *
  * @author github.com/KyleGonzalez
  */
 @Slf4j
 @Component
-open class MapQueue: MultiQueue<QueueMessage>
+open class InMemoryMultiQueue: MultiQueue<QueueMessage>
 {
     private val messageQueue: ConcurrentHashMap<String, Queue<QueueMessage>> = ConcurrentHashMap()
 
