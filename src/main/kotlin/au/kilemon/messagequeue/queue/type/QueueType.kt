@@ -1,8 +1,8 @@
 package au.kilemon.messagequeue.queue.type
 
 /**
- * Wraps a provided [String]. This is used as a unique identifier in the [MultiQueue] to determine which `InMemoryMultiQueue` the provided [QueueMessage] will be placed into.
- * This allows services to retrieve and search for entries in the [MultiQueue] based on their accountable [QueueType].
+ * Wraps a provided [String]. This is used as a unique identifier in the `MultiQueue` to determine which `InMemoryMultiQueue` the provided `QueueMessage` will be placed into.
+ * This allows services to retrieve and search for entries in the `MultiQueue` based on their accountable [QueueType].
  *
  * @author github.com/KyleGonzalez
  */

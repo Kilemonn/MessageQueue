@@ -2,7 +2,6 @@ package au.kilemon.messagequeue.queue
 
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.type.QueueTypeProvider
-import java.io.Serializable
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
@@ -13,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * @author github.com/KyleGonzalez
  */
-interface MultiQueue<T: Serializable>: Queue<T>
+interface MultiQueue: Queue<QueueMessage>
 {
     companion object
     {
@@ -64,7 +63,7 @@ interface MultiQueue<T: Serializable>: Queue<T>
      * @param queueTypeProvider [QueueTypeProvider] of the [Queue] to poll
      * @return the head element or `null`
      */
-    fun pollForType(queueTypeProvider: QueueTypeProvider): T?
+    fun pollForType(queueTypeProvider: QueueTypeProvider): QueueMessage?
 
     /**
      * Calls [Queue.peek] on the underlying [Queue] for the provided [QueueTypeProvider].
@@ -73,7 +72,7 @@ interface MultiQueue<T: Serializable>: Queue<T>
      * @param queueTypeProvider [QueueTypeProvider] of the [Queue] to peek
      * @return the head element or `null`
      */
-    fun peekForType(queueTypeProvider: QueueTypeProvider): T?
+    fun peekForType(queueTypeProvider: QueueTypeProvider): QueueMessage?
 
     /**
      * Any unsupported methods from the [Queue] interface that are not implemented.
@@ -81,7 +80,7 @@ interface MultiQueue<T: Serializable>: Queue<T>
     /**
      * Not Implemented.
      */
-    override fun offer(e: T): Boolean
+    override fun offer(e: QueueMessage): Boolean
     {
         throw UnsupportedOperationException(NOT_IMPLEMENTED_METHOD)
     }
@@ -89,7 +88,7 @@ interface MultiQueue<T: Serializable>: Queue<T>
     /**
      * Not Implemented.
      */
-    override fun poll(): T
+    override fun poll(): QueueMessage
     {
         throw UnsupportedOperationException(NOT_IMPLEMENTED_METHOD)
     }
@@ -97,7 +96,7 @@ interface MultiQueue<T: Serializable>: Queue<T>
     /**
      * Not Implemented.
      */
-    override fun element(): T
+    override fun element(): QueueMessage
     {
         throw UnsupportedOperationException(NOT_IMPLEMENTED_METHOD)
     }
@@ -105,7 +104,7 @@ interface MultiQueue<T: Serializable>: Queue<T>
     /**
      * Not Implemented.
      */
-    override fun peek(): T
+    override fun peek(): QueueMessage
     {
         throw UnsupportedOperationException(NOT_IMPLEMENTED_METHOD)
     }
@@ -113,7 +112,7 @@ interface MultiQueue<T: Serializable>: Queue<T>
     /**
      * Not Implemented.
      */
-    override fun remove(): T
+    override fun remove(): QueueMessage
     {
         throw UnsupportedOperationException(NOT_IMPLEMENTED_METHOD)
     }
@@ -121,7 +120,7 @@ interface MultiQueue<T: Serializable>: Queue<T>
     /**
      * Not Implemented.
      */
-    override fun iterator(): MutableIterator<T>
+    override fun iterator(): MutableIterator<QueueMessage>
     {
         throw UnsupportedOperationException(NOT_IMPLEMENTED_METHOD)
     }

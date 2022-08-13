@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode
 import java.io.Serializable
 
 /**
- * A base [QueueMessage] object which will wrap any object that is placed into the [MultiQueue].
+ * A base [QueueMessage] object which will wrap any object that is placed into the `MultiQueue`.
  * This object wraps a [Serializable] type `T` which is the payload to be stored in the queue.
  *
  * @author github.com/KyleGonzalez

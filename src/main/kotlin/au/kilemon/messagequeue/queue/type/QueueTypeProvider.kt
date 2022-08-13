@@ -9,7 +9,7 @@ interface QueueTypeProvider
 {
     /**
      * Get the unique identifier. This will be used as a "key" so
-     * that services can indicate which [Queue] with the [MultiQueue] that they want to interact with.
+     * that services can indicate which `Queue` with the `MultiQueue` that they want to interact with.
      *
      * @return a unique identifier as a [String]
      */

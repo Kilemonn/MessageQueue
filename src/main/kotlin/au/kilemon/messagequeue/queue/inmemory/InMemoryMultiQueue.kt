@@ -4,7 +4,6 @@ import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.type.QueueTypeProvider
 import lombok.extern.slf4j.Slf4j
-import org.springframework.stereotype.Component
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -16,8 +15,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
  * @author github.com/KyleGonzalez
  */
 @Slf4j
-@Component
-open class InMemoryMultiQueue: MultiQueue<QueueMessage>
+open class InMemoryMultiQueue: MultiQueue
 {
     /**
      * The underlying [Map] holding [Queue] entities mapped against the provided [String].

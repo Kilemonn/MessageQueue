@@ -22,7 +22,7 @@ import java.util.stream.Stream
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest
-abstract class AbstractMultiQueueTest<T: MultiQueue<QueueMessage>>
+abstract class AbstractMultiQueueTest<T: MultiQueue>
 {
     @Autowired
     protected lateinit var multiQueue: T
