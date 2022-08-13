@@ -1,4 +1,4 @@
-package au.kilemon.messagequeue.inmemory
+package au.kilemon.messagequeue.queue.inmemory
 
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
