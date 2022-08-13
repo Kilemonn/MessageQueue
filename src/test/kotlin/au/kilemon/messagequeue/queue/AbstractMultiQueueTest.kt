@@ -21,7 +21,6 @@ import java.util.stream.Stream
  * @author github.com/KyleGonzalez
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@SpringBootTest
 abstract class AbstractMultiQueueTest<T: MultiQueue>
 {
     @Autowired
