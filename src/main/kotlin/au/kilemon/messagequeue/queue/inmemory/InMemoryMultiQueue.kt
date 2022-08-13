@@ -19,27 +19,27 @@ import java.util.concurrent.ConcurrentLinkedQueue
 @Component
 open class InMemoryMultiQueue: MultiQueue<QueueMessage>
 {
+    /**
+     * The underlying [Map] holding [Queue] entities mapped against the provided [String].
+     */
     private val messageQueue: ConcurrentHashMap<String, Queue<QueueMessage>> = ConcurrentHashMap()
 
     override var size: Int = 0
 
-    /**
-     * Retrieves or creates a new [Queue] of type [QueueMessage] for the provided [QueueTypeProvider].
-     * If the underlying [Queue] does not exist for the provided [QueueTypeProvider] then a new [Queue] will
-     * be created and stored in the [ConcurrentHashMap] under the provided [QueueTypeProvider].
-     *
-     * @param queueTypeProvider the provider used to get the correct underlying [Queue]
-     * @return the [Queue] matching the provided [QueueTypeProvider]
-     */
-    private fun getQueueForType(queueTypeProvider: QueueTypeProvider): Queue<QueueMessage>
+    override fun getQueueForType(queueTypeProvider: QueueTypeProvider): Queue<QueueMessage>
     {
         var queueForType: Queue<QueueMessage>? = messageQueue[queueTypeProvider.getIdentifier()]
         if (queueForType == null)
         {
             queueForType = ConcurrentLinkedQueue()
-            messageQueue[queueTypeProvider.getIdentifier()] = queueForType
+            this.initialiseQueueForType(queueTypeProvider, queueForType)
         }
         return queueForType
+    }
+
+    override fun initialiseQueueForType(queueTypeProvider: QueueTypeProvider, queue: Queue<QueueMessage>)
+    {
+        messageQueue[queueTypeProvider.getIdentifier()] = queue
     }
 
     override fun add(element: QueueMessage): Boolean

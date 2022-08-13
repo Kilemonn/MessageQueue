@@ -1,8 +1,10 @@
 package au.kilemon.messagequeue.queue
 
+import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.type.QueueTypeProvider
 import java.io.Serializable
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * A [MultiQueue] interface, which extends [Queue].
@@ -21,6 +23,24 @@ interface MultiQueue<T: Serializable>: Queue<T>
     /**
      * New methods for the [MultiQueue] that are required by implementing classes.
      */
+
+    /**
+     * Retrieves or creates a new [Queue] of type [QueueMessage] for the provided [QueueTypeProvider].
+     * If the underlying [Queue] does not exist for the provided [QueueTypeProvider] then a new [Queue] will
+     * be created and stored in the [ConcurrentHashMap] under the provided [QueueTypeProvider].
+     *
+     * @param queueTypeProvider the provider used to get the correct underlying [Queue]
+     * @return the [Queue] matching the provided [QueueTypeProvider]
+     */
+    fun getQueueForType(queueTypeProvider: QueueTypeProvider): Queue<QueueMessage>
+
+    /**
+     * Initialise and register the provided [Queue] against the [QueueTypeProvider].
+     *
+     * @param queueTypeProvider the [QueueTypeProvider] to register the [Queue] against
+     * @param queue the queue to register
+     */
+    fun initialiseQueueForType(queueTypeProvider: QueueTypeProvider, queue: Queue<QueueMessage>)
 
     /**
      * Clears the underlying [Queue] for the provided [QueueTypeProvider]. By calling [Queue.clear].
