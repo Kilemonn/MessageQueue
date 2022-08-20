@@ -59,7 +59,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertEquals(0, multiQueue.size)
 
         Assertions.assertNotNull(retrievedMessage)
-        Assertions.assertEquals(data, retrievedMessage!!.data)
+        Assertions.assertEquals(data, retrievedMessage!!.payload)
     }
 
     /**

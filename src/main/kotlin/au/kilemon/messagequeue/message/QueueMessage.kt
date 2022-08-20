@@ -10,7 +10,7 @@ import java.io.Serializable
  * @author github.com/KyleGonzalez
  */
 @EqualsAndHashCode
-data class QueueMessage(val data: Serializable?, val type: String, @EqualsAndHashCode.Exclude var isConsumed: Boolean = false, @EqualsAndHashCode.Exclude var consumedBy: String? = null): Serializable
+data class QueueMessage(val payload: Serializable?, val type: String, @EqualsAndHashCode.Exclude var isConsumed: Boolean = false, @EqualsAndHashCode.Exclude var consumedBy: String? = null): Serializable
 {
     /**
      * Required for JSON deserialisation.

@@ -15,18 +15,33 @@ class MessageQueueController
     @Autowired
     lateinit var messageQueue: MultiQueue
 
-    @GetMapping
-    fun getValue(): String
+    @GetMapping(path = ["/{queueType}"],
+        produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE])
+    fun getValue(@PathVariable queueType: String?): String
     {
-        return messageQueue.size.toString()
+        return if (queueType == null)
+        {
+            messageQueue.size.toString()
+        }
+        else
+        {
+            messageQueue.getQueueForType(queueType).size.toString()
+        }
     }
 
     @PostMapping(
-        path = ["/{queueType}"],
         consumes = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE])
-    fun createMessage(@PathVariable queueType: String, @Valid @RequestBody queueMessage: QueueMessage): MessageResponse
+    fun createMessage(@Valid @RequestBody queueMessage: QueueMessage): MessageResponse
     {
-        return MessageResponse(queueType=queueType)
+        val wasAdded = messageQueue.add(queueMessage)
+        if (wasAdded)
+        {
+            return MessageResponse(data=queueMessage)
+        }
+        else
+        {
+            throw Exception("Failed to add entry")
+        }
     }
 }
