@@ -37,7 +37,7 @@ class MessageQueueController
         val wasAdded = messageQueue.add(queueMessage)
         if (wasAdded)
         {
-            return MessageResponse(data=queueMessage)
+            return MessageResponse(message=queueMessage)
         }
         else
         {
