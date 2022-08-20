@@ -1,13 +1,12 @@
 package au.kilemon.messagequeue.queue
 
 import au.kilemon.messagequeue.message.QueueMessage
-import au.kilemon.messagequeue.queue.type.QueueTypeProvider
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 /**
  * A [MultiQueue] interface, which extends [Queue].
- * It contains various extra methods for interfacing with the [MultiQueue] using the [QueueTypeProvider]
+ * It contains various extra methods for interfacing with the [MultiQueue] using the [String]
  * to manipulate the appropriate underlying [Queue]s.
  *
  * @author github.com/KyleGonzalez
@@ -24,55 +23,55 @@ interface MultiQueue: Queue<QueueMessage>
      */
 
     /**
-     * Retrieves or creates a new [Queue] of type [QueueMessage] for the provided [QueueTypeProvider].
-     * If the underlying [Queue] does not exist for the provided [QueueTypeProvider] then a new [Queue] will
-     * be created and stored in the [ConcurrentHashMap] under the provided [QueueTypeProvider].
+     * Retrieves or creates a new [Queue] of type [QueueMessage] for the provided [String].
+     * If the underlying [Queue] does not exist for the provided [String] then a new [Queue] will
+     * be created and stored in the [ConcurrentHashMap] under the provided [String].
      *
-     * @param queueTypeProvider the provider used to get the correct underlying [Queue]
-     * @return the [Queue] matching the provided [QueueTypeProvider]
+     * @param queueType the provider used to get the correct underlying [Queue]
+     * @return the [Queue] matching the provided [String]
      */
-    fun getQueueForType(queueTypeProvider: QueueTypeProvider): Queue<QueueMessage>
+    fun getQueueForType(queueType: String): Queue<QueueMessage>
 
     /**
-     * Initialise and register the provided [Queue] against the [QueueTypeProvider].
+     * Initialise and register the provided [Queue] against the [String].
      *
-     * @param queueTypeProvider the [QueueTypeProvider] to register the [Queue] against
+     * @param queueType the [String] to register the [Queue] against
      * @param queue the queue to register
      */
-    fun initialiseQueueForType(queueTypeProvider: QueueTypeProvider, queue: Queue<QueueMessage>)
+    fun initialiseQueueForType(queueType: String, queue: Queue<QueueMessage>)
 
     /**
-     * Clears the underlying [Queue] for the provided [QueueTypeProvider]. By calling [Queue.clear].
+     * Clears the underlying [Queue] for the provided [String]. By calling [Queue.clear].
      *
-     * @param queueTypeProvider the [QueueTypeProvider] of the [Queue] to clear
+     * @param queueType the [String] of the [Queue] to clear
      */
-    fun clearForType(queueTypeProvider: QueueTypeProvider)
+    fun clearForType(queueType: String)
 
     /**
-     * Indicates whether the underlying [Queue] for the provided [QueueTypeProvider] is empty. By calling [Queue.isEmpty].
+     * Indicates whether the underlying [Queue] for the provided [String] is empty. By calling [Queue.isEmpty].
      *
-     * @param queueTypeProvider the [QueueTypeProvider] of the [Queue] to check whether it is empty
-     * @return `true` if the [Queue] for the [QueueTypeProvider] is empty, otherwise `false`
+     * @param queueType the [String] of the [Queue] to check whether it is empty
+     * @return `true` if the [Queue] for the [String] is empty, otherwise `false`
      */
-    fun isEmptyForType(queueTypeProvider: QueueTypeProvider): Boolean
+    fun isEmptyForType(queueType: String): Boolean
 
     /**
-     * Calls [Queue.poll] on the underlying [Queue] for the provided [QueueTypeProvider].
+     * Calls [Queue.poll] on the underlying [Queue] for the provided [String].
      * This will retrieve **AND** remove the head element of the [Queue].
      *
-     * @param queueTypeProvider [QueueTypeProvider] of the [Queue] to poll
+     * @param queueType [String] of the [Queue] to poll
      * @return the head element or `null`
      */
-    fun pollForType(queueTypeProvider: QueueTypeProvider): QueueMessage?
+    fun pollForType(queueType: String): QueueMessage?
 
     /**
-     * Calls [Queue.peek] on the underlying [Queue] for the provided [QueueTypeProvider].
+     * Calls [Queue.peek] on the underlying [Queue] for the provided [String].
      * This will retrieve the head element of the [Queue] without removing it.
      *
-     * @param queueTypeProvider [QueueTypeProvider] of the [Queue] to peek
+     * @param queueType [String] of the [Queue] to peek
      * @return the head element or `null`
      */
-    fun peekForType(queueTypeProvider: QueueTypeProvider): QueueMessage?
+    fun peekForType(queueType: String): QueueMessage?
 
     /**
      * Any unsupported methods from the [Queue] interface that are not implemented.

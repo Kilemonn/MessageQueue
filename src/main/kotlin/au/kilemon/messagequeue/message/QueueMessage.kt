@@ -1,6 +1,5 @@
 package au.kilemon.messagequeue.message
 
-import au.kilemon.messagequeue.queue.type.QueueTypeProvider
 import lombok.EqualsAndHashCode
 import java.io.Serializable
 
@@ -11,4 +10,10 @@ import java.io.Serializable
  * @author github.com/KyleGonzalez
  */
 @EqualsAndHashCode
-data class QueueMessage(val data: Serializable?, val type: QueueTypeProvider, @EqualsAndHashCode.Exclude var isConsumed: Boolean = false, @EqualsAndHashCode.Exclude var consumedBy: String? = null): Serializable
+data class QueueMessage(val data: Serializable?, val type: String, @EqualsAndHashCode.Exclude var isConsumed: Boolean = false, @EqualsAndHashCode.Exclude var consumedBy: String? = null): Serializable
+{
+    /**
+     * Required for JSON deserialisation.
+     */
+    constructor() : this(null, "")
+}

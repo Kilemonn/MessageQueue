@@ -2,7 +2,6 @@ package au.kilemon.messagequeue.queue
 
 import au.kilemon.messagequeue.Payload
 import au.kilemon.messagequeue.message.QueueMessage
-import au.kilemon.messagequeue.queue.type.QueueType
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -50,7 +49,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     fun testAdd(data: Serializable)
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val message = QueueMessage(data, QueueType("type"))
+        val message = QueueMessage(data, "type")
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
         Assertions.assertEquals(1, multiQueue.size)
@@ -84,7 +83,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     {
         Assertions.assertTrue(multiQueue.isEmpty())
 
-        val message = QueueMessage("A test value", QueueType("type"))
+        val message = QueueMessage("A test value", "type")
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
@@ -102,7 +101,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     fun testRemove_whenEntryDoesntExist()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val messageThatDoesntExist = QueueMessage(Payload("some Other data"), QueueType("type"))
+        val messageThatDoesntExist = QueueMessage(Payload("some Other data"), "type")
 
         Assertions.assertFalse(multiQueue.remove(messageThatDoesntExist))
         Assertions.assertTrue(multiQueue.isEmpty())
@@ -115,7 +114,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     fun testContains_whenEntryDoesntExist()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val type = QueueType("type")
+        val type = "type"
         val otherData = Payload("some Other data")
         val messageThatDoesntExist = QueueMessage(otherData, type)
         Assertions.assertFalse(multiQueue.contains(messageThatDoesntExist))
@@ -128,7 +127,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     fun testContains_whenEntryExists()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val message = QueueMessage(0x52347, QueueType("type"))
+        val message = QueueMessage(0x52347, "type")
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
@@ -146,7 +145,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     fun testContains_whenMetadataPropertiesAreSet()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val message = QueueMessage(0x5234, QueueType("type"))
+        val message = QueueMessage(0x5234, "type")
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
@@ -164,7 +163,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     fun testAddAll_containsAll_removeAll()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val list = listOf(QueueMessage(81273648, QueueType("type")), QueueMessage("test test test", QueueType("type")))
+        val list = listOf(QueueMessage(81273648, "type"), QueueMessage("test test test", "type"))
         Assertions.assertTrue(multiQueue.addAll(list))
         Assertions.assertFalse(multiQueue.isEmpty())
         Assertions.assertEquals(2, multiQueue.size)
@@ -179,14 +178,14 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     }
 
     /**
-     * Ensure that `null` is returned when there are no elements in the [MultiQueue] for the [QueueType].
+     * Ensure that `null` is returned when there are no elements in the [MultiQueue] for the specific queue.
      * Otherwise, if it does exist make sure that the correct entry is returned and that it is removed.
      */
     @Test
     fun testPollForType()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val message = QueueMessage(Payload("poll for type"), QueueType("poll-type"))
+        val message = QueueMessage(Payload("poll for type"), "poll-type")
 
         Assertions.assertNull(multiQueue.pollForType(message.type))
         Assertions.assertTrue(multiQueue.add(message))
@@ -196,14 +195,14 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     }
 
     /**
-     * Ensure that `null` is returned when there are no elements in the [MultiQueue] for the [QueueType].
+     * Ensure that `null` is returned when there are no elements in the [MultiQueue] for the specific queue.
      * Otherwise, if it does exist make sure that the correct entry is returned.
      */
     @Test
     fun testPeekForType()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val message = QueueMessage(Payload("peek for type"), QueueType("peek-type"))
+        val message = QueueMessage(Payload("peek for type"), "peek-type")
 
         Assertions.assertNull(multiQueue.peekForType(message.type))
         Assertions.assertTrue(multiQueue.add(message))
@@ -221,28 +220,28 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     {
         Assertions.assertTrue(multiQueue.isEmpty())
 
-        val type = QueueType("type")
+        val type = "type"
         val data = "test data"
         val message = QueueMessage(data, type)
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
         Assertions.assertFalse(multiQueue.isEmptyForType(type))
-        Assertions.assertTrue(multiQueue.isEmptyForType(QueueType("another-type")))
+        Assertions.assertTrue(multiQueue.isEmptyForType("another-type"))
     }
 
     /**
-     * Ensure that only the [QueueType] entries are removed when [MultiQueue.clearForType] is called.
+     * Ensure that only the specific entries are removed when [MultiQueue.clearForType] is called.
      */
     @Test
     fun testClearForType()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val type = QueueType("clear-for-type")
+        val type = "clear-for-type"
         val list = listOf(QueueMessage(81273648, type), QueueMessage("test test test", type))
         Assertions.assertTrue(multiQueue.addAll(list))
 
-        val singleEntryType = QueueType("single-entry-type")
+        val singleEntryType = "single-entry-type"
         val message = QueueMessage("test message", singleEntryType)
         Assertions.assertTrue(multiQueue.add(message))
 
@@ -254,13 +253,13 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     }
 
     /**
-     * Ensure that no change is made when the [QueueType] has no entries.
+     * Ensure that no change is made when the specific type has no entries.
      */
     @Test
     fun testClearForType_DoesNotExist()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val type = QueueType("clear-for-type-does-not-exist")
+        val type = "clear-for-type-does-not-exist"
         multiQueue.clearForType(type)
         Assertions.assertTrue(multiQueue.isEmpty())
     }
@@ -272,8 +271,8 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     fun testRetainAll()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val type = QueueType("type1")
-        val type2 = QueueType("type2")
+        val type = "type1"
+        val type2 = "type2"
         val data = Payload("some payload")
         val data2 = Payload("some more data")
         val list = listOf(QueueMessage(data, type), QueueMessage(data, type2), QueueMessage(data2, type), QueueMessage(data2, type2))
@@ -285,7 +284,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         toRetain.addAll(list.subList(0, 2))
         Assertions.assertEquals(2, toRetain.size)
         // No elements of this type to cover all branches of code
-        val type3 = QueueType("type3")
+        val type3 = "type3"
         val type3Message = QueueMessage(Payload("type3 data"), type3)
         toRetain.add(type3Message)
         Assertions.assertEquals(3, toRetain.size)
@@ -315,7 +314,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
             {
                 assertThrows(UnsupportedOperationException::class.java)
                 {
-                    multiQueue.offer(QueueMessage(Payload("test data"), QueueType("test type")))
+                    multiQueue.offer(QueueMessage(Payload("test data"), "test type"))
                 }
             },
             {

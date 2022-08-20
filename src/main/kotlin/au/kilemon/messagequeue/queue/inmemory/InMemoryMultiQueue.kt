@@ -2,7 +2,6 @@ package au.kilemon.messagequeue.queue.inmemory
 
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
-import au.kilemon.messagequeue.queue.type.QueueTypeProvider
 import lombok.extern.slf4j.Slf4j
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -10,7 +9,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
  * The InMemoryMultiQueue which implements the [MultiQueue]. It holds a [ConcurrentHashMap] with [Queue] entries.
- * Using the provided [QueueTypeProvider], specific entries in the queue can be manipulated and changed as needed.
+ * Using the provided [String], specific entries in the queue can be manipulated and changed as needed.
  *
  * @author github.com/KyleGonzalez
  */
@@ -24,20 +23,20 @@ open class InMemoryMultiQueue: MultiQueue
 
     override var size: Int = 0
 
-    override fun getQueueForType(queueTypeProvider: QueueTypeProvider): Queue<QueueMessage>
+    override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {
-        var queueForType: Queue<QueueMessage>? = messageQueue[queueTypeProvider.getIdentifier()]
+        var queueForType: Queue<QueueMessage>? = messageQueue[queueType]
         if (queueForType == null)
         {
             queueForType = ConcurrentLinkedQueue()
-            this.initialiseQueueForType(queueTypeProvider, queueForType)
+            this.initialiseQueueForType(queueType, queueForType)
         }
         return queueForType
     }
 
-    override fun initialiseQueueForType(queueTypeProvider: QueueTypeProvider, queue: Queue<QueueMessage>)
+    override fun initialiseQueueForType(queueType: String, queue: Queue<QueueMessage>)
     {
-        messageQueue[queueTypeProvider.getIdentifier()] = queue
+        messageQueue[queueType] = queue
     }
 
     override fun add(element: QueueMessage): Boolean
@@ -67,9 +66,9 @@ open class InMemoryMultiQueue: MultiQueue
         size = 0
     }
 
-    override fun clearForType(queueTypeProvider: QueueTypeProvider)
+    override fun clearForType(queueType: String)
     {
-        val queueForType: Queue<QueueMessage>? = messageQueue[queueTypeProvider.getIdentifier()]
+        val queueForType: Queue<QueueMessage>? = messageQueue[queueType]
         if (queueForType != null)
         {
             size -= queueForType.size
@@ -128,15 +127,15 @@ open class InMemoryMultiQueue: MultiQueue
         return size == 0
     }
 
-    override fun isEmptyForType(queueTypeProvider: QueueTypeProvider): Boolean
+    override fun isEmptyForType(queueType: String): Boolean
     {
-        val queueForType: Queue<QueueMessage> = getQueueForType(queueTypeProvider)
+        val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
         return queueForType.isEmpty()
     }
 
-    override fun pollForType(queueTypeProvider: QueueTypeProvider): QueueMessage?
+    override fun pollForType(queueType: String): QueueMessage?
     {
-        val queueForType: Queue<QueueMessage> = getQueueForType(queueTypeProvider)
+        val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
         val head = queueForType.poll()
         if (head != null)
         {
@@ -145,9 +144,9 @@ open class InMemoryMultiQueue: MultiQueue
         return head
     }
 
-    override fun peekForType(queueTypeProvider: QueueTypeProvider): QueueMessage?
+    override fun peekForType(queueType: String): QueueMessage?
     {
-        val queueForType: Queue<QueueMessage> = getQueueForType(queueTypeProvider)
+        val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
         return queueForType.peek()
     }
 

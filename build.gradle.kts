@@ -13,6 +13,7 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web:2.7.2")
+    implementation("org.springframework.boot:spring-boot-starter-validation:2.7.2")
 
     compileOnly("org.projectlombok:lombok:1.18.24")
 

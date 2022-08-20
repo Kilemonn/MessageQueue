@@ -1,4 +1,4 @@
-package au.kilemon.messagequeue.controller
+package au.kilemon.messagequeue.rest.controller
 
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.springframework.beans.factory.annotation.Autowired
