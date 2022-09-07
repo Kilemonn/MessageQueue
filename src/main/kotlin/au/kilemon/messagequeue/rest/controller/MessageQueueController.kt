@@ -16,7 +16,7 @@ class MessageQueueController
     lateinit var messageQueue: MultiQueue
 
     @GetMapping(path = ["/{queueType}"],
-        produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE])
+        produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getValue(@PathVariable queueType: String?): String
     {
         return if (queueType == null)
@@ -30,8 +30,8 @@ class MessageQueueController
     }
 
     @PostMapping(
-        consumes = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE],
-        produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE])
+        consumes = [MediaType.APPLICATION_JSON_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE])
     fun createMessage(@Valid @RequestBody queueMessage: QueueMessage): MessageResponse
     {
         val wasAdded = messageQueue.add(queueMessage)
