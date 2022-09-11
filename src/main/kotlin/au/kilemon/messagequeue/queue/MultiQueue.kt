@@ -74,6 +74,12 @@ interface MultiQueue: Queue<QueueMessage>
     fun peekForType(queueType: String): QueueMessage?
 
     /**
+     * Retrieves the underlying key list as a set.
+     * This is returning a [Set] of the available `QueueTypes` that have entries in the [MultiQueue].
+     */
+    fun keys(): Set<String>
+
+    /**
      * Any unsupported methods from the [Queue] interface that are not implemented.
      */
     /**

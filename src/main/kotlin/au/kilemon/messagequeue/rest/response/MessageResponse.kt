@@ -6,4 +6,4 @@ import java.io.Serializable
 import java.util.*
 
 @JsonPropertyOrder("uuid", "queueType", "data")
-data class MessageResponse(val uuid: UUID = UUID.randomUUID(), val message: QueueMessage, val queueType: String = message.type): Serializable
+data class MessageResponse(val message: QueueMessage, val queueType: String = message.type): Serializable

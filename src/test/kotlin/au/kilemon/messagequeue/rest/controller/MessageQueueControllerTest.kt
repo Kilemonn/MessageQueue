@@ -40,7 +40,7 @@ class MessageQueueControllerTest
     fun testGetQueueEntry()
     {
         val queueType = "test"
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_PATH + "/" + queueType)
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + queueType)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.content().json("0"))

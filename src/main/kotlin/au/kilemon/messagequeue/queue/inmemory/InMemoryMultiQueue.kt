@@ -160,4 +160,9 @@ open class InMemoryMultiQueue: MultiQueue
         val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
         return queueForType.contains(element)
     }
+
+    override fun keys(): Set<String>
+    {
+        return messageQueue.keys.toSet()
+    }
 }
