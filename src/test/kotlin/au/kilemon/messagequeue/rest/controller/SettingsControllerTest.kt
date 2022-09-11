@@ -44,7 +44,7 @@ class SettingsControllerTest
             MockMvcRequestBuilders.get(SettingsController.SETTINGS_PATH)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
-//            .andExpect(MockMvcResultMatchers.content().json("{\n    \"multiQueueType\": \"IN_MEMORY\"\n}"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.muiltiQueueType").value(MultiQueueType.IN_MEMORY.toString()))
+            .andExpect(MockMvcResultMatchers.content().json("{\n    \"multiQueueType\": \"IN_MEMORY\"\n}"))
+//            .andExpect(MockMvcResultMatchers.jsonPath("$.muiltiQueueType").value(MultiQueueType.IN_MEMORY.toString()))
     }
 }
