@@ -8,10 +8,18 @@ import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 
+/**
+ * @author github.com/KyleGonzalez
+ */
 @RestController
-@RequestMapping("/message/queue")
+@RequestMapping(MessageQueueController.MESSAGE_QUEUE_PATH)
 class MessageQueueController
 {
+    companion object
+    {
+        const val MESSAGE_QUEUE_PATH: String = "/message/queue"
+    }
+
     @Autowired
     lateinit var messageQueue: MultiQueue
 

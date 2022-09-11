@@ -7,10 +7,18 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.bind.annotation.RestController
 
+/**
+ * @author github.com/KyleGonzalez
+ */
 @RestController
-@RequestMapping("message/settings")
+@RequestMapping(SettingsController.SETTINGS_PATH)
 class SettingsController
 {
+    companion object
+    {
+        const val SETTINGS_PATH = "/message/settings"
+    }
+
     @Autowired
     lateinit var queueSettings: MessageQueueSettings
 
