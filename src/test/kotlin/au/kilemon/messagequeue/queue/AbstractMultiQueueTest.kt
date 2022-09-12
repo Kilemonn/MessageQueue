@@ -1,6 +1,7 @@
 package au.kilemon.messagequeue.queue
 
 import au.kilemon.messagequeue.Payload
+import au.kilemon.messagequeue.PayloadEnum
 import au.kilemon.messagequeue.message.QueueMessage
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -101,7 +102,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     fun testRemove_whenEntryDoesntExist()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val messageThatDoesntExist = QueueMessage(Payload("some Other data"), "type")
+        val messageThatDoesntExist = QueueMessage(Payload("some Other data", 23, false, PayloadEnum.A), "type")
 
         Assertions.assertFalse(multiQueue.remove(messageThatDoesntExist))
         Assertions.assertTrue(multiQueue.isEmpty())
@@ -115,7 +116,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     {
         Assertions.assertTrue(multiQueue.isEmpty())
         val type = "type"
-        val otherData = Payload("some Other data")
+        val otherData = Payload("some Other data", 65, true, PayloadEnum.B)
         val messageThatDoesntExist = QueueMessage(otherData, type)
         Assertions.assertFalse(multiQueue.contains(messageThatDoesntExist))
     }
@@ -151,7 +152,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertFalse(multiQueue.isEmpty())
 
         Assertions.assertTrue(multiQueue.contains(message))
-        message.isConsumed = true
+        message.consumed = true
         message.consumedBy = "Instance_11242"
         Assertions.assertTrue(multiQueue.contains(message))
     }
@@ -185,7 +186,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     fun testPollForType()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val message = QueueMessage(Payload("poll for type"), "poll-type")
+        val message = QueueMessage(Payload("poll for type", 89, true, PayloadEnum.B), "poll-type")
 
         Assertions.assertNull(multiQueue.pollForType(message.type))
         Assertions.assertTrue(multiQueue.add(message))
@@ -202,7 +203,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     fun testPeekForType()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val message = QueueMessage(Payload("peek for type"), "peek-type")
+        val message = QueueMessage(Payload("peek for type", 1121, false, PayloadEnum.C), "peek-type")
 
         Assertions.assertNull(multiQueue.peekForType(message.type))
         Assertions.assertTrue(multiQueue.add(message))
@@ -273,8 +274,8 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertTrue(multiQueue.isEmpty())
         val type = "type1"
         val type2 = "type2"
-        val data = Payload("some payload")
-        val data2 = Payload("some more data")
+        val data = Payload("some payload", 1, true, PayloadEnum.A)
+        val data2 = Payload("some more data", 2, false, PayloadEnum.B)
         val list = listOf(QueueMessage(data, type), QueueMessage(data, type2), QueueMessage(data2, type), QueueMessage(data2, type2))
 
         Assertions.assertTrue(multiQueue.addAll(list))
@@ -285,7 +286,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertEquals(2, toRetain.size)
         // No elements of this type to cover all branches of code
         val type3 = "type3"
-        val type3Message = QueueMessage(Payload("type3 data"), type3)
+        val type3Message = QueueMessage(Payload("type3 data", 3, false, PayloadEnum.C), type3)
         toRetain.add(type3Message)
         Assertions.assertEquals(3, toRetain.size)
 
@@ -314,7 +315,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
             {
                 assertThrows(UnsupportedOperationException::class.java)
                 {
-                    multiQueue.offer(QueueMessage(Payload("test data"), "test type"))
+                    multiQueue.offer(QueueMessage(Payload("test data", 13, false, PayloadEnum.C), "test type"))
                 }
             },
             {

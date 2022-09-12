@@ -3,11 +3,10 @@ package au.kilemon.messagequeue.rest.controller
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.rest.response.MessageResponse
-import com.sun.org.apache.xpath.internal.operations.Bool
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
-import java.util.UUID
 import java.util.stream.Collectors
 import javax.validation.Valid
 
@@ -50,6 +49,7 @@ class MessageQueueController
     @PostMapping(ENDPOINT_ENTRY,
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE])
+    @ResponseStatus(HttpStatus.CREATED)
     fun createMessage(@Valid @RequestBody queueMessage: QueueMessage): MessageResponse
     {
         val wasAdded = messageQueue.add(queueMessage)
