@@ -15,6 +15,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web:2.7.2")
     implementation("org.springframework.boot:spring-boot-starter-validation:2.7.2")
 
+    implementation("com.google.code.gson:gson:2.9.1")
+
     compileOnly("org.projectlombok:lombok:1.18.24")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test:2.7.2")
