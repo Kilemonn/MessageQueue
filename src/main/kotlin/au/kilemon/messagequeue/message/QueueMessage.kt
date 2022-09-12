@@ -11,8 +11,10 @@ import java.util.UUID
  * @author github.com/KyleGonzalez
  */
 @EqualsAndHashCode
-data class QueueMessage(val payload: Serializable?, val type: String, val uuid: UUID = UUID.randomUUID(), @EqualsAndHashCode.Exclude var isConsumed: Boolean = false, @EqualsAndHashCode.Exclude var consumedBy: String? = null): Serializable
+data class QueueMessage(val payload: Serializable?, val type: String, @EqualsAndHashCode.Exclude var isConsumed: Boolean = false, @EqualsAndHashCode.Exclude var consumedBy: String? = null): Serializable
 {
+    private val uuid: UUID = UUID.randomUUID()
+
     /**
      * Required for JSON deserialisation.
      */
