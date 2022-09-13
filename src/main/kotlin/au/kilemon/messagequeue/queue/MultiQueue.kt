@@ -1,6 +1,7 @@
 package au.kilemon.messagequeue.queue
 
 import au.kilemon.messagequeue.message.QueueMessage
+import com.sun.org.apache.xpath.internal.operations.Bool
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
@@ -75,9 +76,11 @@ interface MultiQueue: Queue<QueueMessage>
 
     /**
      * Retrieves the underlying key list as a set.
-     * This is returning a [Set] of the available `QueueTypes` that have entries in the [MultiQueue].
+     *
+     * @param includeEmpty *true* to include any empty queues which one had elements in them, otherwise *false* to only include keys from queues which have elements.
+     * @return a [Set] of the available `QueueTypes` that have entries in the [MultiQueue].
      */
-    fun keys(): Set<String>
+    fun keys(includeEmpty: Boolean = true): Set<String>
 
     /**
      * Any unsupported methods from the [Queue] interface that are not implemented.

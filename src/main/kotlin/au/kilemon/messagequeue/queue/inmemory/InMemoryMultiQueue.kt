@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.collections.HashSet
 
 /**
  * The InMemoryMultiQueue which implements the [MultiQueue]. It holds a [ConcurrentHashMap] with [Queue] entries.
@@ -161,8 +162,24 @@ open class InMemoryMultiQueue: MultiQueue
         return queueForType.contains(element)
     }
 
-    override fun keys(): Set<String>
+    override fun keys(includeEmpty: Boolean): Set<String>
     {
-        return messageQueue.keys.toSet()
+        if (includeEmpty)
+        {
+            return messageQueue.keys.toSet()
+        }
+        else
+        {
+            val keys = HashSet<String>()
+            for (key: String in messageQueue.keys)
+            {
+                val queueForType = getQueueForType(key)
+                if (queueForType.isNotEmpty())
+                {
+                    keys.add(key)
+                }
+            }
+            return keys
+        }
     }
 }
