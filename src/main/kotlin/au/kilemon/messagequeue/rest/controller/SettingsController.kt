@@ -2,6 +2,8 @@ package au.kilemon.messagequeue.rest.controller
 
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseBody
@@ -22,10 +24,9 @@ class SettingsController
     @Autowired
     lateinit var queueSettings: MessageQueueSettings
 
-    @GetMapping
-    @ResponseBody
-    fun getSettings(): MessageQueueSettings
+    @GetMapping(produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getSettings(): ResponseEntity<MessageQueueSettings>
     {
-        return queueSettings
+        return ResponseEntity.ok(queueSettings)
     }
 }
