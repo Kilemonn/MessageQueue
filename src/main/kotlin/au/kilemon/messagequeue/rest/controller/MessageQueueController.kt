@@ -81,7 +81,7 @@ class MessageQueueController
         produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getValue(@PathVariable queueType: String?): ResponseEntity<String>
     {
-        return if (queueType == null)
+        return if (queueType.isNullOrBlank())
         {
             ResponseEntity.ok(messageQueue.size.toString())
         }
@@ -95,7 +95,7 @@ class MessageQueueController
         produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getEntry(@PathVariable uuid: String, @RequestParam(required = false) queueType: String?): ResponseEntity<MessageResponse>
     {
-        if (queueType != null)
+        if ( !queueType.isNullOrBlank())
         {
             val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
             val entry = queueForType.stream().filter{ message -> message.uuid.toString() == uuid }.findFirst()
@@ -153,19 +153,29 @@ class MessageQueueController
      * A [GetMapping] endpoint which retrieves all the stored [QueueMessage]s that are currently available in the [MultiQueue].
      *
      * @param detailed *true* if you require detailed information about each message and their payload/owner, otherwise **false** which displayed only limited information about each message
+     * @param queueType the `type` to include, if provided only messages in this `queueType` will be retrieved.
      * @return a [Map] where the `key` is the `queueType` and the `value` is a comma separated list of all the [QueueMessage.toDetailedString]
      */
     @GetMapping(ENDPOINT_ALL,
         produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun getAll(@RequestParam(required = false) detailed: Boolean?): ResponseEntity<Map<String, String>>
+    fun getAll(@RequestParam(required = false) detailed: Boolean?, @RequestParam(required = false) queueType: String?): ResponseEntity<Map<String, String>>
     {
         val responseMap = HashMap<String, String>()
-        for (key: String in messageQueue.keys(false))
+        if ( !queueType.isNullOrBlank())
         {
-            // No need to empty check since we passed `false` to `keys()` above
-            val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(key)
+            val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
             val queueDetails = queueForType.stream().map { message -> message.toDetailedString(detailed) }.collect(Collectors.toList())
-            responseMap[key] = queueDetails.toString()
+            responseMap[queueType] = queueDetails.toString()
+        }
+        else
+        {
+            for (key: String in messageQueue.keys(false))
+            {
+                // No need to empty check since we passed `false` to `keys()` above
+                val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(key)
+                val queueDetails = queueForType.stream().map { message -> message.toDetailedString(detailed) }.collect(Collectors.toList())
+                responseMap[key] = queueDetails.toString()
+            }
         }
         return ResponseEntity.ok(responseMap)
     }
@@ -263,7 +273,7 @@ class MessageQueueController
         if (message.isPresent)
         {
             val messageToRemove = message.get()
-            if (consumedBy != null)
+            if ( !consumedBy.isNullOrBlank())
             {
                 if (messageToRemove.consumedBy == consumedBy)
                 {
