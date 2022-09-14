@@ -1,7 +1,6 @@
 package au.kilemon.messagequeue.queue
 
 import au.kilemon.messagequeue.message.QueueMessage
-import com.sun.org.apache.xpath.internal.operations.Bool
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
@@ -85,10 +84,10 @@ interface MultiQueue: Queue<QueueMessage>
     /**
      * Returns the `queueType` that the [QueueMessage] with the provided [UUID] exists in.
      *
-     * @param uuid the [UUID] to look up
+     * @param uuid the [UUID] (as a [String]) to look up
      * @return the `queueType` [String] if a [QueueMessage] exists with the provided [UUID] otherwise [Optional.empty]
      */
-    fun containsUUID(uuid: UUID): Optional<String>
+    fun containsUUID(uuid: String): Optional<String>
 
     /**
      * Any unsupported methods from the [Queue] interface that are not implemented.

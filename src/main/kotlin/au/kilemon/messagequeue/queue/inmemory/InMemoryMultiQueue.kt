@@ -47,7 +47,7 @@ open class InMemoryMultiQueue: MultiQueue
     override fun add(element: QueueMessage): Boolean
     {
         val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
-        if ( !containsUUID(element.uuid).isPresent)
+        if ( !containsUUID(element.uuid.toString()).isPresent)
         {
             val wasAdded = queueForType.add(element)
             if (wasAdded)
@@ -197,8 +197,8 @@ open class InMemoryMultiQueue: MultiQueue
         }
     }
 
-    override fun containsUUID(uuid: UUID): Optional<String>
+    override fun containsUUID(uuid: String): Optional<String>
     {
-        return Optional.ofNullable(uuidMap[uuid.toString()])
+        return Optional.ofNullable(uuidMap[uuid])
     }
 }

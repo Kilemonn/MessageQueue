@@ -92,27 +92,16 @@ class MessageQueueController
 
     @GetMapping("$ENDPOINT_ENTRY/{uuid}",
         produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun getEntry(@PathVariable uuid: String, @RequestParam(required = false) queueType: String?): ResponseEntity<MessageResponse>
+    fun getEntry(@PathVariable uuid: String): ResponseEntity<MessageResponse>
     {
-        if ( !queueType.isNullOrBlank())
+        val queueType = messageQueue.containsUUID(uuid)
+        if (queueType.isPresent)
         {
-            val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
+            val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType.get())
             val entry = queueForType.stream().filter{ message -> message.uuid.toString() == uuid }.findFirst()
             if (entry.isPresent)
             {
                 return ResponseEntity.ok(QueueMessageResponse(entry.get()))
-            }
-        }
-        else
-        {
-            for (key: String in messageQueue.keys(false))
-            {
-                val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(key)
-                val entry = queueForType.stream().filter{ message -> message.uuid.toString() == uuid }.findFirst()
-                if (entry.isPresent)
-                {
-                    return ResponseEntity.ok(QueueMessageResponse(entry.get()))
-                }
             }
         }
 
@@ -190,30 +179,34 @@ class MessageQueueController
 
     @PutMapping(ENDPOINT_CONSUME,
         produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun consumeMessage(@RequestParam queueType: String, @RequestParam uuid: String, @RequestParam consumedBy: String)
+    fun consumeMessage(@RequestParam uuid: String, @RequestParam consumedBy: String)
     {
-        val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
-        val message = queueForType.stream().filter { message -> message.uuid.toString() == uuid }.findFirst()
-        if (message.isPresent)
+        val queueType = messageQueue.containsUUID(uuid)
+        if (queueType.isPresent)
         {
-            val messageToRelease = message.get()
-            if (messageToRelease.consumed)
+            val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType.get())
+            val message = queueForType.stream().filter { message -> message.uuid.toString() == uuid }.findFirst()
+            if (message.isPresent)
             {
-                if (messageToRelease.consumedBy == consumedBy)
+                val messageToRelease = message.get()
+                if (messageToRelease.consumed)
                 {
-                    // The message is already in this state, returning 202 to tell the client that it is accepted but no action was done
-                    ResponseEntity.accepted().body(messageToRelease)
-                    return
+                    if (messageToRelease.consumedBy == consumedBy)
+                    {
+                        // The message is already in this state, returning 202 to tell the client that it is accepted but no action was done
+                        ResponseEntity.accepted().body(messageToRelease)
+                        return
+                    }
+                    else
+                    {
+                        throw ResponseStatusException(HttpStatus.CONFLICT, "The message with UUID: $uuid and $queueType is already held by instance with ID ${messageToRelease.consumedBy}.")
+                    }
                 }
-                else
-                {
-                    throw ResponseStatusException(HttpStatus.CONFLICT, "The message with UUID: $uuid and $queueType is already held by instance with ID ${messageToRelease.consumedBy}.")
-                }
-            }
 
-            messageToRelease.consumedBy = consumedBy
-            messageToRelease.consumed = true
-            ResponseEntity.ok(messageToRelease)
+                messageToRelease.consumedBy = consumedBy
+                messageToRelease.consumed = true
+                ResponseEntity.ok(messageToRelease)
+            }
         }
 
         // No entries match the provided UUID (and queue type)
@@ -242,22 +235,26 @@ class MessageQueueController
 
     @PutMapping(ENDPOINT_RELEASE,
         produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun releaseMessage(@RequestParam uuid: String, @RequestParam queueType: String)
+    fun releaseMessage(@RequestParam uuid: String)
     {
-        val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
-        val message = queueForType.stream().filter { message -> message.uuid.toString() == uuid }.findFirst()
-        if (message.isPresent)
+        val queueType = messageQueue.containsUUID(uuid)
+        if (queueType.isPresent)
         {
-            val messageToRelease = message.get()
-            if ( !messageToRelease.consumed)
+            val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType.get())
+            val message = queueForType.stream().filter { message -> message.uuid.toString() == uuid }.findFirst()
+            if (message.isPresent)
             {
-                // The message is already in this state, returning 202 to tell the client that it is accepted but no action was done
-                ResponseEntity.accepted().body(messageToRelease)
-                return
+                val messageToRelease = message.get()
+                if ( !messageToRelease.consumed)
+                {
+                    // The message is already in this state, returning 202 to tell the client that it is accepted but no action was done
+                    ResponseEntity.accepted().body(messageToRelease)
+                    return
+                }
+                messageToRelease.consumedBy = null
+                messageToRelease.consumed = false
+                ResponseEntity.ok(messageToRelease)
             }
-            messageToRelease.consumedBy = null
-            messageToRelease.consumed = false
-            ResponseEntity.ok(messageToRelease)
         }
 
         // No entries match the provided UUID (and queue type)
@@ -265,33 +262,28 @@ class MessageQueueController
     }
 
     @DeleteMapping
-    fun removeMessage(@RequestParam uuid: String, @RequestParam queueType: String, @RequestParam(required = false) consumedBy: String?)
+    fun removeMessage(@RequestParam uuid: String, @RequestParam(required = false) consumedBy: String?)
     {
-        val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
-        val message = queueForType.stream().filter { message -> message.uuid.toString() == uuid }.findFirst()
-        if (message.isPresent)
+        val queueType = messageQueue.containsUUID(uuid)
+        if (queueType.isPresent)
         {
-            val messageToRemove = message.get()
-            if ( !consumedBy.isNullOrBlank())
+            val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType.get())
+            val message = queueForType.stream().filter { message -> message.uuid.toString() == uuid }.findFirst()
+            if (message.isPresent)
             {
-                if (messageToRemove.consumedBy == consumedBy)
-                {
-                    queueForType.remove(messageToRemove)
-                }
-                else
+                val messageToRemove = message.get()
+                if ( !consumedBy.isNullOrBlank() && messageToRemove.consumedBy != consumedBy)
                 {
                     throw ResponseStatusException(HttpStatus.FORBIDDEN, "Unable to remove message with UUID $uuid in Queue $queueType because the provided consumedBy: $consumedBy does not match the message's consumedBy: ${messageToRemove.consumedBy}")
                 }
+                else
+                {
+                    queueForType.remove(messageToRemove)
+                }
+                ResponseEntity.noContent()
             }
-            else
-            {
-                queueForType.remove(messageToRemove)
-            }
-            ResponseEntity.noContent()
         }
-        else
-        {
-            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find message with UUID $uuid. (Queue-type: $queueType.")
-        }
+
+        throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find message with UUID $uuid. (Queue-type: $queueType.")
     }
 }
