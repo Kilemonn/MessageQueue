@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
-import kotlin.collections.HashSet
 
 /**
  * The InMemoryMultiQueue which implements the [MultiQueue]. It holds a [ConcurrentHashMap] with [Queue] entries.
@@ -21,6 +20,11 @@ open class InMemoryMultiQueue: MultiQueue
      * The underlying [Map] holding [Queue] entities mapped against the provided [String].
      */
     private val messageQueue: ConcurrentHashMap<String, Queue<QueueMessage>> = ConcurrentHashMap()
+
+    /**
+     * An internal [Map] that holds known [UUID]s (as a [String]) and their related `queueType` to quickly find entries within the [MultiQueue].
+     */
+    private val uuidMap: ConcurrentHashMap<String, String> = ConcurrentHashMap()
 
     override var size: Int = 0
 
@@ -43,12 +47,17 @@ open class InMemoryMultiQueue: MultiQueue
     override fun add(element: QueueMessage): Boolean
     {
         val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
-        val wasAdded = queueForType.add(element)
-        if (wasAdded)
+        if ( !containsUUID(element.uuid).isPresent)
         {
-            size++
+            val wasAdded = queueForType.add(element)
+            if (wasAdded)
+            {
+                uuidMap[element.uuid.toString()] = element.type
+                size++
+                return true
+            }
         }
-        return wasAdded
+        return false
     }
 
     override fun addAll(elements: Collection<QueueMessage>): Boolean
@@ -64,6 +73,7 @@ open class InMemoryMultiQueue: MultiQueue
     override fun clear()
     {
         messageQueue.clear()
+        uuidMap.clear()
         size = 0
     }
 
@@ -73,6 +83,7 @@ open class InMemoryMultiQueue: MultiQueue
         if (queueForType != null)
         {
             size -= queueForType.size
+            queueForType.forEach { message -> uuidMap.remove(message.uuid.toString()) }
             queueForType.clear()
         }
     }
@@ -87,12 +98,13 @@ open class InMemoryMultiQueue: MultiQueue
             {
                 for(entry: QueueMessage in queueForKey)
                 {
-                    if (!elements.contains(entry))
+                    if ( !elements.contains(entry))
                     {
                         val wasRemoved = queueForKey.remove(entry)
                         anyWasRemoved = wasRemoved || anyWasRemoved
                         if (wasRemoved)
                         {
+                            uuidMap.remove(entry.uuid.toString())
                             size--
                         }
                     }
@@ -118,6 +130,7 @@ open class InMemoryMultiQueue: MultiQueue
         val wasRemoved = queueForType.remove(element)
         if (wasRemoved)
         {
+            uuidMap.remove(element.uuid.toString())
             size--
         }
         return wasRemoved
@@ -134,21 +147,22 @@ open class InMemoryMultiQueue: MultiQueue
         return queueForType.isEmpty()
     }
 
-    override fun pollForType(queueType: String): QueueMessage?
+    override fun pollForType(queueType: String): Optional<QueueMessage>
     {
         val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
         val head = queueForType.poll()
         if (head != null)
         {
+            uuidMap.remove(head.uuid.toString())
             size--
         }
-        return head
+        return Optional.ofNullable(head)
     }
 
-    override fun peekForType(queueType: String): QueueMessage?
+    override fun peekForType(queueType: String): Optional<QueueMessage>
     {
         val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
-        return queueForType.peek()
+        return Optional.ofNullable(queueForType.peek())
     }
 
     override fun containsAll(elements: Collection<QueueMessage>): Boolean
@@ -181,5 +195,10 @@ open class InMemoryMultiQueue: MultiQueue
             }
             return keys
         }
+    }
+
+    override fun containsUUID(uuid: UUID): Optional<String>
+    {
+        return Optional.ofNullable(uuidMap[uuid.toString()])
     }
 }

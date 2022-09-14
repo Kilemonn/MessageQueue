@@ -59,8 +59,8 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertTrue(multiQueue.isEmpty())
         Assertions.assertEquals(0, multiQueue.size)
 
-        Assertions.assertNotNull(retrievedMessage)
-        Assertions.assertEquals(data, retrievedMessage!!.payload)
+        Assertions.assertTrue(retrievedMessage.isPresent)
+        Assertions.assertEquals(data, retrievedMessage.get().payload)
     }
 
     /**
@@ -188,10 +188,10 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertTrue(multiQueue.isEmpty())
         val message = QueueMessage(Payload("poll for type", 89, true, PayloadEnum.B), "poll-type")
 
-        Assertions.assertNull(multiQueue.pollForType(message.type))
+        Assertions.assertFalse(multiQueue.pollForType(message.type).isPresent)
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
-        Assertions.assertEquals(message, multiQueue.pollForType(message.type))
+        Assertions.assertEquals(message, multiQueue.pollForType(message.type).get())
         Assertions.assertTrue(multiQueue.isEmpty())
     }
 
@@ -205,10 +205,10 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertTrue(multiQueue.isEmpty())
         val message = QueueMessage(Payload("peek for type", 1121, false, PayloadEnum.C), "peek-type")
 
-        Assertions.assertNull(multiQueue.peekForType(message.type))
+        Assertions.assertFalse(multiQueue.peekForType(message.type).isPresent)
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
-        Assertions.assertEquals(message, multiQueue.peekForType(message.type))
+        Assertions.assertEquals(message, multiQueue.peekForType(message.type).get())
         Assertions.assertFalse(multiQueue.isEmpty())
 
     }

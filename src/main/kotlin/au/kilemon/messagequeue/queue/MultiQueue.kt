@@ -63,7 +63,7 @@ interface MultiQueue: Queue<QueueMessage>
      * @param queueType [String] of the [Queue] to poll
      * @return the head element or `null`
      */
-    fun pollForType(queueType: String): QueueMessage?
+    fun pollForType(queueType: String): Optional<QueueMessage>
 
     /**
      * Calls [Queue.peek] on the underlying [Queue] for the provided [String].
@@ -72,7 +72,7 @@ interface MultiQueue: Queue<QueueMessage>
      * @param queueType [String] of the [Queue] to peek
      * @return the head element or `null`
      */
-    fun peekForType(queueType: String): QueueMessage?
+    fun peekForType(queueType: String): Optional<QueueMessage>
 
     /**
      * Retrieves the underlying key list as a set.
@@ -81,6 +81,14 @@ interface MultiQueue: Queue<QueueMessage>
      * @return a [Set] of the available `QueueTypes` that have entries in the [MultiQueue].
      */
     fun keys(includeEmpty: Boolean = true): Set<String>
+
+    /**
+     * Returns the `queueType` that the [QueueMessage] with the provided [UUID] exists in.
+     *
+     * @param uuid the [UUID] to look up
+     * @return the `queueType` [String] if a [QueueMessage] exists with the provided [UUID] otherwise [Optional.empty]
+     */
+    fun containsUUID(uuid: UUID): Optional<String>
 
     /**
      * Any unsupported methods from the [Queue] interface that are not implemented.
