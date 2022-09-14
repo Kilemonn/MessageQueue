@@ -3,7 +3,7 @@ package au.kilemon.messagequeue.rest.controller
 import au.kilemon.messagequeue.Payload
 import au.kilemon.messagequeue.PayloadEnum
 import au.kilemon.messagequeue.message.QueueMessage
-import au.kilemon.messagequeue.rest.response.QueueMessageResponse
+import au.kilemon.messagequeue.rest.response.MessageResponse
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import com.google.gson.Gson
 import org.junit.jupiter.api.Assertions
@@ -64,7 +64,7 @@ class MessageQueueControllerTest
 
     /**
      * Calling create with provided [QueueMessage.consumedBy], [QueueMessage.consumed] and [QueueMessage.uuid] to
-     * ensure they are set correctly in the returned [QueueMessageResponse].
+     * ensure they are set correctly in the returned [MessageResponse].
      */
     @Test
     fun testCreateQueueEntry_withProvidedDefaults()
@@ -84,7 +84,7 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isCreated)
             .andReturn()
 
-        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, QueueMessageResponse::class.java)
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
 
         val deserialisedPayload = gson.fromJson(gson.toJson(messageResponse.message.payload), Payload::class.java)
         Assertions.assertEquals(payload, deserialisedPayload)
@@ -112,7 +112,7 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isCreated)
             .andReturn()
 
-        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, QueueMessageResponse::class.java)
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
 
         val deserialisedPayload = gson.fromJson(gson.toJson(messageResponse.message.payload), Payload::class.java)
         Assertions.assertEquals(payload, deserialisedPayload)
