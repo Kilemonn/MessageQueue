@@ -23,7 +23,7 @@ class QueueMessage(val payload: Any?, val type: String, @EqualsAndHashCode.Exclu
     /**
      * Retrieve a detailed [String] of the underlying object properties. If the provided [Boolean] is `true` then the payload will also be provided in the response.
      *
-     * @param detailed when `true` the [#payload] object will be logged as well, otherwise the [#payload] will not be contained in the response
+     * @param detailed when `true` the [payload] object will be logged as well, otherwise the [payload] will not be contained in the response
      * @return a detail [String] about this object with varying detail
      */
     fun toDetailedString(detailed: Boolean?): String

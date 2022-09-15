@@ -21,7 +21,7 @@ import javax.validation.Valid
  */
 @RestController
 @RequestMapping(MessageQueueController.MESSAGE_QUEUE_BASE_PATH)
-class MessageQueueController
+open class MessageQueueController
 {
     companion object
     {
@@ -111,7 +111,7 @@ class MessageQueueController
             }
         }
 
-        throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find message with UUID $uuid. (Queue-type: $queueType).")
+        throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find message with UUID $uuid.")
     }
 
     /**

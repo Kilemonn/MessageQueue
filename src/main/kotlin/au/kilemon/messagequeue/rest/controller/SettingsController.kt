@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 @RequestMapping(SettingsController.SETTINGS_PATH)
-class SettingsController
+open class SettingsController
 {
     companion object
     {
