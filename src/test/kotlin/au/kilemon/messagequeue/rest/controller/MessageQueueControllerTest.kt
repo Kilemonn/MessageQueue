@@ -10,11 +10,9 @@ import com.google.gson.Gson
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.context.annotation.Bean
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -26,7 +24,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.web.server.ResponseStatusException
 import java.util.*
-import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
  * A test class for the [MessageQueueController].
@@ -59,7 +56,6 @@ class MessageQueueControllerTest
     @Autowired
     private lateinit var queueController: MessageQueueController
 
-    @SpyBean
     @Autowired
     private lateinit var multiQueue: MultiQueue
 
@@ -145,8 +141,7 @@ class MessageQueueControllerTest
         message.uuid = UUID.fromString(uuid)
         message.consumed = false
 
-        Mockito.`when`(multiQueue.containsUUID(uuid)).thenReturn(Optional.of(type))
-        Mockito.`when`(multiQueue.getQueueForType(type)).thenReturn(ConcurrentLinkedQueue(Collections.singleton(message)))
+        multiQueue.add(message)
 
         val returnedMessage = queueController.getEntry(uuid)
         Assertions.assertEquals(HttpStatus.OK, returnedMessage.statusCode)
@@ -154,6 +149,8 @@ class MessageQueueControllerTest
         Assertions.assertNotNull(res)
         Assertions.assertEquals(type, res!!.queueType)
         Assertions.assertEquals(message, res.message)
+
+        multiQueue.clear()
     }
 
     /**
