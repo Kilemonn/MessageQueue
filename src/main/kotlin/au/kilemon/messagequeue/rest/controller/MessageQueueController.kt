@@ -149,7 +149,7 @@ open class MessageQueueController
     /**
      * A [GetMapping] which returns a list of all the `QueueTypes` defined in the [MultiQueue].
      *
-     * @param includeEmpty to include `keys` which one had elements stored against them but don't at the moment.
+     * @param includeEmpty to include `keys` which one had elements stored against them but don't at the moment. Default is `true`.
      * @return a [Set] of [String] `queueType`s
      */
     @GetMapping(ENDPOINT_KEYS,

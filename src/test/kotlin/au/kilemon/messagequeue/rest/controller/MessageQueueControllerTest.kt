@@ -8,6 +8,7 @@ import au.kilemon.messagequeue.rest.response.MessageResponse
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import com.google.gson.Gson
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
@@ -22,7 +23,6 @@ import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
-import org.springframework.web.server.ResponseStatusException
 import java.util.*
 
 /**
@@ -54,12 +54,19 @@ class MessageQueueControllerTest
     private lateinit var mockMvc: MockMvc
 
     @Autowired
-    private lateinit var queueController: MessageQueueController
-
-    @Autowired
     private lateinit var multiQueue: MultiQueue
 
     private val gson: Gson = Gson()
+
+    /**
+     * [BeforeEach] method to run [MultiQueue.clear] and ensure that [MultiQueue.isEmpty] returns `true` at the beginning of each test.
+     */
+    @BeforeEach
+    fun setUp()
+    {
+        multiQueue.clear()
+        Assertions.assertTrue(multiQueue.isEmpty())
+    }
 
     @Test
     fun testGetQueueEntry()
@@ -72,85 +79,29 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Calling create with provided [QueueMessage.consumedBy], [QueueMessage.consumed] and [QueueMessage.uuid] to
-     * ensure they are set correctly in the returned [MessageResponse].
+     * Test [MessageQueueController.getEntry] to ensure that [HttpStatus.OK] and the correct [QueueMessage] is returned as the response.
      */
-    @Test
-    fun testCreateQueueEntry_withProvidedDefaults()
-    {
-        val payload = Payload("Some test string", 89, true, PayloadEnum.C)
-        val isConsumed = true
-        val consumedBy = "instance_a"
-        val type = "A_TYPE"
-        val uuid = UUID.randomUUID()
-
-        val message = QueueMessage(payload, type, consumed = isConsumed, consumedBy = consumedBy)
-        message.uuid = uuid
-
-        val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
-            .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .content(gson.toJson(message)))
-            .andExpect(MockMvcResultMatchers.status().isCreated)
-            .andReturn()
-
-        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-
-        val deserialisedPayload = gson.fromJson(gson.toJson(messageResponse.message.payload), Payload::class.java)
-        Assertions.assertEquals(payload, deserialisedPayload)
-        Assertions.assertEquals(isConsumed, messageResponse.message.consumed)
-        Assertions.assertEquals(consumedBy, messageResponse.message.consumedBy)
-        Assertions.assertEquals(type, messageResponse.message.type)
-        Assertions.assertEquals(type, messageResponse.queueType)
-        Assertions.assertEquals(uuid, messageResponse.message.uuid)
-    }
-
-    /**
-     * Calling create without [QueueMessage.consumedBy], [QueueMessage.consumed] and [QueueMessage.uuid] to
-     * ensure they are initialised as expected when they are not provided by the caller.
-     */
-    @Test
-    fun testCreateQueueEntry_withOutDefaults()
-    {
-        val payload = Payload("Some test string", 23, true, PayloadEnum.C)
-        val type = "A_TYPE"
-        val message = QueueMessage(payload, type)
-
-        val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
-            .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .content(gson.toJson(message)))
-            .andExpect(MockMvcResultMatchers.status().isCreated)
-            .andReturn()
-
-        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-
-        val deserialisedPayload = gson.fromJson(gson.toJson(messageResponse.message.payload), Payload::class.java)
-        Assertions.assertEquals(payload, deserialisedPayload)
-        Assertions.assertFalse(messageResponse.message.consumed)
-        Assertions.assertNull(messageResponse.message.consumedBy)
-        Assertions.assertEquals(type, messageResponse.message.type)
-        Assertions.assertEquals(type, messageResponse.queueType)
-        Assertions.assertNotNull(messageResponse.message.uuid)
-    }
-
     @Test
     fun testGetEntry()
     {
-        val uuid = UUID.randomUUID().toString()
-        val type = "a-type"
-        val message = QueueMessage(payload = "ok", type = type)
-        message.uuid = UUID.fromString(uuid)
-        message.consumed = false
+        val message = createQueueMessage(false)
 
         multiQueue.add(message)
 
-        val returnedMessage = queueController.getEntry(uuid)
-        Assertions.assertEquals(HttpStatus.OK, returnedMessage.statusCode)
-        val res = returnedMessage.body
-        Assertions.assertNotNull(res)
-        Assertions.assertEquals(type, res!!.queueType)
-        Assertions.assertEquals(message, res.message)
+        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
 
-        multiQueue.clear()
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+
+        val deserialisedPayload = gson.fromJson(gson.toJson(messageResponse.message.payload), Payload::class.java)
+        Assertions.assertEquals(message.payload, deserialisedPayload)
+        Assertions.assertFalse(messageResponse.message.consumed)
+        Assertions.assertNull(messageResponse.message.consumedBy)
+        Assertions.assertEquals(message.type, messageResponse.message.type)
+        Assertions.assertEquals(message.type, messageResponse.queueType)
+        Assertions.assertNotNull(messageResponse.message.uuid)
     }
 
     /**
@@ -166,16 +117,153 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getEntry] to ensure that a [ResponseStatusException] is thrown with [HttpStatus.NOT_FOUND] when a [UUID] of a message that does not exist is provided.
+     * Calling create with provided [QueueMessage.consumedBy], [QueueMessage.consumed] and [QueueMessage.uuid] to
+     * ensure they are set correctly in the returned [MessageResponse].
      */
     @Test
-    fun testGetEntry_Exception_NotExists()
+    fun testCreateQueueEntry_withProvidedDefaults()
     {
-        val uuid = "invalid-not-found-uuid"
-        val exception = Assertions.assertThrows(ResponseStatusException::class.java)
+        val message = createQueueMessage(true)
+
+        val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .content(gson.toJson(message)))
+            .andExpect(MockMvcResultMatchers.status().isCreated)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+
+        val deserialisedPayload = gson.fromJson(gson.toJson(messageResponse.message.payload), Payload::class.java)
+        Assertions.assertEquals(message.payload, deserialisedPayload)
+        Assertions.assertEquals(message.consumed, messageResponse.message.consumed)
+        Assertions.assertEquals(message.consumedBy, messageResponse.message.consumedBy)
+        Assertions.assertEquals(message.type, messageResponse.message.type)
+        Assertions.assertEquals(message.type, messageResponse.queueType)
+        Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
+    }
+
+    /**
+     * Calling create without [QueueMessage.consumedBy], [QueueMessage.consumed] and [QueueMessage.uuid] to
+     * ensure they are initialised as expected when they are not provided by the caller.
+     */
+    @Test
+    fun testCreateQueueEntry_withOutDefaults()
+    {
+        val message = createQueueMessage()
+
+        val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .content(gson.toJson(message)))
+            .andExpect(MockMvcResultMatchers.status().isCreated)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+
+        val deserialisedPayload = gson.fromJson(gson.toJson(messageResponse.message.payload), Payload::class.java)
+        Assertions.assertEquals(message.payload, deserialisedPayload)
+        Assertions.assertFalse(messageResponse.message.consumed)
+        Assertions.assertNull(messageResponse.message.consumedBy)
+        Assertions.assertEquals(message.type, messageResponse.message.type)
+        Assertions.assertEquals(message.type, messageResponse.queueType)
+        Assertions.assertNotNull(messageResponse.message.uuid)
+    }
+
+    /**
+     * Test [MessageQueueController.createMessage] to ensure that [HttpStatus.CONFLICT] is returned if a message with the same [UUID] already exists in the queue.
+     */
+    @Test
+    fun testCreateEntry_Conflict()
+    {
+        val message = createQueueMessage()
+
+        multiQueue.add(message)
+
+        mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .content(gson.toJson(message)))
+            .andExpect(MockMvcResultMatchers.status().isConflict)
+    }
+
+    /**
+     * Test [MessageQueueController.getKeys] to ensure that all keys for existing entries are provided and exist within the [MultiQueue].
+     */
+    @Test
+    fun testGetKeys()
+    {
+        val types = listOf("type1", "type2", "type3", "type4")
+        val message = createQueueMessage(type = types[0])
+        val message2 = createQueueMessage(type = types[1])
+        val message3 = createQueueMessage(type = types[2])
+        val message4 = createQueueMessage(type = types[3])
+
+        multiQueue.add(message)
+        multiQueue.add(message2)
+        multiQueue.add(message3)
+        multiQueue.add(message4)
+
+        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val keys = gson.fromJson(mvcResult.response.contentAsString, List::class.java)
+        Assertions.assertFalse(keys.isNullOrEmpty())
+        Assertions.assertEquals(types.size, keys.size)
+        types.forEach { type -> Assertions.assertTrue(keys.contains(type)) }
+    }
+
+    /**
+     * Test [MessageQueueController.getKeys] to ensure that all keys are returned. Specifically when entries are added and `includeEmpty` is set to `false`.
+     */
+    @Test
+    fun testGetKeys_excludeEmpty()
+    {
+        val types = listOf("type1", "type2", "type3", "type4")
+        val message = createQueueMessage(type = types[0])
+        val message2 = createQueueMessage(type = types[1])
+        val message3 = createQueueMessage(type = types[2])
+        val message4 = createQueueMessage(type = types[3])
+
+        multiQueue.add(message)
+        multiQueue.add(message2)
+        multiQueue.add(message3)
+        multiQueue.add(message4)
+
+        multiQueue.remove(message)
+        multiQueue.remove(message2)
+
+        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("includeEmpty", "false"))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val keys = gson.fromJson(mvcResult.response.contentAsString, List::class.java)
+        Assertions.assertFalse(keys.isNullOrEmpty())
+        Assertions.assertEquals(2, keys.size)
+        types.subList(2, 3).forEach { type -> Assertions.assertTrue(keys.contains(type)) }
+    }
+
+
+
+    /**
+     * A helper method to create a [QueueMessage] that can be easily re-used between each test.
+     *
+     * @param withConsumedBy indicates whether the [QueueMessage.consumedBy] should be non-null and [QueueMessage.consumed] should be `true`.
+     * @return a [QueueMessage] initialised with multiple parameters
+     */
+    private fun createQueueMessage(withConsumedBy: Boolean = false, type: String = "a-type"): QueueMessage
+    {
+        val uuid = UUID.randomUUID().toString()
+        val payload = Payload("test", 12, true, PayloadEnum.C)
+        val message = QueueMessage(payload = payload, type = type)
+        message.uuid = UUID.fromString(uuid)
+        message.consumed = withConsumedBy
+
+        if (withConsumedBy)
         {
-            queueController.getEntry(uuid)
+            message.consumedBy = "consumer"
         }
-        Assertions.assertEquals(HttpStatus.NOT_FOUND, exception.status)
+        return message
     }
 }
