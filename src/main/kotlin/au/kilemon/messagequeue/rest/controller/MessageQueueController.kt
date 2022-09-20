@@ -168,14 +168,14 @@ open class MessageQueueController
      */
     @GetMapping(ENDPOINT_ALL,
         produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun getAll(@RequestParam(required = false) detailed: Boolean?, @RequestParam(required = false) queueType: String?): ResponseEntity<Map<String, String>>
+    fun getAll(@RequestParam(required = false) detailed: Boolean?, @RequestParam(required = false) queueType: String?): ResponseEntity<Map<String, List<String>>>
     {
-        val responseMap = HashMap<String, String>()
+        val responseMap = HashMap<String, List<String>>()
         if ( !queueType.isNullOrBlank())
         {
             val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
             val queueDetails = queueForType.stream().map { message -> message.toDetailedString(detailed) }.collect(Collectors.toList())
-            responseMap[queueType] = queueDetails.toString()
+            responseMap[queueType] = queueDetails
         }
         else
         {
@@ -184,7 +184,7 @@ open class MessageQueueController
                 // No need to empty check since we passed `false` to `keys()` above
                 val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(key)
                 val queueDetails = queueForType.stream().map { message -> message.toDetailedString(detailed) }.collect(Collectors.toList())
-                responseMap[key] = queueDetails.toString()
+                responseMap[key] = queueDetails
             }
         }
         return ResponseEntity.ok(responseMap)

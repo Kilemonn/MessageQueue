@@ -7,6 +7,7 @@ import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.rest.response.MessageResponse
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,6 +25,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import java.util.*
+import java.util.function.BiConsumer
 
 /**
  * A test class for the [MessageQueueController].
@@ -84,7 +86,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetEntry()
     {
-        val message = createQueueMessage(false)
+        val message = createQueueMessage()
 
         multiQueue.add(message)
 
@@ -123,7 +125,7 @@ class MessageQueueControllerTest
     @Test
     fun testCreateQueueEntry_withProvidedDefaults()
     {
-        val message = createQueueMessage(true)
+        val message = createQueueMessage(consumedBy = "consumed")
 
         val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -190,16 +192,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetKeys()
     {
-        val types = listOf("type1", "type2", "type3", "type4")
-        val message = createQueueMessage(type = types[0])
-        val message2 = createQueueMessage(type = types[1])
-        val message3 = createQueueMessage(type = types[2])
-        val message4 = createQueueMessage(type = types[3])
-
-        multiQueue.add(message)
-        multiQueue.add(message2)
-        multiQueue.add(message3)
-        multiQueue.add(message4)
+        val entries = initialiseMapWithEntries()
 
         val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
@@ -208,8 +201,8 @@ class MessageQueueControllerTest
 
         val keys = gson.fromJson(mvcResult.response.contentAsString, List::class.java)
         Assertions.assertFalse(keys.isNullOrEmpty())
-        Assertions.assertEquals(types.size, keys.size)
-        types.forEach { type -> Assertions.assertTrue(keys.contains(type)) }
+        Assertions.assertEquals(entries.second.size, keys.size)
+        entries.second.forEach { type -> Assertions.assertTrue(keys.contains(type)) }
     }
 
     /**
@@ -218,19 +211,9 @@ class MessageQueueControllerTest
     @Test
     fun testGetKeys_excludeEmpty()
     {
-        val types = listOf("type1", "type2", "type3", "type4")
-        val message = createQueueMessage(type = types[0])
-        val message2 = createQueueMessage(type = types[1])
-        val message3 = createQueueMessage(type = types[2])
-        val message4 = createQueueMessage(type = types[3])
-
-        multiQueue.add(message)
-        multiQueue.add(message2)
-        multiQueue.add(message3)
-        multiQueue.add(message4)
-
-        multiQueue.remove(message)
-        multiQueue.remove(message2)
+        val entries = initialiseMapWithEntries()
+        multiQueue.remove(entries.first[0])
+        multiQueue.remove(entries.first[1])
 
         val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -241,10 +224,127 @@ class MessageQueueControllerTest
         val keys = gson.fromJson(mvcResult.response.contentAsString, List::class.java)
         Assertions.assertFalse(keys.isNullOrEmpty())
         Assertions.assertEquals(2, keys.size)
-        types.subList(2, 3).forEach { type -> Assertions.assertTrue(keys.contains(type)) }
+        entries.second.subList(2, 3).forEach { type -> Assertions.assertTrue(keys.contains(type)) }
     }
 
+    /**
+     * Test [MessageQueueController.getAll] to ensure that all entries are returned from all `queueTypes` when an explicit `queueType` is not provided.
+     */
+    @Test
+    fun testGetAll()
+    {
+        val entries = initialiseMapWithEntries()
 
+        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val mapType = object : TypeToken<Map<String, List<String>>>() {}.type
+        val keys = gson.fromJson<Map<String, List<String>>>(mvcResult.response.contentAsString, mapType)
+        Assertions.assertNotNull(keys)
+        Assertions.assertEquals(entries.second.size, keys.keys.size)
+        entries.second.forEach { type -> Assertions.assertTrue(keys.keys.contains(type)) }
+        keys.values.forEach { detailList -> Assertions.assertEquals(1, detailList.size) }
+    }
+
+    /**
+     * Test [MessageQueueController.getAll] to ensure that all entries are returned from the `queueType` when an explicit `queueType` is provided.
+     */
+    @Test
+    fun testGetAll_SpecificQueueType()
+    {
+        val entries = initialiseMapWithEntries()
+        val type = entries.first[0].type
+        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("queueType", type))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val mapType = object : TypeToken<Map<String, List<String>>>() {}.type
+        val keys = gson.fromJson<Map<String, List<String>>>(mvcResult.response.contentAsString, mapType)
+        Assertions.assertNotNull(keys)
+        Assertions.assertEquals(1, keys.keys.size)
+        Assertions.assertTrue(keys.keys.contains(type))
+        keys.values.forEach { detailList -> Assertions.assertEquals(1, detailList.size) }
+        Assertions.assertEquals(entries.first[0].toDetailedString(false), keys[type]!![0])
+    }
+
+    /**
+     * Test [MessageQueueController.getOwned] to ensure that no entries are returned when no [QueueMessage] are consumed by the provided `consumedBy` parameter.
+     */
+    @Test
+    fun testGetOwned_NoneOwned()
+    {
+        val entries = initialiseMapWithEntries()
+        val consumedBy = "my-consumed-by-identifier"
+
+        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("consumedBy", consumedBy)
+            .param("queueType", entries.first[0].type))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val listType = object : TypeToken<List<MessageResponse>>() {}.type
+        val owned = gson.fromJson<List<MessageResponse>>(mvcResult.response.contentAsString, listType)
+        Assertions.assertTrue(owned.isEmpty())
+    }
+
+    /**
+     * Test [MessageQueueController.getOwned] to ensure that all appropriate [QueueMessage] entries are returned when the provided `consumedBy` parameter owns the existings [QueueMessage].
+     */
+    @Test
+    fun testGetOwned_SomeOwned()
+    {
+        val consumedBy = "my-consumed-by-identifier"
+        val type = "my-type"
+        val message1 = createQueueMessage(consumedBy = consumedBy, type = type)
+        val message2 = createQueueMessage(consumedBy = consumedBy, type = type)
+
+        multiQueue.add(message1)
+        multiQueue.add(message2)
+
+        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("consumedBy", consumedBy)
+            .param("queueType", type))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val listType = object : TypeToken<List<MessageResponse>>() {}.type
+        val owned = gson.fromJson<List<MessageResponse>>(mvcResult.response.contentAsString, listType)
+        Assertions.assertTrue(owned.isNotEmpty())
+        owned.forEach { message ->
+            Assertions.assertTrue(message.message.uuid == message1.uuid || message.message.uuid == message2.uuid)
+            Assertions.assertEquals(type, message.queueType)
+            Assertions.assertEquals(type, message.message.type)
+            Assertions.assertTrue(message.message.consumed)
+            Assertions.assertEquals(consumedBy, message.message.consumedBy)
+        }
+    }
+
+    /**
+     * A helper method which creates `4` [QueueMessage] objects and inserts them into the [MultiQueue].
+     *
+     * @return a [Pair] containing the [List] of [QueueMessage] and their related matching [List] of [String] `queueTypes` in order.
+     */
+    private fun initialiseMapWithEntries(): Pair<List<QueueMessage>, List<String>>
+    {
+        val types = listOf("type1", "type2", "type3", "type4")
+        val message = createQueueMessage(type = types[0])
+        val message2 = createQueueMessage(type = types[1])
+        val message3 = createQueueMessage(type = types[2], consumedBy = "consumed")
+        val message4 = createQueueMessage(type = types[3])
+
+        multiQueue.add(message)
+        multiQueue.add(message2)
+        multiQueue.add(message3)
+        multiQueue.add(message4)
+
+        return Pair(listOf(message, message2, message3, message4), types)
+    }
 
     /**
      * A helper method to create a [QueueMessage] that can be easily re-used between each test.
@@ -252,17 +352,17 @@ class MessageQueueControllerTest
      * @param withConsumedBy indicates whether the [QueueMessage.consumedBy] should be non-null and [QueueMessage.consumed] should be `true`.
      * @return a [QueueMessage] initialised with multiple parameters
      */
-    private fun createQueueMessage(withConsumedBy: Boolean = false, type: String = "a-type"): QueueMessage
+    private fun createQueueMessage(type: String = "a-type", consumedBy: String? = null): QueueMessage
     {
         val uuid = UUID.randomUUID().toString()
         val payload = Payload("test", 12, true, PayloadEnum.C)
         val message = QueueMessage(payload = payload, type = type)
         message.uuid = UUID.fromString(uuid)
-        message.consumed = withConsumedBy
 
-        if (withConsumedBy)
+        if (consumedBy != null)
         {
-            message.consumedBy = "consumer"
+            message.consumed = true
+            message.consumedBy = consumedBy
         }
         return message
     }
