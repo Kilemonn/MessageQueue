@@ -6,6 +6,12 @@ import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
 
 /**
+ * An object that holds application level properties and is set initially on application start up.
+ * This will control things such as:
+ * - Credentials to external data storage
+ * - The type of `MultiQueue` being used
+ * - Other utility configuration for the application to use.
+ *
  * @author github.com/KyleGonzalez
  */
 @Component

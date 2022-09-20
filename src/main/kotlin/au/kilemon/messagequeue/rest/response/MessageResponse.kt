@@ -4,6 +4,8 @@ import au.kilemon.messagequeue.message.QueueMessage
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
 
 /**
+ * A response object which wraps the [QueueMessage], and exposes the `type` [String].
+ *
  * @author github.com/KyleGonzalez
  */
 @JsonPropertyOrder("queueType", "message")
