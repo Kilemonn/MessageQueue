@@ -21,11 +21,9 @@ import org.springframework.http.MediaType
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.MvcResult
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import java.util.*
-import java.util.function.BiConsumer
 
 /**
  * A test class for the [MessageQueueController].
@@ -88,7 +86,7 @@ class MessageQueueControllerTest
     {
         val message = createQueueMessage()
 
-        multiQueue.add(message)
+        Assertions.assertTrue(multiQueue.add(message))
 
         val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
@@ -178,7 +176,7 @@ class MessageQueueControllerTest
     {
         val message = createQueueMessage()
 
-        multiQueue.add(message)
+        Assertions.assertTrue(multiQueue.add(message))
 
         mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -212,8 +210,8 @@ class MessageQueueControllerTest
     fun testGetKeys_excludeEmpty()
     {
         val entries = initialiseMapWithEntries()
-        multiQueue.remove(entries.first[0])
-        multiQueue.remove(entries.first[1])
+        Assertions.assertTrue(multiQueue.remove(entries.first[0]))
+        Assertions.assertTrue(multiQueue.remove(entries.first[1]))
 
         val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -303,8 +301,8 @@ class MessageQueueControllerTest
         val message1 = createQueueMessage(consumedBy = consumedBy, type = type)
         val message2 = createQueueMessage(consumedBy = consumedBy, type = type)
 
-        multiQueue.add(message1)
-        multiQueue.add(message2)
+        Assertions.assertTrue(multiQueue.add(message1))
+        Assertions.assertTrue(multiQueue.add(message2))
 
         val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -323,6 +321,264 @@ class MessageQueueControllerTest
             Assertions.assertTrue(message.message.consumed)
             Assertions.assertEquals(consumedBy, message.message.consumedBy)
         }
+    }
+
+    /**
+     * Test [MessageQueueController.consumeMessage] to ensure that [HttpStatus.NOT_FOUND] is returned when a [QueueMessage] with the provided [UUID] does not exist.
+     */
+    @Test
+    fun testConsumeMessage_doesNotExist()
+    {
+        val uuid = UUID.randomUUID().toString()
+        val consumedBy = "consumer"
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_CONSUME)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("consumedBy", consumedBy)
+            .param("uuid", uuid))
+            .andExpect(MockMvcResultMatchers.status().isNotFound)
+    }
+
+    /**
+     * Test [MessageQueueController.consumeMessage] to ensure that the message is consumed correctly and [HttpStatus.OK] is returned when the [QueueMessage] was initially not consumed.
+     */
+    @Test
+    fun testConsumeMessage_messageIsConsumed()
+    {
+        val consumedBy = "consumer"
+        val message = createQueueMessage()
+        Assertions.assertFalse(message.consumed)
+        Assertions.assertNull(message.consumedBy)
+        Assertions.assertTrue(multiQueue.add(message))
+
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_CONSUME)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("consumedBy", consumedBy)
+            .param("uuid", message.uuid.toString()))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+        Assertions.assertTrue(messageResponse.message.consumed)
+        Assertions.assertEquals(consumedBy, messageResponse.message.consumedBy)
+        Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
+    }
+
+    /**
+     * Test [MessageQueueController.consumeMessage] to ensure that the message is consumed correctly and [HttpStatus.ACCEPTED] is returned when the [QueueMessage] is already consumed by the provided `consumedBy` identifier.
+     */
+    @Test
+    fun testConsumeMessage_alreadyConsumedBySameID()
+    {
+        val consumedBy = "consumer"
+        val message = createQueueMessage(consumedBy = consumedBy)
+
+        Assertions.assertTrue(message.consumed)
+        Assertions.assertEquals(consumedBy, message.consumedBy)
+        Assertions.assertTrue(multiQueue.add(message))
+
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_CONSUME)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("consumedBy", consumedBy)
+            .param("uuid", message.uuid.toString()))
+            .andExpect(MockMvcResultMatchers.status().isAccepted)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+        Assertions.assertTrue(messageResponse.message.consumed)
+        Assertions.assertEquals(message.consumedBy, messageResponse.message.consumedBy)
+        Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
+    }
+
+    /**
+     * Test [MessageQueueController.consumeMessage] to ensure that [HttpStatus.CONFLICT] is returned when the [QueueMessage] is already consumed by another identifier.
+     */
+    @Test
+    fun testConsumeMessage_alreadyConsumedByOtherID()
+    {
+        val consumedBy = "consumer"
+        val message = createQueueMessage(consumedBy = consumedBy)
+
+        Assertions.assertTrue(message.consumed)
+        Assertions.assertEquals(consumedBy, message.consumedBy)
+        Assertions.assertTrue(multiQueue.add(message))
+
+        val wrongConsumer = "wrong-consumer"
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_CONSUME)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("consumedBy", wrongConsumer)
+            .param("uuid", message.uuid.toString()))
+            .andExpect(MockMvcResultMatchers.status().isConflict)
+    }
+
+    /**
+     * Test [MessageQueueController.getNext] to ensure [HttpStatus.NO_CONTENT] is returned when there are no [QueueMessage]s available for the provided `queueType`.
+     */
+    @Test
+    fun testGetNext_noNewMessages()
+    {
+        val consumedBy = "consumer"
+        val type = "type"
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("queueType", type)
+            .param("consumedBy", consumedBy))
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
+    }
+
+    /**
+     * Test [MessageQueueController.getNext] to ensure that [HttpStatus.NO_CONTENT] is returned if there are no `unconsumed` [QueueMessage]s available.
+     */
+    @Test
+    fun testGetNext_noNewUnConsumedMessages()
+    {
+        val consumedBy = "consumer"
+        val type = "type"
+        val message = createQueueMessage(type = type, consumedBy = consumedBy)
+        val message2 = createQueueMessage(type = type, consumedBy = consumedBy)
+
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertTrue(multiQueue.add(message2))
+
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("queueType", type)
+            .param("consumedBy", consumedBy))
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
+    }
+
+    /**
+     * Test [MessageQueueController.getNext] to ensure that the correct next message is returned if it exists in the [MultiQueue].
+     */
+    @Test
+    fun testGetNext()
+    {
+        val consumedBy = "consumer"
+        val type = "type"
+        val message = createQueueMessage(type = type, consumedBy = consumedBy)
+        val message2 = createQueueMessage(type = type)
+
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertTrue(multiQueue.add(message2))
+
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("queueType", type)
+            .param("consumedBy", consumedBy))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+        Assertions.assertTrue(messageResponse.message.consumed)
+        Assertions.assertEquals(consumedBy, messageResponse.message.consumedBy)
+        Assertions.assertEquals(message2.uuid, messageResponse.message.uuid)
+    }
+
+    /**
+     * Test [MessageQueueController.releaseMessage] to ensure that [HttpStatus.NOT_FOUND] is returned when a [QueueMessage] with the provided [UUID] does not exist.
+     */
+    @Test
+    fun testReleaseMessage_doesNotExist()
+    {
+        val uuid = UUID.randomUUID().toString()
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("uuid", uuid))
+            .andExpect(MockMvcResultMatchers.status().isNotFound)
+    }
+
+    /**
+     * Test [MessageQueueController.releaseMessage] to ensure that the [QueueMessage] is released if it is currently consumed.
+     */
+    @Test
+    fun testReleaseMessage_messageIsReleased()
+    {
+        val consumedBy = "consumer"
+        val message = createQueueMessage(consumedBy = consumedBy)
+
+        Assertions.assertTrue(message.consumed)
+        Assertions.assertEquals(consumedBy, message.consumedBy)
+        Assertions.assertTrue(multiQueue.add(message))
+
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("uuid", message.uuid.toString())
+            .param("consumedBy", consumedBy))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+        Assertions.assertFalse(messageResponse.message.consumed)
+        Assertions.assertNull(messageResponse.message.consumedBy)
+        Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
+    }
+
+    /**
+     * Test [MessageQueueController.releaseMessage] to ensure that the [QueueMessage] is released if it is currently consumed. Even when the `consumedBy` is not provided.
+     */
+    @Test
+    fun testReleaseMessage_messageIsReleased_withoutConsumedByInQuery()
+    {
+        val consumedBy = "consumer"
+        val message = createQueueMessage(consumedBy = consumedBy)
+
+        Assertions.assertTrue(message.consumed)
+        Assertions.assertEquals(consumedBy, message.consumedBy)
+        Assertions.assertTrue(multiQueue.add(message))
+
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("uuid", message.uuid.toString()))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+        Assertions.assertFalse(messageResponse.message.consumed)
+        Assertions.assertNull(messageResponse.message.consumedBy)
+        Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
+    }
+
+    /**
+     * Test [MessageQueueController.releaseMessage] to ensure that [HttpStatus.ACCEPTED] is returned if the message is already released and not owned by anyone.
+     */
+    @Test
+    fun testReleaseMessage_alreadyReleased()
+    {
+        val message = createQueueMessage()
+        Assertions.assertFalse(message.consumed)
+        Assertions.assertNull(message.consumedBy)
+        Assertions.assertTrue(multiQueue.add(message))
+
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("uuid", message.uuid.toString()))
+            .andExpect(MockMvcResultMatchers.status().isAccepted)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+        Assertions.assertFalse(messageResponse.message.consumed)
+        Assertions.assertNull(messageResponse.message.consumedBy)
+        Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
+    }
+
+    /**
+     * Test [MessageQueueController.releaseMessage] to ensure that [HttpStatus.CONFLICT] is returned if `consumedBy` is provided and does not match the [QueueMessage.consumedBy], meaning the user cannot `release` the [QueueMessage] if it's not the `consumer` of the [QueueMessage].
+     */
+    @Test
+    fun testReleaseMessage_cannotBeReleasedWithMisMatchingID()
+    {
+        val consumedBy = "consumer"
+        val message = createQueueMessage(consumedBy = consumedBy)
+
+        Assertions.assertTrue(message.consumed)
+        Assertions.assertEquals(consumedBy, message.consumedBy)
+        Assertions.assertTrue(multiQueue.add(message))
+
+        val wrongConsumedBy = "wrong-consumer"
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("uuid", message.uuid.toString())
+            .param("consumedBy", wrongConsumedBy))
+            .andExpect(MockMvcResultMatchers.status().isConflict)
     }
 
     /**
@@ -349,7 +605,8 @@ class MessageQueueControllerTest
     /**
      * A helper method to create a [QueueMessage] that can be easily re-used between each test.
      *
-     * @param withConsumedBy indicates whether the [QueueMessage.consumedBy] should be non-null and [QueueMessage.consumed] should be `true`.
+     * @param type the `queueType` to assign to the created [QueueMessage]
+     * @param consumedBy indicates whether the [QueueMessage.consumedBy] should be non-null and [QueueMessage.consumed] should be `true`.
      * @return a [QueueMessage] initialised with multiple parameters
      */
     private fun createQueueMessage(type: String = "a-type", consumedBy: String? = null): QueueMessage

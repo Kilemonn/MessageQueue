@@ -292,7 +292,7 @@ open class MessageQueueController
      */
     @PutMapping(ENDPOINT_RELEASE,
         produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun releaseMessage(@RequestParam uuid: String, @RequestParam(required = false) consumedBy: String?)
+    fun releaseMessage(@RequestParam uuid: String, @RequestParam(required = false) consumedBy: String?): ResponseEntity<MessageResponse>
     {
         val queueType = messageQueue.containsUUID(uuid)
         if (queueType.isPresent)
@@ -305,17 +305,16 @@ open class MessageQueueController
                 if ( !messageToRelease.consumed)
                 {
                     // The message is already in this state, returning 202 to tell the client that it is accepted but no action was done
-                    ResponseEntity.accepted().body(messageToRelease)
-                    return
+                    return ResponseEntity.accepted().body(MessageResponse(messageToRelease))
                 }
 
-                if (consumedBy.isNullOrBlank() && messageToRelease.consumedBy != consumedBy)
+                if (!consumedBy.isNullOrBlank() && messageToRelease.consumedBy != consumedBy)
                 {
                     throw ResponseStatusException(HttpStatus.CONFLICT, "The message with UUID: $uuid and $queueType cannot be released because it is already held by instance with ID ${messageToRelease.consumedBy} and a provided ID was $consumedBy.")
                 }
                 messageToRelease.consumedBy = null
                 messageToRelease.consumed = false
-                ResponseEntity.ok(messageToRelease)
+                return ResponseEntity.ok(MessageResponse(messageToRelease))
             }
         }
 
