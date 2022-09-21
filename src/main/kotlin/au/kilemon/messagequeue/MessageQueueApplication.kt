@@ -26,7 +26,8 @@ open class MessageQueueApplication
         return if (messageQueueSettings.multiQueueType == MultiQueueType.IN_MEMORY)
         {
             InMemoryMultiQueue()
-        } else
+        }
+        else
         {
             InMemoryMultiQueue()
         }
