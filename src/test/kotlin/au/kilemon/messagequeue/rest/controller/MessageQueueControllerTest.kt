@@ -140,6 +140,12 @@ class MessageQueueControllerTest
         Assertions.assertEquals(message.type, messageResponse.message.type)
         Assertions.assertEquals(message.type, messageResponse.queueType)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
+
+        val createdMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertEquals(message.consumed, createdMessage.consumed)
+        Assertions.assertEquals(message.consumedBy, createdMessage.consumedBy)
+        Assertions.assertEquals(message.type, createdMessage.type)
+        Assertions.assertEquals(message.uuid, createdMessage.uuid)
     }
 
     /**
@@ -166,6 +172,12 @@ class MessageQueueControllerTest
         Assertions.assertEquals(message.type, messageResponse.message.type)
         Assertions.assertEquals(message.type, messageResponse.queueType)
         Assertions.assertNotNull(messageResponse.message.uuid)
+
+        val createdMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertFalse(createdMessage.consumed)
+        Assertions.assertNull(createdMessage.consumedBy)
+        Assertions.assertEquals(message.type, createdMessage.type)
+        Assertions.assertEquals(message.uuid, createdMessage.uuid)
     }
 
     /**
@@ -201,6 +213,11 @@ class MessageQueueControllerTest
         Assertions.assertFalse(keys.isNullOrEmpty())
         Assertions.assertEquals(entries.second.size, keys.size)
         entries.second.forEach { type -> Assertions.assertTrue(keys.contains(type)) }
+
+        val mapKeys = multiQueue.keys(true)
+        Assertions.assertFalse(mapKeys.isEmpty())
+        Assertions.assertEquals(entries.second.size, mapKeys.size)
+        entries.second.forEach { type -> Assertions.assertTrue(mapKeys.contains(type)) }
     }
 
     /**
@@ -223,6 +240,11 @@ class MessageQueueControllerTest
         Assertions.assertFalse(keys.isNullOrEmpty())
         Assertions.assertEquals(2, keys.size)
         entries.second.subList(2, 3).forEach { type -> Assertions.assertTrue(keys.contains(type)) }
+
+        val mapKeys = multiQueue.keys(false)
+        Assertions.assertFalse(mapKeys.isEmpty())
+        Assertions.assertEquals(2, mapKeys.size)
+        entries.second.subList(2, 3).forEach { type -> Assertions.assertTrue(mapKeys.contains(type)) }
     }
 
     /**
@@ -361,6 +383,11 @@ class MessageQueueControllerTest
         Assertions.assertTrue(messageResponse.message.consumed)
         Assertions.assertEquals(consumedBy, messageResponse.message.consumedBy)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
+
+        val consumedMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertTrue(consumedMessage.consumed)
+        Assertions.assertEquals(consumedBy, consumedMessage.consumedBy)
+        Assertions.assertEquals(message.uuid, consumedMessage.uuid)
     }
 
     /**
@@ -387,6 +414,11 @@ class MessageQueueControllerTest
         Assertions.assertTrue(messageResponse.message.consumed)
         Assertions.assertEquals(message.consumedBy, messageResponse.message.consumedBy)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
+
+        val consumedMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertTrue(consumedMessage.consumed)
+        Assertions.assertEquals(consumedBy, consumedMessage.consumedBy)
+        Assertions.assertEquals(message.uuid, consumedMessage.uuid)
     }
 
     /**
@@ -402,12 +434,24 @@ class MessageQueueControllerTest
         Assertions.assertEquals(consumedBy, message.consumedBy)
         Assertions.assertTrue(multiQueue.add(message))
 
+        // Check the message is set correctly
+        var consumedMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertTrue(consumedMessage.consumed)
+        Assertions.assertEquals(consumedBy, consumedMessage.consumedBy)
+        Assertions.assertEquals(message.uuid, consumedMessage.uuid)
+
         val wrongConsumer = "wrong-consumer"
         mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_CONSUME)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param("consumedBy", wrongConsumer)
             .param("uuid", message.uuid.toString()))
             .andExpect(MockMvcResultMatchers.status().isConflict)
+
+        // Check the message is still consumed by the correct ID
+        consumedMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertTrue(consumedMessage.consumed)
+        Assertions.assertEquals(consumedBy, consumedMessage.consumedBy)
+        Assertions.assertEquals(message.uuid, consumedMessage.uuid)
     }
 
     /**
@@ -423,6 +467,8 @@ class MessageQueueControllerTest
             .param("queueType", type)
             .param("consumedBy", consumedBy))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
+
+        Assertions.assertTrue(multiQueue.getQueueForType(type).isEmpty())
     }
 
     /**
@@ -438,6 +484,8 @@ class MessageQueueControllerTest
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.add(message2))
+
+        Assertions.assertFalse(multiQueue.getQueueForType(type).isEmpty())
 
         mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -460,6 +508,11 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.add(message2))
 
+        val storedMessage2 = multiQueue.getQueueForType(type).stream().filter{ m -> m.uuid == message2.uuid }.findFirst().get()
+        Assertions.assertFalse(storedMessage2.consumed)
+        Assertions.assertNull(storedMessage2.consumedBy)
+        Assertions.assertEquals(message2.uuid, storedMessage2.uuid)
+
         val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param("queueType", type)
@@ -471,6 +524,11 @@ class MessageQueueControllerTest
         Assertions.assertTrue(messageResponse.message.consumed)
         Assertions.assertEquals(consumedBy, messageResponse.message.consumedBy)
         Assertions.assertEquals(message2.uuid, messageResponse.message.uuid)
+
+        val consumedMessage2 = multiQueue.getQueueForType(type).stream().filter{ m -> m.uuid == message2.uuid }.findFirst().get()
+        Assertions.assertTrue(consumedMessage2.consumed)
+        Assertions.assertEquals(consumedBy, consumedMessage2.consumedBy)
+        Assertions.assertEquals(message2.uuid, consumedMessage2.uuid)
     }
 
     /**
@@ -510,6 +568,11 @@ class MessageQueueControllerTest
         Assertions.assertFalse(messageResponse.message.consumed)
         Assertions.assertNull(messageResponse.message.consumedBy)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
+
+        val updatedMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertFalse(updatedMessage.consumed)
+        Assertions.assertNull(updatedMessage.consumedBy)
+        Assertions.assertEquals(message.uuid, updatedMessage.uuid)
     }
 
     /**
@@ -535,6 +598,11 @@ class MessageQueueControllerTest
         Assertions.assertFalse(messageResponse.message.consumed)
         Assertions.assertNull(messageResponse.message.consumedBy)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
+
+        val updatedMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertFalse(updatedMessage.consumed)
+        Assertions.assertNull(updatedMessage.consumedBy)
+        Assertions.assertEquals(message.uuid, updatedMessage.uuid)
     }
 
     /**
@@ -558,6 +626,12 @@ class MessageQueueControllerTest
         Assertions.assertFalse(messageResponse.message.consumed)
         Assertions.assertNull(messageResponse.message.consumedBy)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
+
+        // Ensure the message is updated in the queue too
+        val updatedMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertFalse(updatedMessage.consumed)
+        Assertions.assertNull(updatedMessage.consumedBy)
+        Assertions.assertEquals(message.uuid, updatedMessage.uuid)
     }
 
     /**
@@ -579,6 +653,64 @@ class MessageQueueControllerTest
             .param("uuid", message.uuid.toString())
             .param("consumedBy", wrongConsumedBy))
             .andExpect(MockMvcResultMatchers.status().isConflict)
+
+        val consumedEntry = multiQueue.peekForType(message.type).get()
+        Assertions.assertTrue(consumedEntry.consumed)
+        Assertions.assertEquals(consumedBy, consumedEntry.consumedBy)
+    }
+
+    /**
+     * Test [MessageQueueController.removeMessage] to ensure that [HttpStatus.NOT_FOUND] is returned when a [QueueMessage] with the provided [UUID] does not exist.
+     */
+    @Test
+    fun testRemoveMessage_notFound()
+    {
+        val uuid = UUID.randomUUID().toString()
+
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("uuid", uuid))
+            .andExpect(MockMvcResultMatchers.status().isNotFound)
+    }
+
+    /**
+     * Test [MessageQueueController.removeMessage] to ensure that the message is correctly removed.
+     */
+    @Test
+    fun testRemoveMessage_removed()
+    {
+        val message = createQueueMessage()
+        Assertions.assertTrue(multiQueue.add(message))
+
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("uuid", message.uuid.toString()))
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
+
+        Assertions.assertFalse(multiQueue.containsUUID(message.uuid.toString()).isPresent)
+        Assertions.assertTrue(multiQueue.getQueueForType(message.type).isEmpty())
+    }
+
+    /**
+     * Test [MessageQueueController.removeMessage] to ensure that [HttpStatus.FORBIDDEN] is returned if the message is attempting to be removed while another user is consuming it.
+     */
+    @Test
+    fun testRemoveMessage_consumedByAnotherID()
+    {
+        val consumedBy = "consumer"
+        val message = createQueueMessage(consumedBy = consumedBy)
+        Assertions.assertTrue(multiQueue.add(message))
+
+        val wrongConsumedBy = "wrong-consumer"
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("uuid", message.uuid.toString())
+            .param("consumedBy", wrongConsumedBy))
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+
+        val consumedEntry = multiQueue.peekForType(message.type).get()
+        Assertions.assertTrue(consumedEntry.consumed)
+        Assertions.assertEquals(consumedBy, consumedEntry.consumedBy)
     }
 
     /**

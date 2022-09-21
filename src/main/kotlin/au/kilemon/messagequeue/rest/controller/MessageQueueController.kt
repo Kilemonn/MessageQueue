@@ -334,7 +334,7 @@ open class MessageQueueController
      * @return [HttpStatus.NO_CONTENT]
      */
     @DeleteMapping
-    fun removeMessage(@RequestParam uuid: String, @RequestParam(required = false) consumedBy: String?)
+    fun removeMessage(@RequestParam uuid: String, @RequestParam(required = false) consumedBy: String?): ResponseEntity<Void>
     {
         val queueType = messageQueue.containsUUID(uuid)
         if (queueType.isPresent)
@@ -348,11 +348,8 @@ open class MessageQueueController
                 {
                     throw ResponseStatusException(HttpStatus.FORBIDDEN, "Unable to remove message with UUID $uuid in Queue $queueType because the provided consumedBy: $consumedBy does not match the message's consumedBy: ${messageToRemove.consumedBy}")
                 }
-                else
-                {
-                    queueForType.remove(messageToRemove)
-                }
-                ResponseEntity.noContent()
+                messageQueue.remove(messageToRemove)
+                return ResponseEntity.noContent().build()
             }
         }
 
