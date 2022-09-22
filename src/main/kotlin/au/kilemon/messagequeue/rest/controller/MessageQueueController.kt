@@ -78,21 +78,27 @@ open class MessageQueueController : HasLogger
     @Autowired
     lateinit var messageQueue: MultiQueue
 
+    /**
+     * Retrieve information about the whole [MultiQueue]. Specifically data related information.
+     */
+    @GetMapping(ENDPOINT_TYPE,
+        produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getAllQueueTypeInfo(): ResponseEntity<String>
+    {
+        LOG.debug("Returning total multi-queue size [{}].", messageQueue.size)
+        return ResponseEntity.ok(messageQueue.size.toString())
+    }
+
+    /**
+     * Retrieve information about a specific queue within [MultiQueue], based on the provided `queueType`. Specifically data related information.
+     */
     @GetMapping("$ENDPOINT_TYPE/{queueType}",
         produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun getValue(@PathVariable queueType: String?): ResponseEntity<String>
+    fun getQueueTypeInfo(@PathVariable queueType: String): ResponseEntity<String>
     {
-        return if (queueType.isNullOrBlank())
-        {
-            LOG.debug("No queue type provided, returning total multi-queue size [{}].", messageQueue.size)
-            ResponseEntity.ok(messageQueue.size.toString())
-        }
-        else
-        {
-            val queueForType = messageQueue.getQueueForType(queueType)
-            LOG.debug("Provided queue type [{}] has size [{}].", queueType, queueForType.size)
-            ResponseEntity.ok(queueForType.size.toString())
-        }
+        val queueForType = messageQueue.getQueueForType(queueType)
+        LOG.debug("Provided queue type [{}] has size [{}].", queueType, queueForType.size)
+        return ResponseEntity.ok(queueForType.size.toString())
     }
 
     /**

@@ -76,6 +76,27 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         )
     }
 
+    /***
+     * Test [MultiQueue.add] to ensure that `false` is returned if a [QueueMessage] already exists with the same `UUID` even if it is assigned to a different `queue type`.
+     */
+    @Test
+    fun testAdd_entryAlreadyExistsInDifferentQueueType()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val message = QueueMessage("test", "type")
+        Assertions.assertTrue(multiQueue.add(message))
+
+        val differentType = "different-type"
+        val differentTypeMessage = QueueMessage(message.payload, differentType)
+        differentTypeMessage.uuid = message.uuid
+
+        Assertions.assertEquals(message.payload, differentTypeMessage.payload)
+        Assertions.assertEquals(message.uuid, differentTypeMessage.uuid)
+        Assertions.assertNotEquals(message.type, differentTypeMessage.type)
+
+        Assertions.assertFalse(multiQueue.add(differentTypeMessage))
+    }
+
     /**
      * Ensure that when an entry is added and the same entry is removed that the [MultiQueue] is empty.
      */

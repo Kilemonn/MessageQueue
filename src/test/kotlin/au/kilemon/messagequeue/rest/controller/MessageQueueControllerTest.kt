@@ -68,14 +68,55 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.isEmpty())
     }
 
+    /**
+     * Test [MessageQueueController.getQueueTypeInfo] to ensure the correct information is returned for the specified `queueType`.
+     */
     @Test
-    fun testGetQueueEntry()
+    fun testGetQueueTypeInfo()
     {
         val queueType = "test"
+        Assertions.assertEquals(0, multiQueue.getQueueForType(queueType).size)
         mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE + "/" + queueType)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.content().json("0"))
+
+        val message = createQueueMessage(type = queueType)
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertEquals(1, multiQueue.getQueueForType(queueType).size)
+
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE + "/" + queueType)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.content().json("1"))
+    }
+
+    /**
+     * Test [MessageQueueController.getAllQueueTypeInfo] to ensure that information for all `queue type`s is returned when no `queue type` is specified.
+     */
+    @Test
+    fun testGetAllQueueTypeInfo()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE + "/")
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.content().json("0"))
+
+        val message = createQueueMessage(type = "type1")
+        val message2 = createQueueMessage(type = "type2")
+
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertTrue(multiQueue.add(message2))
+
+        Assertions.assertEquals(1, multiQueue.getQueueForType(message.type).size)
+        Assertions.assertEquals(1, multiQueue.getQueueForType(message2.type).size)
+        Assertions.assertEquals(2, multiQueue.size)
+
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE + "/")
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.content().json("2"))
     }
 
     /**
