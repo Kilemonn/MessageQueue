@@ -56,7 +56,7 @@ open class MessageQueueApplication : HasLogger
      * Initialise the [MessageSource] [Bean] to read from [MessageQueueApplication.SOURCE_MESSAGES].
      */
     @Bean
-    fun getMessageSource(): MessageSource
+    open fun getMessageSource(): MessageSource
     {
         val messageSource = ReloadableResourceBundleMessageSource()
         messageSource.setBasename(SOURCE_MESSAGES)
