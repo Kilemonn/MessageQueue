@@ -667,7 +667,7 @@ class MessageQueueControllerTest
     {
         val uuid = UUID.randomUUID().toString()
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH)
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.MESSAGE_QUEUE_BASE_PATH)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param("uuid", uuid))
             .andExpect(MockMvcResultMatchers.status().isNotFound)
@@ -682,7 +682,7 @@ class MessageQueueControllerTest
         val message = createQueueMessage()
         Assertions.assertTrue(multiQueue.add(message))
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH)
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.MESSAGE_QUEUE_BASE_PATH)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param("uuid", message.uuid.toString()))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
@@ -702,7 +702,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.add(message))
 
         val wrongConsumedBy = "wrong-consumer"
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH)
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.MESSAGE_QUEUE_BASE_PATH)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param("uuid", message.uuid.toString())
             .param("consumedBy", wrongConsumedBy))

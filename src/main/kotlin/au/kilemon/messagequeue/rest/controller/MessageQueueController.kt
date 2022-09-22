@@ -1,8 +1,10 @@
 package au.kilemon.messagequeue.rest.controller
 
+import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.rest.response.MessageResponse
+import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -21,8 +23,10 @@ import javax.validation.Valid
  */
 @RestController
 @RequestMapping(MessageQueueController.MESSAGE_QUEUE_BASE_PATH)
-open class MessageQueueController
+open class MessageQueueController : HasLogger
 {
+    override val LOG: Logger = initialiseLogger()
+
     companion object
     {
         /**
@@ -80,11 +84,14 @@ open class MessageQueueController
     {
         return if (queueType.isNullOrBlank())
         {
+            LOG.debug("No queue type provided, returning total multi-queue size [{}].", messageQueue.size)
             ResponseEntity.ok(messageQueue.size.toString())
         }
         else
         {
-            ResponseEntity.ok(messageQueue.getQueueForType(queueType).size.toString())
+            val queueForType = messageQueue.getQueueForType(queueType)
+            LOG.debug("Provided queue type [{}] has size [{}].", queueType, queueForType.size)
+            ResponseEntity.ok(queueForType.size.toString())
         }
     }
 
@@ -103,14 +110,18 @@ open class MessageQueueController
         val queueType = messageQueue.containsUUID(uuid)
         if (queueType.isPresent)
         {
-            val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType.get())
+            val queueTypeString = queueType.get()
+            val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueTypeString)
             val entry = queueForType.stream().filter{ message -> message.uuid.toString() == uuid }.findFirst()
             if (entry.isPresent)
             {
-                return ResponseEntity.ok(MessageResponse(entry.get()))
+                val foundEntry = entry.get()
+                LOG.debug("Found message with UUID [{}] in queue with type [{}].", foundEntry.uuid, queueTypeString)
+                return ResponseEntity.ok(MessageResponse(foundEntry))
             }
         }
 
+        LOG.debug("Failed to find entry with UUID [{}].", uuid)
         throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find message with UUID $uuid.")
     }
 
@@ -130,19 +141,25 @@ open class MessageQueueController
     @ResponseStatus(HttpStatus.CREATED)
     fun createMessage(@Valid @RequestBody queueMessage: QueueMessage): ResponseEntity<MessageResponse>
     {
-        if (messageQueue.containsUUID(queueMessage.uuid.toString()).isPresent)
+        val queueTypeOfExistingEntry = messageQueue.containsUUID(queueMessage.uuid.toString())
+        if (queueTypeOfExistingEntry.isPresent)
         {
-            throw ResponseStatusException(HttpStatus.CONFLICT, "Failed to add entry with UUID: ${queueMessage.uuid}, an entry with the same UUID already exists.")
+            val queueType = queueTypeOfExistingEntry.get()
+            val errorMessage = "Failed to add entry with UUID [${queueMessage.uuid}], an entry with the same UUID already exists in queue with type [$queueType]."
+            LOG.error(errorMessage)
+            throw ResponseStatusException(HttpStatus.CONFLICT, errorMessage)
         }
 
         val wasAdded = messageQueue.add(queueMessage)
         if (wasAdded)
         {
+            LOG.debug("Added new message with UUID [{}] to queue with type [{}}.", queueMessage.uuid, queueMessage.type)
             return ResponseEntity.status(HttpStatus.CREATED).body(MessageResponse(queueMessage))
         }
         else
         {
-            throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to add entry with UUID: ${queueMessage.uuid}")
+            LOG.error("Failed to add entry with UUID [{}] to queue with type [{}]. AND the message does not already exists. This could be a memory limitation or an issue with the underlying collection.", queueMessage.uuid, queueMessage.type)
+            throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to add entry with UUID: ${queueMessage.uuid} to queue with type ${queueMessage.type}")
         }
     }
 
@@ -173,12 +190,14 @@ open class MessageQueueController
         val responseMap = HashMap<String, List<String>>()
         if ( !queueType.isNullOrBlank())
         {
+            LOG.debug("Retrieving all entry details from queue with type [{}].", queueType)
             val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
             val queueDetails = queueForType.stream().map { message -> message.toDetailedString(detailed) }.collect(Collectors.toList())
             responseMap[queueType] = queueDetails
         }
         else
         {
+            LOG.debug("Retrieving all entry details from all queue types.")
             for (key: String in messageQueue.keys(false))
             {
                 // No need to empty check since we passed `false` to `keys()` above
@@ -203,6 +222,7 @@ open class MessageQueueController
     {
         val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
         val ownedMessages =  queueForType.stream().filter { message -> message.consumed && message.consumedBy == consumedBy }.map { message -> MessageResponse(message) }.collect(Collectors.toList())
+        LOG.debug("Found [{}] owned entries within queue with type [{}] for user with identifier [{}].", ownedMessages.size, queueType, consumedBy)
         return ResponseEntity.ok(ownedMessages)
     }
 
@@ -234,21 +254,25 @@ open class MessageQueueController
                     if (messageToRelease.consumedBy == consumedBy)
                     {
                         // The message is already in this state, returning 202 to tell the client that it is accepted but no action was done
+                        LOG.debug("Message with uuid [{}] in queue with type [{}] is already consumed by user with identifier [{}].", messageToRelease.uuid, queueType.get(), consumedBy)
                         return ResponseEntity.accepted().body(MessageResponse(messageToRelease))
                     }
                     else
                     {
+                        LOG.error("Message with uuid [{}] in queue with type [{}] is already consumed by user with identifier [{}]. User [{}] is attempting to consume.", messageToRelease.uuid, queueType.get(), messageToRelease.consumedBy, consumedBy)
                         throw ResponseStatusException(HttpStatus.CONFLICT, "The message with UUID: $uuid and $queueType is already held by instance with ID ${messageToRelease.consumedBy}.")
                     }
                 }
 
                 messageToRelease.consumedBy = consumedBy
                 messageToRelease.consumed = true
+                LOG.debug("Consumed message with UUID [{}] on behalf of consumer with identifier [{}].", messageToRelease.uuid, consumedBy)
                 return ResponseEntity.ok(MessageResponse(messageToRelease))
             }
         }
 
         // No entries match the provided UUID (and queue type)
+        LOG.debug("Could not find message to consume with UUID [{}].", uuid)
         throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find message with UUID $uuid. (Queue-type: $queueType).")
     }
 
@@ -269,12 +293,14 @@ open class MessageQueueController
         return if (nextMessage.isPresent)
         {
             val nextUnconsumedMessage = nextMessage.get()
+            LOG.debug("Retrieving and consuming next message for queue type [{}] with UUID [{}] for user with identifier [{}].", queueType, nextUnconsumedMessage.uuid, consumedBy)
             nextUnconsumedMessage.consumed = true
             nextUnconsumedMessage.consumedBy = consumedBy
             ResponseEntity.ok(MessageResponse(nextUnconsumedMessage))
         }
         else
         {
+            LOG.debug("No unconsumed entries in queue with type [{}].", queueType)
             ResponseEntity.noContent().build()
         }
     }
@@ -305,20 +331,25 @@ open class MessageQueueController
                 if ( !messageToRelease.consumed)
                 {
                     // The message is already in this state, returning 202 to tell the client that it is accepted but no action was done
+                    LOG.debug("Message with UUID [{}] is already released.", uuid)
                     return ResponseEntity.accepted().body(MessageResponse(messageToRelease))
                 }
 
                 if (!consumedBy.isNullOrBlank() && messageToRelease.consumedBy != consumedBy)
                 {
-                    throw ResponseStatusException(HttpStatus.CONFLICT, "The message with UUID: $uuid and $queueType cannot be released because it is already held by instance with ID ${messageToRelease.consumedBy} and a provided ID was $consumedBy.")
+                    val errorMessage = "The message with UUID: $uuid and $queueType cannot be released because it is already held by instance with ID ${messageToRelease.consumedBy} and a provided ID was $consumedBy."
+                    LOG.error(errorMessage)
+                    throw ResponseStatusException(HttpStatus.CONFLICT, errorMessage)
                 }
                 messageToRelease.consumedBy = null
                 messageToRelease.consumed = false
+                LOG.debug("Released message with UUID [{}] on request from consumer [{}].", messageToRelease.uuid, consumedBy)
                 return ResponseEntity.ok(MessageResponse(messageToRelease))
             }
         }
 
         // No entries match the provided UUID (and queue type)
+        LOG.debug("Could not find message to release with UUID [{}].", uuid)
         throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find message with UUID $uuid. (Queue-type: $queueType).")
     }
 
@@ -333,7 +364,7 @@ open class MessageQueueController
      * @param consumedBy the identifier of the user who **SHOULD** currently have the [QueueMessage] `consumed`, otherwise `null` if you want to force remove it
      * @return [HttpStatus.NO_CONTENT]
      */
-    @DeleteMapping
+    @DeleteMapping(ENDPOINT_ENTRY)
     fun removeMessage(@RequestParam uuid: String, @RequestParam(required = false) consumedBy: String?): ResponseEntity<Void>
     {
         val queueType = messageQueue.containsUUID(uuid)
@@ -346,13 +377,17 @@ open class MessageQueueController
                 val messageToRemove = message.get()
                 if ( !consumedBy.isNullOrBlank() && messageToRemove.consumed && messageToRemove.consumedBy != consumedBy)
                 {
-                    throw ResponseStatusException(HttpStatus.FORBIDDEN, "Unable to remove message with UUID $uuid in Queue $queueType because the provided consumedBy: $consumedBy does not match the message's consumedBy: ${messageToRemove.consumedBy}")
+                    val errorMessage = "Unable to remove message with UUID $uuid in Queue $queueType because the provided consumedBy: $consumedBy does not match the message's consumedBy: ${messageToRemove.consumedBy}"
+                    LOG.error(errorMessage)
+                    throw ResponseStatusException(HttpStatus.FORBIDDEN, errorMessage)
                 }
                 messageQueue.remove(messageToRemove)
+                LOG.debug("Removed message with UUID [{}] on request from consumer [{}].", messageToRemove.uuid, consumedBy)
                 return ResponseEntity.noContent().build()
             }
         }
 
+        LOG.debug("Could not find message to remove with UUID [{}].", uuid)
         throw ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find message with UUID $uuid. (Queue-type: $queueType).")
     }
 }
