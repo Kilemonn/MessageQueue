@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.rest.controller
 
+import au.kilemon.messagequeue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
@@ -147,25 +148,26 @@ open class MessageQueueController : HasLogger
     @ResponseStatus(HttpStatus.CREATED)
     fun createMessage(@Valid @RequestBody queueMessage: QueueMessage): ResponseEntity<MessageResponse>
     {
-        val queueTypeOfExistingEntry = messageQueue.containsUUID(queueMessage.uuid.toString())
-        if (queueTypeOfExistingEntry.isPresent)
+        try
         {
-            val queueType = queueTypeOfExistingEntry.get()
+            val wasAdded = messageQueue.add(queueMessage)
+            if (wasAdded)
+            {
+                LOG.debug("Added new message with UUID [{}] to queue with type [{}}.", queueMessage.uuid, queueMessage.type)
+                return ResponseEntity.status(HttpStatus.CREATED).body(MessageResponse(queueMessage))
+            }
+            else
+            {
+                LOG.error("Failed to add entry with UUID [{}] to queue with type [{}]. AND the message does not already exists. This could be a memory limitation or an issue with the underlying collection.", queueMessage.uuid, queueMessage.type)
+                throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to add entry with UUID: ${queueMessage.uuid} to queue with type ${queueMessage.type}")
+            }
+        }
+        catch (ex: DuplicateMessageException)
+        {
+            val queueType = messageQueue.containsUUID(queueMessage.uuid.toString()).get()
             val errorMessage = "Failed to add entry with UUID [${queueMessage.uuid}], an entry with the same UUID already exists in queue with type [$queueType]."
             LOG.error(errorMessage)
-            throw ResponseStatusException(HttpStatus.CONFLICT, errorMessage)
-        }
-
-        val wasAdded = messageQueue.add(queueMessage)
-        if (wasAdded)
-        {
-            LOG.debug("Added new message with UUID [{}] to queue with type [{}}.", queueMessage.uuid, queueMessage.type)
-            return ResponseEntity.status(HttpStatus.CREATED).body(MessageResponse(queueMessage))
-        }
-        else
-        {
-            LOG.error("Failed to add entry with UUID [{}] to queue with type [{}]. AND the message does not already exists. This could be a memory limitation or an issue with the underlying collection.", queueMessage.uuid, queueMessage.type)
-            throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to add entry with UUID: ${queueMessage.uuid} to queue with type ${queueMessage.type}")
+            throw ResponseStatusException(HttpStatus.CONFLICT, errorMessage, ex)
         }
     }
 

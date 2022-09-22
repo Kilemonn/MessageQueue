@@ -1,8 +1,10 @@
 package au.kilemon.messagequeue.queue
 
+import au.kilemon.messagequeue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.message.QueueMessage
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.jvm.Throws
 
 /**
  * A [MultiQueue] interface, which extends [Queue].
@@ -88,6 +90,17 @@ interface MultiQueue: Queue<QueueMessage>
      * @return the `queueType` [String] if a [QueueMessage] exists with the provided [UUID] otherwise [Optional.empty]
      */
     fun containsUUID(uuid: String): Optional<String>
+
+    /**
+     * Any overridden methods to update the signature for all implementing [MultiQueue] classes.
+     */
+    /**
+     * Override [add] method to declare [Throws] [DuplicateMessageException] annotation.
+     *
+     * @throws [DuplicateMessageException] if a message already exists with the same [QueueMessage.uuid] in `any` other queue.
+     */
+    @Throws(DuplicateMessageException::class)
+    override fun add(element: QueueMessage): Boolean
 
     /**
      * Any unsupported methods from the [Queue] interface that are not implemented.

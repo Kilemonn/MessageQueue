@@ -2,6 +2,7 @@ package au.kilemon.messagequeue.queue
 
 import au.kilemon.messagequeue.Payload
 import au.kilemon.messagequeue.PayloadEnum
+import au.kilemon.messagequeue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.message.QueueMessage
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -77,7 +78,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     }
 
     /***
-     * Test [MultiQueue.add] to ensure that `false` is returned if a [QueueMessage] already exists with the same `UUID` even if it is assigned to a different `queue type`.
+     * Test [MultiQueue.add] to ensure that [DuplicateMessageException] is thrown if a [QueueMessage] already exists with the same `UUID` even if it is assigned to a different `queue type`.
      */
     @Test
     fun testAdd_entryAlreadyExistsInDifferentQueueType()
@@ -94,7 +95,26 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertEquals(message.uuid, differentTypeMessage.uuid)
         Assertions.assertNotEquals(message.type, differentTypeMessage.type)
 
-        Assertions.assertFalse(multiQueue.add(differentTypeMessage))
+        assertThrows(DuplicateMessageException::class.java)
+        {
+            multiQueue.add(differentTypeMessage)
+        }
+    }
+
+    /***
+     * Test [MultiQueue.add] to ensure that [DuplicateMessageException] is thrown if a [QueueMessage] already exists with the same `UUID` even if it is assigned to the same `queue type`.
+     */
+    @Test
+    fun testAdd_sameEntryAlreadyExists()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val message = QueueMessage("test", "type")
+        Assertions.assertTrue(multiQueue.add(message))
+
+        assertThrows(DuplicateMessageException::class.java)
+        {
+            multiQueue.add(message)
+        }
     }
 
     /**

@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.queue.inmemory
 
+import au.kilemon.messagequeue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
@@ -7,6 +8,7 @@ import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.jvm.Throws
 
 /**
  * The InMemoryMultiQueue which implements the [MultiQueue]. It holds a [ConcurrentHashMap] with [Queue] entries.
@@ -52,12 +54,13 @@ open class InMemoryMultiQueue: MultiQueue, HasLogger
         messageQueue[queueType] = queue
     }
 
+    @Throws(DuplicateMessageException::class)
     override fun add(element: QueueMessage): Boolean
     {
-        val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
         val elementIsMappedToType = containsUUID(element.uuid.toString())
         if ( !elementIsMappedToType.isPresent)
         {
+            val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
             val wasAdded = queueForType.add(element)
             return if (wasAdded)
             {
@@ -76,18 +79,25 @@ open class InMemoryMultiQueue: MultiQueue, HasLogger
         {
             val existingQueueType = elementIsMappedToType.get()
             LOG.warn("Did not add new message with uuid [{}] to queue with type [{}] as it already exists in queue with type [{}].", element.uuid, element.type, existingQueueType)
-            return false
+            throw DuplicateMessageException(element.uuid.toString(), existingQueueType)
         }
     }
 
     override fun addAll(elements: Collection<QueueMessage>): Boolean
     {
-        var wasAdded = false
+        var allAdded = true
         for (element: QueueMessage in elements)
         {
-            wasAdded = add(element) || wasAdded
+            allAdded = try {
+                val wasAdded = add(element)
+                allAdded && wasAdded
+            }
+            catch (ex: DuplicateMessageException)
+            {
+                false
+            }
         }
-        return wasAdded
+        return allAdded
     }
 
     override fun clear()
@@ -96,7 +106,7 @@ open class InMemoryMultiQueue: MultiQueue, HasLogger
         messageQueue.clear()
         uuidMap.clear()
         size = 0
-        LOG.debug("Cleared multiqueue, removed [{}] message entries.", removedEntryCount)
+        LOG.debug("Cleared multi-queue, removed [{}] message entries.", removedEntryCount)
     }
 
     override fun clearForType(queueType: String)
