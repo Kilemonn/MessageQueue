@@ -3,7 +3,6 @@ package au.kilemon.messagequeue.queue.inmemory
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
-import lombok.extern.slf4j.Slf4j
 import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap

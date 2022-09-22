@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Properties list for use below -->
+    <property name="LOGS" value="./logs"/>
+    <property name="PATTERN" value="%d %p %C{1.} [%t] %m%n"/>
+    <property name="ARCHIVED_FILE_SUFFIX" value="-%d{yyyy-MM-dd}.%i"/>
+
+    <!-- Console appender formatting -->
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>${PATTERN}</Pattern>
+        </layout>
+    </appender>
+
+    <!-- Appender for all classes, set to ERROR level -->
+    <appender name="ErrorFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS}/error.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>${PATTERN}</Pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS}/error${ARCHIVED_FILE_SUFFIX}.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Appender for Message Queue -->
+    <appender name="MessageQueueFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS}/message-queue.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>${PATTERN}</Pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS}/message-queue${ARCHIVED_FILE_SUFFIX}.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+
+    <!-- LOG everything at ERROR level -->
+    <root level="error">
+        <appender-ref ref="ErrorFile" />
+        <appender-ref ref="Console" />
+    </root>
+
+    <!-- LOG "au.kilemon*" at DEBUG level -->
+    <logger name="au.kilemon" level="debug" additivity="false">
+        <appender-ref ref="MessageQueueFile" />
+        <appender-ref ref="Console" />
+    </logger>
+</configuration>

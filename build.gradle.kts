@@ -17,9 +17,6 @@ dependencies {
 
     implementation("com.google.code.gson:gson:2.9.1")
 
-    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
-    implementation("org.slf4j:slf4j-api:2.0.1")
-
     compileOnly("org.projectlombok:lombok:1.18.24")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test:2.7.2")

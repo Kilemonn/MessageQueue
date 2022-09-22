@@ -97,7 +97,7 @@ open class MessageQueueController : HasLogger
     fun getQueueTypeInfo(@PathVariable queueType: String): ResponseEntity<String>
     {
         val queueForType = messageQueue.getQueueForType(queueType)
-        LOG.debug("Provided queue type [{}] has size [{}].", queueType, queueForType.size)
+        LOG.debug("Returning size [{}] for queue with type [{}].", queueForType.size, queueType)
         return ResponseEntity.ok(queueForType.size.toString())
     }
 
