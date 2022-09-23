@@ -1,4 +1,6 @@
 # MessageQueue
+[![Java CI with Gradle](https://github.com/KyleGonzalez/MessageQueue/actions/workflows/gradle.yml/badge.svg)](https://github.com/KyleGonzalez/MessageQueue/actions/workflows/gradle.yml)
+
 An in memory message queue service, which can receive, hold and provide messages that are sent between services.
 
 ## Features
