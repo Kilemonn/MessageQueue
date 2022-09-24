@@ -40,6 +40,7 @@ open class MessageQueueApplication : HasLogger
     @Bean
     open fun getMultiQueue(): MultiQueue
     {
+        LOG.info("Running MessageQueue version: [{}].", javaClass.getPackage().implementationVersion)
         val queue: MultiQueue = if (messageQueueSettings.multiQueueType == MultiQueueType.IN_MEMORY)
         {
             InMemoryMultiQueue()

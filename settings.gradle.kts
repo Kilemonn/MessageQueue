@@ -7,3 +7,5 @@ pluginManagement {
 }
 
 rootProject.name = "messagequeue"
+
+include("src")

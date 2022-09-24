@@ -1,11 +1,30 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
+    application
     kotlin("jvm") version "1.7.10"
 }
 
 group = "au.kilemon"
-version = "1.0-SNAPSHOT"
+version = "0.1.0"
+java.sourceCompatibility = JavaVersion.VERSION_11
+
+application {
+    mainClass.set("au.kilemon.messagequeue.MessageQueueApplicationKt")
+}
+
+sourceSets {
+    main {
+        java {
+            setSrcDirs(listOf("src/main/kotlin"))
+        }
+    }
+    test {
+        java {
+            setSrcDirs(listOf("test/kotlin"))
+        }
+    }
+}
 
 repositories {
     mavenCentral()
@@ -30,4 +49,15 @@ tasks.test {
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+tasks.withType<Jar> {
+    manifest.attributes["Main-Class"] = "au.kilemon.messagequeue.MessageQueueApplicationKt"
+    manifest.attributes["Implementation-Version"] = archiveVersion
+    val dependencies = configurations
+        .compileClasspath
+        .get()
+        .map(::zipTree)
+    from(dependencies)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
