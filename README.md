@@ -5,6 +5,7 @@ An in memory message queue service, which can receive, hold and provide messages
 
 ## Features
 - REST API interface
+- In-memory queue
 - Redis-backed queue storage
 - Database-backed queue storage
   - Postgres

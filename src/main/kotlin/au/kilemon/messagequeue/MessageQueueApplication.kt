@@ -40,16 +40,17 @@ open class MessageQueueApplication : HasLogger
     @Bean
     open fun getMultiQueue(): MultiQueue
     {
-        return if (messageQueueSettings.multiQueueType == MultiQueueType.IN_MEMORY)
+        val queue: MultiQueue = if (messageQueueSettings.multiQueueType == MultiQueueType.IN_MEMORY)
         {
-            LOG.debug("Initialising [{}] queue as the [{}] is set to [{}].", InMemoryMultiQueue::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, MultiQueueType.IN_MEMORY)
             InMemoryMultiQueue()
         }
         else
         {
-            LOG.warn("Initialising [{}] queue as the [{}] is set to [{}].", InMemoryMultiQueue::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, "null")
             InMemoryMultiQueue()
         }
+        LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType)
+
+        return queue
     }
 
     /**
