@@ -13,19 +13,6 @@ application {
     mainClass.set("au.kilemon.messagequeue.MessageQueueApplicationKt")
 }
 
-sourceSets {
-    main {
-        java {
-            setSrcDirs(listOf("src/main/kotlin"))
-        }
-    }
-    test {
-        java {
-            setSrcDirs(listOf("test/kotlin"))
-        }
-    }
-}
-
 repositories {
     mavenCentral()
 }
