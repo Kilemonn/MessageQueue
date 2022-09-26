@@ -1,17 +1,16 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    application
+    id("org.springframework.boot") version "2.7.3"
+    id("io.spring.dependency-management") version "1.0.14.RELEASE"
     kotlin("jvm") version "1.7.10"
+    kotlin("plugin.spring") version "1.7.10"
 }
 
 group = "au.kilemon"
+// Make sure version matches version defined in MessageQueueApplication
 version = "0.1.0"
-java.sourceCompatibility = JavaVersion.VERSION_11
-
-application {
-    mainClass.set("au.kilemon.messagequeue.MessageQueueApplicationKt")
-}
+java.sourceCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
     mavenCentral()
@@ -34,17 +33,8 @@ tasks.test {
     useJUnitPlatform()
 }
 
-tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
 }
 
-tasks.withType<Jar> {
-    manifest.attributes["Main-Class"] = "au.kilemon.messagequeue.MessageQueueApplicationKt"
-    manifest.attributes["Implementation-Version"] = archiveVersion
-    val dependencies = configurations
-        .compileClasspath
-        .get()
-        .map(::zipTree)
-    from(dependencies)
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+tasks.withType<KotlinCompile> {
+    kotlinOptions.jvmTarget = "1.8"
 }
