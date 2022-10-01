@@ -138,8 +138,8 @@ class MessageQueueControllerTest
 
         val deserialisedPayload = gson.fromJson(gson.toJson(messageResponse.message.payload), Payload::class.java)
         Assertions.assertEquals(message.payload, deserialisedPayload)
-        Assertions.assertFalse(messageResponse.message.consumed)
-        Assertions.assertNull(messageResponse.message.consumedBy)
+        Assertions.assertFalse(messageResponse.message.assigned)
+        Assertions.assertNull(messageResponse.message.assignedTo)
         Assertions.assertEquals(message.type, messageResponse.message.type)
         Assertions.assertEquals(message.type, messageResponse.queueType)
         Assertions.assertNotNull(messageResponse.message.uuid)
@@ -158,13 +158,13 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Calling create with provided [QueueMessage.consumedBy], [QueueMessage.consumed] and [QueueMessage.uuid] to
+     * Calling create with provided [QueueMessage.assignedTo], [QueueMessage.assigned] and [QueueMessage.uuid] to
      * ensure they are set correctly in the returned [MessageResponse].
      */
     @Test
     fun testCreateQueueEntry_withProvidedDefaults()
     {
-        val message = createQueueMessage(consumedBy = "consumed")
+        val message = createQueueMessage(assignedTo = "assignedTo")
 
         val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -176,21 +176,21 @@ class MessageQueueControllerTest
 
         val deserialisedPayload = gson.fromJson(gson.toJson(messageResponse.message.payload), Payload::class.java)
         Assertions.assertEquals(message.payload, deserialisedPayload)
-        Assertions.assertEquals(message.consumed, messageResponse.message.consumed)
-        Assertions.assertEquals(message.consumedBy, messageResponse.message.consumedBy)
+        Assertions.assertEquals(message.assigned, messageResponse.message.assigned)
+        Assertions.assertEquals(message.assignedTo, messageResponse.message.assignedTo)
         Assertions.assertEquals(message.type, messageResponse.message.type)
         Assertions.assertEquals(message.type, messageResponse.queueType)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
 
         val createdMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertEquals(message.consumed, createdMessage.consumed)
-        Assertions.assertEquals(message.consumedBy, createdMessage.consumedBy)
+        Assertions.assertEquals(message.assigned, createdMessage.assigned)
+        Assertions.assertEquals(message.assignedTo, createdMessage.assignedTo)
         Assertions.assertEquals(message.type, createdMessage.type)
         Assertions.assertEquals(message.uuid, createdMessage.uuid)
     }
 
     /**
-     * Calling create without [QueueMessage.consumedBy], [QueueMessage.consumed] and [QueueMessage.uuid] to
+     * Calling create without [QueueMessage.assignedTo], [QueueMessage.assigned] and [QueueMessage.uuid] to
      * ensure they are initialised as expected when they are not provided by the caller.
      */
     @Test
@@ -208,15 +208,15 @@ class MessageQueueControllerTest
 
         val deserialisedPayload = gson.fromJson(gson.toJson(messageResponse.message.payload), Payload::class.java)
         Assertions.assertEquals(message.payload, deserialisedPayload)
-        Assertions.assertFalse(messageResponse.message.consumed)
-        Assertions.assertNull(messageResponse.message.consumedBy)
+        Assertions.assertFalse(messageResponse.message.assigned)
+        Assertions.assertNull(messageResponse.message.assignedTo)
         Assertions.assertEquals(message.type, messageResponse.message.type)
         Assertions.assertEquals(message.type, messageResponse.queueType)
         Assertions.assertNotNull(messageResponse.message.uuid)
 
         val createdMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertFalse(createdMessage.consumed)
-        Assertions.assertNull(createdMessage.consumedBy)
+        Assertions.assertFalse(createdMessage.assigned)
+        Assertions.assertNull(createdMessage.assignedTo)
         Assertions.assertEquals(message.type, createdMessage.type)
         Assertions.assertEquals(message.uuid, createdMessage.uuid)
     }
@@ -333,17 +333,17 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getOwned] to ensure that no entries are returned when no [QueueMessage] are consumed by the provided `consumedBy` parameter.
+     * Test [MessageQueueController.getOwned] to ensure that no entries are returned when no [QueueMessage] are assigned by the provided `assignedTo` parameter.
      */
     @Test
     fun testGetOwned_NoneOwned()
     {
         val entries = initialiseMapWithEntries()
-        val consumedBy = "my-consumed-by-identifier"
+        val assignedTo = "my-assigned-to-identifier"
 
         val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("consumedBy", consumedBy)
+            .param("assignedTo", assignedTo)
             .param("queueType", entries.first[0].type))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
@@ -354,22 +354,22 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getOwned] to ensure that all appropriate [QueueMessage] entries are returned when the provided `consumedBy` parameter owns the existings [QueueMessage].
+     * Test [MessageQueueController.getOwned] to ensure that all appropriate [QueueMessage] entries are returned when the provided `assignedTo` parameter owns the existing [QueueMessage].
      */
     @Test
     fun testGetOwned_SomeOwned()
     {
-        val consumedBy = "my-consumed-by-identifier"
+        val assignedTo = "my-assigned-to-identifier"
         val type = "my-type"
-        val message1 = createQueueMessage(consumedBy = consumedBy, type = type)
-        val message2 = createQueueMessage(consumedBy = consumedBy, type = type)
+        val message1 = createQueueMessage(assignedTo = assignedTo, type = type)
+        val message2 = createQueueMessage(assignedTo = assignedTo, type = type)
 
         Assertions.assertTrue(multiQueue.add(message1))
         Assertions.assertTrue(multiQueue.add(message2))
 
         val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("consumedBy", consumedBy)
+            .param("assignedTo", assignedTo)
             .param("queueType", type))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
@@ -381,118 +381,115 @@ class MessageQueueControllerTest
             Assertions.assertTrue(message.message.uuid == message1.uuid || message.message.uuid == message2.uuid)
             Assertions.assertEquals(type, message.queueType)
             Assertions.assertEquals(type, message.message.type)
-            Assertions.assertTrue(message.message.consumed)
-            Assertions.assertEquals(consumedBy, message.message.consumedBy)
+            Assertions.assertTrue(message.message.assigned)
+            Assertions.assertEquals(assignedTo, message.message.assignedTo)
         }
     }
 
     /**
-     * Test [MessageQueueController.consumeMessage] to ensure that [HttpStatus.NOT_FOUND] is returned when a [QueueMessage] with the provided [UUID] does not exist.
+     * Test [MessageQueueController.assignMessage] to ensure that [HttpStatus.NOT_FOUND] is returned when a [QueueMessage] with the provided [UUID] does not exist.
      */
     @Test
-    fun testConsumeMessage_doesNotExist()
+    fun testAssignMessage_doesNotExist()
     {
         val uuid = UUID.randomUUID().toString()
-        val consumedBy = "consumer"
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_CONSUME)
+        val assignedTo = "assigned"
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("consumedBy", consumedBy)
+            .param("assignedTo", assignedTo)
             .param("uuid", uuid))
             .andExpect(MockMvcResultMatchers.status().isNotFound)
     }
 
     /**
-     * Test [MessageQueueController.consumeMessage] to ensure that the message is consumed correctly and [HttpStatus.OK] is returned when the [QueueMessage] was initially not consumed.
+     * Test [MessageQueueController.assignMessage] to ensure that the message is assigned correctly and [HttpStatus.OK] is returned when the [QueueMessage] was initially not assigned.
      */
     @Test
-    fun testConsumeMessage_messageIsConsumed()
+    fun testAssignMessage_messageIsAssigned()
     {
-        val consumedBy = "consumer"
+        val assignedTo = "assigned"
         val message = createQueueMessage()
-        Assertions.assertFalse(message.consumed)
-        Assertions.assertNull(message.consumedBy)
+        Assertions.assertFalse(message.assigned)
+        Assertions.assertNull(message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_CONSUME)
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + message.uuid.toString())
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("consumedBy", consumedBy)
-            .param("uuid", message.uuid.toString()))
+            .param("assignedTo", assignedTo))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
         val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertTrue(messageResponse.message.consumed)
-        Assertions.assertEquals(consumedBy, messageResponse.message.consumedBy)
+        Assertions.assertTrue(messageResponse.message.assigned)
+        Assertions.assertEquals(assignedTo, messageResponse.message.assignedTo)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
 
-        val consumedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertTrue(consumedMessage.consumed)
-        Assertions.assertEquals(consumedBy, consumedMessage.consumedBy)
-        Assertions.assertEquals(message.uuid, consumedMessage.uuid)
+        val assignedMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertTrue(assignedMessage.assigned)
+        Assertions.assertEquals(assignedTo, assignedMessage.assignedTo)
+        Assertions.assertEquals(message.uuid, assignedMessage.uuid)
     }
 
     /**
-     * Test [MessageQueueController.consumeMessage] to ensure that the message is consumed correctly and [HttpStatus.ACCEPTED] is returned when the [QueueMessage] is already consumed by the provided `consumedBy` identifier.
+     * Test [MessageQueueController.assignMessage] to ensure that the message is assigned correctly and [HttpStatus.ACCEPTED] is returned when the [QueueMessage] is already assigned by the provided `assignTo` identifier.
      */
     @Test
-    fun testConsumeMessage_alreadyConsumedBySameID()
+    fun testAssignMessage_alreadyAssignedToSameID()
     {
-        val consumedBy = "consumer"
-        val message = createQueueMessage(consumedBy = consumedBy)
+        val assignedTo = "assigned"
+        val message = createQueueMessage(assignedTo = assignedTo)
 
-        Assertions.assertTrue(message.consumed)
-        Assertions.assertEquals(consumedBy, message.consumedBy)
+        Assertions.assertTrue(message.assigned)
+        Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_CONSUME)
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + message.uuid.toString())
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("consumedBy", consumedBy)
-            .param("uuid", message.uuid.toString()))
+            .param("assignedTo", assignedTo))
             .andExpect(MockMvcResultMatchers.status().isAccepted)
             .andReturn()
 
         val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertTrue(messageResponse.message.consumed)
-        Assertions.assertEquals(message.consumedBy, messageResponse.message.consumedBy)
+        Assertions.assertTrue(messageResponse.message.assigned)
+        Assertions.assertEquals(message.assignedTo, messageResponse.message.assignedTo)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
 
-        val consumedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertTrue(consumedMessage.consumed)
-        Assertions.assertEquals(consumedBy, consumedMessage.consumedBy)
-        Assertions.assertEquals(message.uuid, consumedMessage.uuid)
+        val assignedMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertTrue(assignedMessage.assigned)
+        Assertions.assertEquals(assignedTo, assignedMessage.assignedTo)
+        Assertions.assertEquals(message.uuid, assignedMessage.uuid)
     }
 
     /**
-     * Test [MessageQueueController.consumeMessage] to ensure that [HttpStatus.CONFLICT] is returned when the [QueueMessage] is already consumed by another identifier.
+     * Test [MessageQueueController.assignMessage] to ensure that [HttpStatus.CONFLICT] is returned when the [QueueMessage] is already assigned to another identifier.
      */
     @Test
-    fun testConsumeMessage_alreadyConsumedByOtherID()
+    fun testAssignMessage_alreadyAssignedToOtherID()
     {
-        val consumedBy = "consumer"
-        val message = createQueueMessage(consumedBy = consumedBy)
+        val assignedTo = "assignee"
+        val message = createQueueMessage(assignedTo = assignedTo)
 
-        Assertions.assertTrue(message.consumed)
-        Assertions.assertEquals(consumedBy, message.consumedBy)
+        Assertions.assertTrue(message.assigned)
+        Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
         // Check the message is set correctly
-        var consumedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertTrue(consumedMessage.consumed)
-        Assertions.assertEquals(consumedBy, consumedMessage.consumedBy)
-        Assertions.assertEquals(message.uuid, consumedMessage.uuid)
+        var assignedMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertTrue(assignedMessage.assigned)
+        Assertions.assertEquals(assignedTo, assignedMessage.assignedTo)
+        Assertions.assertEquals(message.uuid, assignedMessage.uuid)
 
-        val wrongConsumer = "wrong-consumer"
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_CONSUME)
+        val wrongAssignee = "wrong-assignee"
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + message.uuid.toString())
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("consumedBy", wrongConsumer)
-            .param("uuid", message.uuid.toString()))
+            .param("assignedTo", wrongAssignee))
             .andExpect(MockMvcResultMatchers.status().isConflict)
 
-        // Check the message is still consumed by the correct ID
-        consumedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertTrue(consumedMessage.consumed)
-        Assertions.assertEquals(consumedBy, consumedMessage.consumedBy)
-        Assertions.assertEquals(message.uuid, consumedMessage.uuid)
+        // Check the message is still assigned to the correct ID
+        assignedMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertTrue(assignedMessage.assigned)
+        Assertions.assertEquals(assignedTo, assignedMessage.assignedTo)
+        Assertions.assertEquals(message.uuid, assignedMessage.uuid)
     }
 
     /**
@@ -501,27 +498,27 @@ class MessageQueueControllerTest
     @Test
     fun testGetNext_noNewMessages()
     {
-        val consumedBy = "consumer"
+        val assignedTo = "assignee"
         val type = "type"
         mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param("queueType", type)
-            .param("consumedBy", consumedBy))
+            .param("assignedTo", assignedTo))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
 
         Assertions.assertTrue(multiQueue.getQueueForType(type).isEmpty())
     }
 
     /**
-     * Test [MessageQueueController.getNext] to ensure that [HttpStatus.NO_CONTENT] is returned if there are no `unconsumed` [QueueMessage]s available.
+     * Test [MessageQueueController.getNext] to ensure that [HttpStatus.NO_CONTENT] is returned if there are no `assigned` [QueueMessage]s available.
      */
     @Test
-    fun testGetNext_noNewUnConsumedMessages()
+    fun testGetNext_noNewUnAssignedMessages()
     {
-        val consumedBy = "consumer"
+        val assignedTo = "assignee"
         val type = "type"
-        val message = createQueueMessage(type = type, consumedBy = consumedBy)
-        val message2 = createQueueMessage(type = type, consumedBy = consumedBy)
+        val message = createQueueMessage(type = type, assignedTo = assignedTo)
+        val message2 = createQueueMessage(type = type, assignedTo = assignedTo)
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.add(message2))
@@ -531,7 +528,7 @@ class MessageQueueControllerTest
         mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param("queueType", type)
-            .param("consumedBy", consumedBy))
+            .param("assignedTo", assignedTo))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
@@ -541,35 +538,35 @@ class MessageQueueControllerTest
     @Test
     fun testGetNext()
     {
-        val consumedBy = "consumer"
+        val assignedTo = "assignee"
         val type = "type"
-        val message = createQueueMessage(type = type, consumedBy = consumedBy)
+        val message = createQueueMessage(type = type, assignedTo = assignedTo)
         val message2 = createQueueMessage(type = type)
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.add(message2))
 
         val storedMessage2 = multiQueue.getQueueForType(type).stream().filter{ m -> m.uuid == message2.uuid }.findFirst().get()
-        Assertions.assertFalse(storedMessage2.consumed)
-        Assertions.assertNull(storedMessage2.consumedBy)
+        Assertions.assertFalse(storedMessage2.assigned)
+        Assertions.assertNull(storedMessage2.assignedTo)
         Assertions.assertEquals(message2.uuid, storedMessage2.uuid)
 
         val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param("queueType", type)
-            .param("consumedBy", consumedBy))
+            .param("assignedTo", assignedTo))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
         val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertTrue(messageResponse.message.consumed)
-        Assertions.assertEquals(consumedBy, messageResponse.message.consumedBy)
+        Assertions.assertTrue(messageResponse.message.assigned)
+        Assertions.assertEquals(assignedTo, messageResponse.message.assignedTo)
         Assertions.assertEquals(message2.uuid, messageResponse.message.uuid)
 
-        val consumedMessage2 = multiQueue.getQueueForType(type).stream().filter{ m -> m.uuid == message2.uuid }.findFirst().get()
-        Assertions.assertTrue(consumedMessage2.consumed)
-        Assertions.assertEquals(consumedBy, consumedMessage2.consumedBy)
-        Assertions.assertEquals(message2.uuid, consumedMessage2.uuid)
+        val assignedMessage2 = multiQueue.getQueueForType(type).stream().filter{ m -> m.uuid == message2.uuid }.findFirst().get()
+        Assertions.assertTrue(assignedMessage2.assigned)
+        Assertions.assertEquals(assignedTo, assignedMessage2.assignedTo)
+        Assertions.assertEquals(message2.uuid, assignedMessage2.uuid)
     }
 
     /**
@@ -586,63 +583,61 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.releaseMessage] to ensure that the [QueueMessage] is released if it is currently consumed.
+     * Test [MessageQueueController.releaseMessage] to ensure that the [QueueMessage] is released if it is currently assigned.
      */
     @Test
     fun testReleaseMessage_messageIsReleased()
     {
-        val consumedBy = "consumer"
-        val message = createQueueMessage(consumedBy = consumedBy)
+        val assignedTo = "assignee"
+        val message = createQueueMessage(assignedTo = assignedTo)
 
-        Assertions.assertTrue(message.consumed)
-        Assertions.assertEquals(consumedBy, message.consumedBy)
+        Assertions.assertTrue(message.assigned)
+        Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE)
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid.toString())
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("uuid", message.uuid.toString())
-            .param("consumedBy", consumedBy))
+            .param("assignedTo", assignedTo))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
         val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertFalse(messageResponse.message.consumed)
-        Assertions.assertNull(messageResponse.message.consumedBy)
+        Assertions.assertFalse(messageResponse.message.assigned)
+        Assertions.assertNull(messageResponse.message.assignedTo)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
 
         val updatedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertFalse(updatedMessage.consumed)
-        Assertions.assertNull(updatedMessage.consumedBy)
+        Assertions.assertFalse(updatedMessage.assigned)
+        Assertions.assertNull(updatedMessage.assignedTo)
         Assertions.assertEquals(message.uuid, updatedMessage.uuid)
     }
 
     /**
-     * Test [MessageQueueController.releaseMessage] to ensure that the [QueueMessage] is released if it is currently consumed. Even when the `consumedBy` is not provided.
+     * Test [MessageQueueController.releaseMessage] to ensure that the [QueueMessage] is released if it is currently assigned. Even when the `assignedTo` is not provided.
      */
     @Test
-    fun testReleaseMessage_messageIsReleased_withoutConsumedByInQuery()
+    fun testReleaseMessage_messageIsReleased_withoutAssignedToInQuery()
     {
-        val consumedBy = "consumer"
-        val message = createQueueMessage(consumedBy = consumedBy)
+        val assignedTo = "assigned"
+        val message = createQueueMessage(assignedTo = assignedTo)
 
-        Assertions.assertTrue(message.consumed)
-        Assertions.assertEquals(consumedBy, message.consumedBy)
+        Assertions.assertTrue(message.assigned)
+        Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE)
-            .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("uuid", message.uuid.toString()))
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid.toString())
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
         val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertFalse(messageResponse.message.consumed)
-        Assertions.assertNull(messageResponse.message.consumedBy)
+        Assertions.assertFalse(messageResponse.message.assigned)
+        Assertions.assertNull(messageResponse.message.assignedTo)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
 
         val updatedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertFalse(updatedMessage.consumed)
-        Assertions.assertNull(updatedMessage.consumedBy)
+        Assertions.assertFalse(updatedMessage.assigned)
+        Assertions.assertNull(updatedMessage.assignedTo)
         Assertions.assertEquals(message.uuid, updatedMessage.uuid)
     }
 
@@ -653,51 +648,49 @@ class MessageQueueControllerTest
     fun testReleaseMessage_alreadyReleased()
     {
         val message = createQueueMessage()
-        Assertions.assertFalse(message.consumed)
-        Assertions.assertNull(message.consumedBy)
+        Assertions.assertFalse(message.assigned)
+        Assertions.assertNull(message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE)
-            .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("uuid", message.uuid.toString()))
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid.toString())
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isAccepted)
             .andReturn()
 
         val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertFalse(messageResponse.message.consumed)
-        Assertions.assertNull(messageResponse.message.consumedBy)
+        Assertions.assertFalse(messageResponse.message.assigned)
+        Assertions.assertNull(messageResponse.message.assignedTo)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
 
         // Ensure the message is updated in the queue too
         val updatedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertFalse(updatedMessage.consumed)
-        Assertions.assertNull(updatedMessage.consumedBy)
+        Assertions.assertFalse(updatedMessage.assigned)
+        Assertions.assertNull(updatedMessage.assignedTo)
         Assertions.assertEquals(message.uuid, updatedMessage.uuid)
     }
 
     /**
-     * Test [MessageQueueController.releaseMessage] to ensure that [HttpStatus.CONFLICT] is returned if `consumedBy` is provided and does not match the [QueueMessage.consumedBy], meaning the user cannot `release` the [QueueMessage] if it's not the `consumer` of the [QueueMessage].
+     * Test [MessageQueueController.releaseMessage] to ensure that [HttpStatus.CONFLICT] is returned if `assignedTo` is provided and does not match the [QueueMessage.assignedTo], meaning the user cannot `release` the [QueueMessage] if it's not the current [QueueMessage.assignedTo] of the [QueueMessage].
      */
     @Test
     fun testReleaseMessage_cannotBeReleasedWithMisMatchingID()
     {
-        val consumedBy = "consumer"
-        val message = createQueueMessage(consumedBy = consumedBy)
+        val assignedTo = "assigned"
+        val message = createQueueMessage(assignedTo = assignedTo)
 
-        Assertions.assertTrue(message.consumed)
-        Assertions.assertEquals(consumedBy, message.consumedBy)
+        Assertions.assertTrue(message.assigned)
+        Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val wrongConsumedBy = "wrong-consumer"
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE)
+        val wrongAssignedTo = "wrong-assigned"
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid.toString())
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("uuid", message.uuid.toString())
-            .param("consumedBy", wrongConsumedBy))
+            .param("assignedTo", wrongAssignedTo))
             .andExpect(MockMvcResultMatchers.status().isConflict)
 
-        val consumedEntry = multiQueue.peekForType(message.type).get()
-        Assertions.assertTrue(consumedEntry.consumed)
-        Assertions.assertEquals(consumedBy, consumedEntry.consumedBy)
+        val assignedEntry = multiQueue.peekForType(message.type).get()
+        Assertions.assertTrue(assignedEntry.assigned)
+        Assertions.assertEquals(assignedTo, assignedEntry.assignedTo)
     }
 
     /**
@@ -708,9 +701,8 @@ class MessageQueueControllerTest
     {
         val uuid = UUID.randomUUID().toString()
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
-            .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("uuid", uuid))
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isNotFound)
     }
 
@@ -723,9 +715,8 @@ class MessageQueueControllerTest
         val message = createQueueMessage()
         Assertions.assertTrue(multiQueue.add(message))
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
-            .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("uuid", message.uuid.toString()))
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid.toString())
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
 
         Assertions.assertFalse(multiQueue.containsUUID(message.uuid.toString()).isPresent)
@@ -736,22 +727,21 @@ class MessageQueueControllerTest
      * Test [MessageQueueController.removeMessage] to ensure that [HttpStatus.FORBIDDEN] is returned if the message is attempting to be removed while another user is consuming it.
      */
     @Test
-    fun testRemoveMessage_consumedByAnotherID()
+    fun testRemoveMessage_assignedToAnotherID()
     {
-        val consumedBy = "consumer"
-        val message = createQueueMessage(consumedBy = consumedBy)
+        val assignedTo = "assignee"
+        val message = createQueueMessage(assignedTo = assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val wrongConsumedBy = "wrong-consumer"
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+        val wrongAssignedTo = "wrong-assignee"
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid.toString())
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("uuid", message.uuid.toString())
-            .param("consumedBy", wrongConsumedBy))
+            .param("assignedTo", wrongAssignedTo))
             .andExpect(MockMvcResultMatchers.status().isForbidden)
 
-        val consumedEntry = multiQueue.peekForType(message.type).get()
-        Assertions.assertTrue(consumedEntry.consumed)
-        Assertions.assertEquals(consumedBy, consumedEntry.consumedBy)
+        val assignedEntry = multiQueue.peekForType(message.type).get()
+        Assertions.assertTrue(assignedEntry.assigned)
+        Assertions.assertEquals(assignedTo, assignedEntry.assignedTo)
     }
 
     /**
@@ -764,7 +754,7 @@ class MessageQueueControllerTest
         val types = listOf("type1", "type2", "type3", "type4")
         val message = createQueueMessage(type = types[0])
         val message2 = createQueueMessage(type = types[1])
-        val message3 = createQueueMessage(type = types[2], consumedBy = "consumed")
+        val message3 = createQueueMessage(type = types[2], assignedTo = "assignee")
         val message4 = createQueueMessage(type = types[3])
 
         multiQueue.add(message)
@@ -779,20 +769,20 @@ class MessageQueueControllerTest
      * A helper method to create a [QueueMessage] that can be easily re-used between each test.
      *
      * @param type the `queueType` to assign to the created [QueueMessage]
-     * @param consumedBy indicates whether the [QueueMessage.consumedBy] should be non-null and [QueueMessage.consumed] should be `true`.
+     * @param assignedTo indicates whether the [QueueMessage.assignedTo] should be non-null and [QueueMessage.assigned] should be `true`.
      * @return a [QueueMessage] initialised with multiple parameters
      */
-    private fun createQueueMessage(type: String = "a-type", consumedBy: String? = null): QueueMessage
+    private fun createQueueMessage(type: String = "a-type", assignedTo: String? = null): QueueMessage
     {
         val uuid = UUID.randomUUID().toString()
         val payload = Payload("test", 12, true, PayloadEnum.C)
         val message = QueueMessage(payload = payload, type = type)
         message.uuid = UUID.fromString(uuid)
 
-        if (consumedBy != null)
+        if (assignedTo != null)
         {
-            message.consumed = true
-            message.consumedBy = consumedBy
+            message.assigned = true
+            message.assignedTo = assignedTo
         }
         return message
     }

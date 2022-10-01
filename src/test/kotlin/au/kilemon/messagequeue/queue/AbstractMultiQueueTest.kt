@@ -193,8 +193,8 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertFalse(multiQueue.isEmpty())
 
         Assertions.assertTrue(multiQueue.contains(message))
-        message.consumed = true
-        message.consumedBy = "Instance_11242"
+        message.assigned = true
+        message.assignedTo = "Instance_11242"
         Assertions.assertTrue(multiQueue.contains(message))
     }
 

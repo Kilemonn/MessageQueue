@@ -20,6 +20,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web:2.7.3")
     implementation("org.springframework.boot:spring-boot-starter-validation:2.7.3")
 
+    // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-ui
+    implementation("org.springdoc:springdoc-openapi-ui:1.6.11")
+
     implementation("com.google.code.gson:gson:2.9.1")
 
     compileOnly("org.projectlombok:lombok:1.18.24")

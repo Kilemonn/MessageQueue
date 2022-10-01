@@ -11,7 +11,7 @@ import java.util.UUID
  * @author github.com/KyleGonzalez
  */
 @EqualsAndHashCode
-class QueueMessage(val payload: Any?, val type: String, @EqualsAndHashCode.Exclude var consumed: Boolean = false, @EqualsAndHashCode.Exclude var consumedBy: String? = null): Serializable
+class QueueMessage(val payload: Any?, val type: String, @EqualsAndHashCode.Exclude var assigned: Boolean = false, @EqualsAndHashCode.Exclude var assignedTo: String? = null): Serializable
 {
     var uuid: UUID = UUID.randomUUID()
 
@@ -28,7 +28,7 @@ class QueueMessage(val payload: Any?, val type: String, @EqualsAndHashCode.Exclu
      */
     fun toDetailedString(detailed: Boolean?): String
     {
-        val minimalDetails = "UUID: {$uuid}, QueueType: {$type}, Is Consumed: {$consumed}, Consumed by: {$consumedBy}"
+        val minimalDetails = "UUID: {$uuid}, QueueType: {$type}, Is Assigned: {$assigned}, Assigned to: {$assignedTo}"
         return if (detailed == true)
         {
              "$minimalDetails, Payload: ${payload.toString()}"
