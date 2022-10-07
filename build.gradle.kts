@@ -23,6 +23,9 @@ dependencies {
     // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-ui
     implementation("org.springdoc:springdoc-openapi-ui:1.6.11")
 
+    // https://mvnrepository.com/artifact/org.springframework.data/spring-data-redis
+    implementation("org.springframework.data:spring-data-redis:2.7.3")
+
     implementation("com.google.code.gson:gson:2.9.1")
 
     compileOnly("org.projectlombok:lombok:1.18.24")
