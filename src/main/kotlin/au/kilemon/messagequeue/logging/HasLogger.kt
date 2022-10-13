@@ -5,6 +5,19 @@ import org.slf4j.LoggerFactory
 
 /**
  * A marker interface used to inject a [Logger] member into the implementing class so that it has access to a logger.
+ *
+ * Classes that implement this class should contain the following in order to initialise the logger:
+ * ```
+ * class ALogger: HasLogger
+ * {
+ *      override val LOG: Logger = initialiseLogger()
+ *      ...
+ *      fun function()
+ *      {
+ *          LOG.info("log message")
+ *      }
+ * }
+ * ```
  */
 interface HasLogger
 {
