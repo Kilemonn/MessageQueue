@@ -1,7 +1,9 @@
 package au.kilemon.messagequeue.queue
 
 import au.kilemon.messagequeue.exception.DuplicateMessageException
+import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
+import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.jvm.Throws
@@ -13,12 +15,21 @@ import kotlin.jvm.Throws
  *
  * @author github.com/KyleGonzalez
  */
-interface MultiQueue: Queue<QueueMessage>
+interface MultiQueue: Queue<QueueMessage>, HasLogger
 {
     companion object
     {
         private const val NOT_IMPLEMENTED_METHOD: String = "Method is not implemented."
     }
+
+    override val LOG: Logger
+
+    override var size: Int
+
+    /**
+     * An internal [Map] that holds known [UUID]s (as a [String]) and their related `queueType` to quickly find entries within the [MultiQueue].
+     */
+    val uuidMap: ConcurrentHashMap<String, String>
 
     /**
      * New methods for the [MultiQueue] that are required by implementing classes.
@@ -65,6 +76,21 @@ interface MultiQueue: Queue<QueueMessage>
      * @return the head element or `null`
      */
     fun pollForType(queueType: String): Optional<QueueMessage>
+    {
+        val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
+        val head = queueForType.poll()
+        if (head != null)
+        {
+            LOG.debug("Found and removed head element with UUID [{}] from queue with type [{}].", head.uuid, queueType)
+            uuidMap.remove(head.uuid.toString())
+            size--
+        }
+        else
+        {
+            LOG.debug("No head element found when polling queue with type [{}].", queueType)
+        }
+        return Optional.ofNullable(head)
+    }
 
     /**
      * Calls [Queue.peek] on the underlying [Queue] for the provided [String].
@@ -74,6 +100,19 @@ interface MultiQueue: Queue<QueueMessage>
      * @return the head element or `null`
      */
     fun peekForType(queueType: String): Optional<QueueMessage>
+    {
+        val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
+        val peeked = queueForType.peek()
+        if (peeked != null)
+        {
+            LOG.debug("Found head element with UUID [{}] from queue with type [{}].", peeked.uuid, queueType)
+        }
+        else
+        {
+            LOG.debug("No head element found when peeking queue with type [{}].", queueType)
+        }
+        return Optional.ofNullable(peeked)
+    }
 
     /**
      * Retrieves the underlying key list as a set.
@@ -90,6 +129,18 @@ interface MultiQueue: Queue<QueueMessage>
      * @return the `queueType` [String] if a [QueueMessage] exists with the provided [UUID] otherwise [Optional.empty]
      */
     fun containsUUID(uuid: String): Optional<String>
+    {
+        val queueTypeForUUID: String? = uuidMap[uuid]
+        if (queueTypeForUUID.isNullOrBlank())
+        {
+            LOG.debug("No queue type exists for UUID: [{}].", uuid)
+        }
+        else
+        {
+            LOG.debug("Found queue type [{}] for UUID: [{}].", queueTypeForUUID, uuid)
+        }
+        return Optional.ofNullable(queueTypeForUUID)
+    }
 
     /**
      * Any overridden methods to update the signature for all implementing [MultiQueue] classes.
@@ -101,6 +152,99 @@ interface MultiQueue: Queue<QueueMessage>
      */
     @Throws(DuplicateMessageException::class)
     override fun add(element: QueueMessage): Boolean
+
+    override fun contains(element: QueueMessage?): Boolean
+    {
+        if (element == null)
+        {
+            return false
+        }
+        val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
+        return queueForType.contains(element)
+    }
+
+    override fun containsAll(elements: Collection<QueueMessage>): Boolean
+    {
+        return elements.stream().allMatch{ element -> this.contains(element) }
+    }
+
+    override fun addAll(elements: Collection<QueueMessage>): Boolean
+    {
+        var allAdded = true
+        for (element: QueueMessage in elements)
+        {
+            allAdded = try {
+                val wasAdded = add(element)
+                allAdded && wasAdded
+            }
+            catch (ex: DuplicateMessageException)
+            {
+                false
+            }
+        }
+        return allAdded
+    }
+
+    override fun retainAll(elements: Collection<QueueMessage>): Boolean
+    {
+        var anyWasRemoved = false
+        for (key: String in keys(false))
+        {
+            // The queue should never be new or created since we passed `false` into `keys()` above.
+            val queueForKey: Queue<QueueMessage> = getQueueForType(key)
+            for(entry: QueueMessage in queueForKey)
+            {
+                if ( !elements.contains(entry))
+                {
+                    LOG.debug("Message with uuid [{}] does not exist in retain list, attempting to remove.", entry.uuid)
+                    val wasRemoved = queueForKey.remove(entry)
+                    anyWasRemoved = wasRemoved || anyWasRemoved
+                    if (wasRemoved)
+                    {
+                        LOG.debug("Removed message with uuid [{}] as it does not exist in retain list.", entry.uuid)
+                        uuidMap.remove(entry.uuid.toString())
+                        size--
+                    }
+                    else
+                    {
+                        LOG.error("Failed to remove message with uuid [{}].", entry.uuid)
+                    }
+                }
+                else
+                {
+                    LOG.debug("Retaining element with uuid [{}] as it exists in the retain list.", entry.uuid)
+                }
+            }
+        }
+        return anyWasRemoved
+    }
+
+    override fun removeAll(elements: Collection<QueueMessage>): Boolean
+    {
+        var wasRemoved = false
+        for (element: QueueMessage in elements)
+        {
+            wasRemoved = remove(element) || wasRemoved
+        }
+        return wasRemoved
+    }
+
+    /**
+     * @return `true` if the [size] is `0`, otherwise `false`.
+     */
+    override fun isEmpty(): Boolean
+    {
+        return size == 0
+    }
+
+    /**
+     * Call [HashMap.clear] on [uuidMap], and set [size] to `0`.
+     */
+    override fun clear()
+    {
+        uuidMap.clear()
+        size = 0
+    }
 
     /**
      * Any unsupported methods from the [Queue] interface that are not implemented.

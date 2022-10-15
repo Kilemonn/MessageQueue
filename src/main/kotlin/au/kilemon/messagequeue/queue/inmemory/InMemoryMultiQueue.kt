@@ -16,7 +16,7 @@ import kotlin.jvm.Throws
  *
  * @author github.com/KyleGonzalez
  */
-open class InMemoryMultiQueue: MultiQueue, HasLogger
+open class InMemoryMultiQueue(override val uuidMap: ConcurrentHashMap<String, String> = ConcurrentHashMap()) : MultiQueue, HasLogger
 {
     override val LOG: Logger = initialiseLogger()
 
@@ -24,11 +24,6 @@ open class InMemoryMultiQueue: MultiQueue, HasLogger
      * The underlying [Map] holding [Queue] entities mapped against the provided [String].
      */
     private val messageQueue: ConcurrentHashMap<String, Queue<QueueMessage>> = ConcurrentHashMap()
-
-    /**
-     * An internal [Map] that holds known [UUID]s (as a [String]) and their related `queueType` to quickly find entries within the [MultiQueue].
-     */
-    private val uuidMap: ConcurrentHashMap<String, String> = ConcurrentHashMap()
 
     override var size: Int = 0
 
@@ -52,6 +47,31 @@ open class InMemoryMultiQueue: MultiQueue, HasLogger
     {
         LOG.debug("Initialising new queue for type [{}].", queueType)
         messageQueue[queueType] = queue
+    }
+
+    override fun clear()
+    {
+        super.clear()
+        val removedEntryCount = messageQueue.size
+        messageQueue.clear()
+        LOG.debug("Cleared multi-queue, removed [{}] message entries.", removedEntryCount)
+    }
+
+    override fun clearForType(queueType: String)
+    {
+        val queueForType: Queue<QueueMessage>? = messageQueue[queueType]
+        if (queueForType != null)
+        {
+            val removedEntryCount = queueForType.size
+            size -= removedEntryCount
+            queueForType.forEach { message -> uuidMap.remove(message.uuid.toString()) }
+            queueForType.clear()
+            LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, removedEntryCount)
+        }
+        else
+        {
+            LOG.debug("Attempting to clear non-existent queue for type [{}]. No messages cleared.", queueType)
+        }
     }
 
     @Throws(DuplicateMessageException::class)
@@ -83,93 +103,6 @@ open class InMemoryMultiQueue: MultiQueue, HasLogger
         }
     }
 
-    override fun addAll(elements: Collection<QueueMessage>): Boolean
-    {
-        var allAdded = true
-        for (element: QueueMessage in elements)
-        {
-            allAdded = try {
-                val wasAdded = add(element)
-                allAdded && wasAdded
-            }
-            catch (ex: DuplicateMessageException)
-            {
-                false
-            }
-        }
-        return allAdded
-    }
-
-    override fun clear()
-    {
-        val removedEntryCount = messageQueue.size
-        messageQueue.clear()
-        uuidMap.clear()
-        size = 0
-        LOG.debug("Cleared multi-queue, removed [{}] message entries.", removedEntryCount)
-    }
-
-    override fun clearForType(queueType: String)
-    {
-        val queueForType: Queue<QueueMessage>? = messageQueue[queueType]
-        if (queueForType != null)
-        {
-            val removedEntryCount = queueForType.size
-            size -= removedEntryCount
-            queueForType.forEach { message -> uuidMap.remove(message.uuid.toString()) }
-            queueForType.clear()
-            LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, removedEntryCount)
-        }
-        else
-        {
-            LOG.debug("Attempting to clear non-existent queue for type [{}]. No messages cleared.", queueType)
-        }
-    }
-
-    override fun retainAll(elements: Collection<QueueMessage>): Boolean
-    {
-        var anyWasRemoved = false
-        for (key: String in keys(false))
-        {
-            // The queue should never be new or created since we passed `false` into `keys()` above.
-            val queueForKey: Queue<QueueMessage> = getQueueForType(key)
-            for(entry: QueueMessage in queueForKey)
-            {
-                if ( !elements.contains(entry))
-                {
-                    LOG.debug("Message with uuid [{}] does not exist in retain list, attempting to remove.", entry.uuid)
-                    val wasRemoved = queueForKey.remove(entry)
-                    anyWasRemoved = wasRemoved || anyWasRemoved
-                    if (wasRemoved)
-                    {
-                        LOG.debug("Removed message with uuid [{}] as it does not exist in retain list.", entry.uuid)
-                        uuidMap.remove(entry.uuid.toString())
-                        size--
-                    }
-                    else
-                    {
-                        LOG.error("Failed to remove message with uuid [{}].", entry.uuid)
-                    }
-                }
-                else
-                {
-                    LOG.debug("Retaining element with uuid [{}] as it exists in the retain list.", entry.uuid)
-                }
-            }
-        }
-        return anyWasRemoved
-    }
-
-    override fun removeAll(elements: Collection<QueueMessage>): Boolean
-    {
-        var wasRemoved = false
-        for (element: QueueMessage in elements)
-        {
-            wasRemoved = remove(element) || wasRemoved
-        }
-        return wasRemoved
-    }
-
     override fun remove(element: QueueMessage): Boolean
     {
         val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
@@ -187,58 +120,10 @@ open class InMemoryMultiQueue: MultiQueue, HasLogger
         return wasRemoved
     }
 
-    override fun isEmpty(): Boolean
-    {
-        return size == 0
-    }
-
     override fun isEmptyForType(queueType: String): Boolean
     {
         val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
         return queueForType.isEmpty()
-    }
-
-    override fun pollForType(queueType: String): Optional<QueueMessage>
-    {
-        val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
-        val head = queueForType.poll()
-        if (head != null)
-        {
-            LOG.debug("Found and removed head element with UUID [{}] from queue with type [{}].", head.uuid, queueType)
-            uuidMap.remove(head.uuid.toString())
-            size--
-        }
-        else
-        {
-            LOG.debug("No head element found when polling queue with type [{}].", queueType)
-        }
-        return Optional.ofNullable(head)
-    }
-
-    override fun peekForType(queueType: String): Optional<QueueMessage>
-    {
-        val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
-        val peeked = queueForType.peek()
-        if (peeked != null)
-        {
-            LOG.debug("Found head element with UUID [{}] from queue with type [{}].", peeked.uuid, queueType)
-        }
-        else
-        {
-            LOG.debug("No head element found when peeking queue with type [{}].", queueType)
-        }
-        return Optional.ofNullable(peeked)
-    }
-
-    override fun containsAll(elements: Collection<QueueMessage>): Boolean
-    {
-        return elements.stream().allMatch{ element -> this.contains(element) }
-    }
-
-    override fun contains(element: QueueMessage): Boolean
-    {
-        val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
-        return queueForType.contains(element)
     }
 
     override fun keys(includeEmpty: Boolean): Set<String>
@@ -263,19 +148,5 @@ open class InMemoryMultiQueue: MultiQueue, HasLogger
             LOG.debug("Removing all empty queue keys in call to keys(). Total queue keys [{}], non-empty queue keys [{}].", messageQueue.keys.size, keys.size)
             return keys
         }
-    }
-
-    override fun containsUUID(uuid: String): Optional<String>
-    {
-        val queueTypeForUUID: String? = uuidMap[uuid]
-        if (queueTypeForUUID.isNullOrBlank())
-        {
-            LOG.debug("No queue type exists for UUID: [{}].", uuid)
-        }
-        else
-        {
-            LOG.debug("Found queue type [{}] for UUID: [{}].", queueTypeForUUID, uuid)
-        }
-        return Optional.ofNullable(queueTypeForUUID)
     }
 }
