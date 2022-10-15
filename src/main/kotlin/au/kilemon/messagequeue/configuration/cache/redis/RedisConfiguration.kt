@@ -35,7 +35,7 @@ class RedisConfiguration: HasLogger
 
     @Bean
     @ConditionalOnExpression("#{(environment.${MessageQueueSettings.MULTI_QUEUE_TYPE}).equals('REDIS')}")
-    fun getRedisConfiguration(): org.springframework.data.redis.connection.RedisConfiguration
+    fun getJedisConnectionFactory(): JedisConnectionFactory
     {
         if (messageQueueSettings.redisUseSentinels.toBoolean())
         {
@@ -59,7 +59,7 @@ class RedisConfiguration: HasLogger
                     redisSentinelConfiguration.sentinel(host, port.toInt())
                 }
             }
-            return redisSentinelConfiguration
+            return JedisConnectionFactory(redisSentinelConfiguration)
         }
         else
         {
@@ -69,24 +69,16 @@ class RedisConfiguration: HasLogger
             redisConfiguration.hostName = messageQueueSettings.redisEndpoint
             redisConfiguration.port = messageQueueSettings.redisPort.toInt()
 
-            return redisConfiguration
+            return JedisConnectionFactory(redisConfiguration)
         }
     }
 
     @Bean
     @ConditionalOnExpression("#{(environment.${MessageQueueSettings.MULTI_QUEUE_TYPE}).equals('REDIS')}")
-    fun getRedisTemplate(): RedisTemplate<String, QueueMessage>
+    fun getRedisTemplate(): RedisTemplate<String, Set<QueueMessage>>
     {
-        val connectionFactory: JedisConnectionFactory = if (messageQueueSettings.redisUseSentinels.toBoolean())
-        {
-            JedisConnectionFactory(getRedisConfiguration() as RedisSentinelConfiguration)
-        }
-        else
-        {
-            JedisConnectionFactory(getRedisConfiguration() as RedisStandaloneConfiguration)
-        }
-        val template = RedisTemplate<String, QueueMessage>()
-        template.connectionFactory = connectionFactory
+        val template = RedisTemplate<String, Set<QueueMessage>>()
+        template.connectionFactory = getJedisConnectionFactory()
         return template
     }
 }

@@ -3,6 +3,7 @@ package au.kilemon.messagequeue
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.logging.Messages
 import au.kilemon.messagequeue.queue.MultiQueue
+import au.kilemon.messagequeue.queue.cache.redis.RedisMultiQueue
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import au.kilemon.messagequeue.settings.MultiQueueType
@@ -51,9 +52,13 @@ open class MessageQueueApplication : HasLogger
     open fun getMultiQueue(): MultiQueue
     {
         LOG.info(messagesSource.getMessage(Messages.VERSION_START_UP, null, Locale.getDefault()), VERSION)
-        val queue: MultiQueue = if (messageQueueSettings.multiQueueType == MultiQueueType.IN_MEMORY)
+        val queue: MultiQueue = if (messageQueueSettings.multiQueueType == MultiQueueType.IN_MEMORY.toString())
         {
             InMemoryMultiQueue()
+        }
+        else if (messageQueueSettings.multiQueueType == MultiQueueType.REDIS.toString())
+        {
+            RedisMultiQueue()
         }
         else
         {

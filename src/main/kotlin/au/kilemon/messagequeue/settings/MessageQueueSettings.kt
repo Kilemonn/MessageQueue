@@ -26,7 +26,7 @@ class MessageQueueSettings
         const val REDIS_PREFIX: String = "REDIS_PREFIX"
 
         const val REDIS_ENDPOINT: String = "REDIS_ENDPOINT"
-        const val REDIS_ENPOINT_DEFAULT: String = "127.0.0.1"
+        const val REDIS_ENDPOINT_DEFAULT: String = "127.0.0.1"
 
         const val REDIS_PORT: String = "REDIS_PORT"
         const val REDIS_PORT_DEFAULT = "6379"
@@ -41,24 +41,24 @@ class MessageQueueSettings
     /**
      * Uses the [MULTI_QUEUE_TYPE] environment variable, otherwise defaults to [MultiQueueType.IN_MEMORY].
      */
-    @Value("#{environment.$MULTI_QUEUE_TYPE} || '$MULTI_QUEUE_TYPE_DEFAULT'")
-    lateinit var multiQueueType: MultiQueueType
+    @Value("\${$MULTI_QUEUE_TYPE:$MULTI_QUEUE_TYPE_DEFAULT}")
+    lateinit var multiQueueType: String
 
     /**
      * Uses the [REDIS_PREFIX] to set a prefix used for all redis entry keys.
      */
-    @Value("#{environment.$REDIS_PREFIX} || ''")
+    @Value("\${$REDIS_PREFIX:''}")
     lateinit var redisPrefix: String
 
-    @Value("#{environment.$REDIS_ENDPOINT} || '$REDIS_ENPOINT_DEFAULT'")
+    @Value("\${environment.$REDIS_ENDPOINT:$REDIS_ENDPOINT_DEFAULT}")
     lateinit var redisEndpoint: String
 
-    @Value("#{environment.$REDIS_PORT} || '$REDIS_PORT_DEFAULT'")
+    @Value("\${$REDIS_PORT:$REDIS_PORT_DEFAULT}")
     lateinit var redisPort: String
 
-    @Value("#{environment.$REDIS_USE_SENTINELS} || 'false'")
+    @Value("\${$REDIS_USE_SENTINELS:'false'}")
     lateinit var redisUseSentinels: String
 
-    @Value("#{environment.$REDIS_MASTER_NAME} || '$REDIS_MASTER_NAME_DEFAULT'")
+    @Value("\${$REDIS_MASTER_NAME:$REDIS_MASTER_NAME_DEFAULT}")
     lateinit var redisMasterName: String
 }
