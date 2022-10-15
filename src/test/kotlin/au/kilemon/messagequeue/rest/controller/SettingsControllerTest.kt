@@ -27,6 +27,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 class SettingsControllerTest
 {
     /**
+     * The test configuration to be used by the [SettingsControllerTest] class.
+     *
      * @author github.com/KyleGonzalez
      */
     @TestConfiguration
@@ -55,6 +57,6 @@ class SettingsControllerTest
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
         val settings = gson.fromJson(mvcResult.response.contentAsString, MessageQueueSettings::class.java)
-        Assertions.assertEquals(MultiQueueType.IN_MEMORY, settings.multiQueueType)
+        Assertions.assertEquals(MultiQueueType.IN_MEMORY.toString(), settings.multiQueueType)
     }
 }
