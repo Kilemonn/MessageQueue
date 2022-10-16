@@ -64,9 +64,9 @@ class RedisMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
         }
 
         @Bean
-        open fun redisTemplate(): RedisTemplate<String, Set<QueueMessage>>
+        open fun redisTemplate(): RedisTemplate<String, QueueMessage>
         {
-            val template = RedisTemplate<String, Set<QueueMessage>>()
+            val template = RedisTemplate<String, QueueMessage>()
             template.connectionFactory = connectionFactory
             return template
         }

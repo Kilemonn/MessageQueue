@@ -23,7 +23,7 @@ class RedisMultiQueue : MultiQueue, HasLogger
     lateinit var messageQueueSettings: MessageQueueSettings
 
     @Autowired
-    lateinit var redisTemplate: RedisTemplate<String, Set<QueueMessage>>
+    lateinit var redisTemplate: RedisTemplate<String, QueueMessage>
 
     /**
      * Append the [MessageQueueSettings.redisPrefix] to the provided [queueType] [String].
@@ -52,8 +52,7 @@ class RedisMultiQueue : MultiQueue, HasLogger
         val set = redisTemplate.opsForSet().members(queueType)
         if (!set.isNullOrEmpty())
         {
-            // TODO
-//            queue.addAll(set)
+            queue.addAll(set)
         }
         return queue
     }

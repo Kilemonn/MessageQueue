@@ -76,9 +76,9 @@ class RedisConfiguration: HasLogger
     @Bean
     @ConditionalOnProperty(name=[MessageQueueSettings.MULTI_QUEUE_TYPE], havingValue="REDIS")
 //    @ConditionalOnExpression("#{systemEnvironment['${MessageQueueSettings.MULTI_QUEUE_TYPE}'].equals('REDIS')}")
-    fun getRedisTemplate(): RedisTemplate<String, Set<QueueMessage>>
+    fun getRedisTemplate(): RedisTemplate<String, QueueMessage>
     {
-        val template = RedisTemplate<String, Set<QueueMessage>>()
+        val template = RedisTemplate<String, QueueMessage>()
         template.connectionFactory = getConnectionFactory()
         return template
     }
