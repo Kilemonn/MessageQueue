@@ -8,14 +8,12 @@ import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.RedisTemplate
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
-import kotlin.collections.HashSet
 
 /**
  *
  */
-class RedisMultiQueue(override val uuidMap: ConcurrentHashMap<String, String> = ConcurrentHashMap()) : MultiQueue, HasLogger
+class RedisMultiQueue : MultiQueue, HasLogger
 {
     override val LOG: Logger = initialiseLogger()
 
@@ -25,30 +23,7 @@ class RedisMultiQueue(override val uuidMap: ConcurrentHashMap<String, String> = 
     lateinit var messageQueueSettings: MessageQueueSettings
 
     @Autowired
-    lateinit var redisTemplate: RedisTemplate<String, QueueMessage>
-
-    /**
-     * Initialise the [RedisMultiQueue] based on the current entries in the redis instance.
-     */
-    init
-    {
-        val keys = keys()
-        LOG.debug("Initialising Redis Multi Queue. [{}] existing entries in redis queue matching the provided prefix [{}]. Pre-caching entry UUIDs...",
-            keys.size, messageQueueSettings.redisPrefix)
-        for (key in keys())
-        {
-            val queueForType = getQueueForType(key)
-            if (queueForType.isNotEmpty())
-            {
-                for (message in queueForType)
-                {
-                    uuidMap[message.uuid.toString()] = key
-                }
-                size += queueForType.size
-                LOG.debug("Found [{}] entries for the queue type [{}].", queueForType.size, key)
-            }
-        }
-    }
+    lateinit var redisTemplate: RedisTemplate<String, Set<QueueMessage>>
 
     /**
      * Append the [MessageQueueSettings.redisPrefix] to the provided [queueType] [String].
@@ -77,7 +52,8 @@ class RedisMultiQueue(override val uuidMap: ConcurrentHashMap<String, String> = 
         val set = redisTemplate.opsForSet().members(queueType)
         if (!set.isNullOrEmpty())
         {
-            queue.addAll(set)
+            // TODO
+//            queue.addAll(set)
         }
         return queue
     }
@@ -97,7 +73,6 @@ class RedisMultiQueue(override val uuidMap: ConcurrentHashMap<String, String> = 
         {
             val removedEntryCount = queueForType.size
             size -= removedEntryCount
-            queueForType.forEach { message -> uuidMap.remove(message.uuid.toString()) }
             redisTemplate.opsForSet().remove(queueType)
             LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, removedEntryCount)
         }
@@ -139,7 +114,8 @@ class RedisMultiQueue(override val uuidMap: ConcurrentHashMap<String, String> = 
 
     override fun containsUUID(uuid: String): Optional<String>
     {
-        val queueTypeForUUID: String? = uuidMap[uuid]
+        // TODO
+        val queueTypeForUUID: String? = null
         if (queueTypeForUUID.isNullOrBlank())
         {
             LOG.debug("No queue type exists for UUID: [{}].", uuid)

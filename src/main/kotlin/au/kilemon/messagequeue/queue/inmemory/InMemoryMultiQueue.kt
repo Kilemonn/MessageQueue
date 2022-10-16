@@ -16,9 +16,14 @@ import kotlin.jvm.Throws
  *
  * @author github.com/KyleGonzalez
  */
-open class InMemoryMultiQueue(override val uuidMap: ConcurrentHashMap<String, String> = ConcurrentHashMap()) : MultiQueue, HasLogger
+open class InMemoryMultiQueue : MultiQueue, HasLogger
 {
     override val LOG: Logger = initialiseLogger()
+
+    /**
+     * An internal [Map] that holds known [UUID]s (as a [String]) and their related `queueType` to quickly find entries within the [MultiQueue].
+     */
+    private val uuidMap: ConcurrentHashMap<String, String> = ConcurrentHashMap()
 
     /**
      * The underlying [Map] holding [Queue] entities mapped against the provided [String].
@@ -53,6 +58,7 @@ open class InMemoryMultiQueue(override val uuidMap: ConcurrentHashMap<String, St
     {
         super.clear()
         val removedEntryCount = messageQueue.size
+        uuidMap.clear()
         messageQueue.clear()
         LOG.debug("Cleared multi-queue, removed [{}] message entries.", removedEntryCount)
     }
@@ -148,5 +154,33 @@ open class InMemoryMultiQueue(override val uuidMap: ConcurrentHashMap<String, St
             LOG.debug("Removing all empty queue keys in call to keys(). Total queue keys [{}], non-empty queue keys [{}].", messageQueue.keys.size, keys.size)
             return keys
         }
+    }
+
+    override fun containsUUID(uuid: String): Optional<String>
+    {
+        val queueTypeForUUID: String? = uuidMap[uuid]
+        if (queueTypeForUUID.isNullOrBlank())
+        {
+            LOG.debug("No queue type exists for UUID: [{}].", uuid)
+        }
+        else
+        {
+            LOG.debug("Found queue type [{}] for UUID: [{}].", queueTypeForUUID, uuid)
+        }
+        return Optional.ofNullable(queueTypeForUUID)
+    }
+
+    /**
+     * Update the [uuidMap] and remove the entry if it is returned (removed).
+     */
+    override fun pollForType(queueType: String): Optional<QueueMessage>
+    {
+        val message = super.pollForType(queueType)
+        if (message.isPresent)
+        {
+            uuidMap.remove(message.get().uuid.toString())
+        }
+
+        return message
     }
 }

@@ -6,7 +6,6 @@ import au.kilemon.messagequeue.message.QueueMessage
 import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.jvm.Throws
 
 /**
  * A [MultiQueue] interface, which extends [Queue].
@@ -25,11 +24,6 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     override val LOG: Logger
 
     override var size: Int
-
-    /**
-     * An internal [Map] that holds known [UUID]s (as a [String]) and their related `queueType` to quickly find entries within the [MultiQueue].
-     */
-    val uuidMap: ConcurrentHashMap<String, String>
 
     /**
      * New methods for the [MultiQueue] that are required by implementing classes.
@@ -82,7 +76,6 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
         if (head != null)
         {
             LOG.debug("Found and removed head element with UUID [{}] from queue with type [{}].", head.uuid, queueType)
-            uuidMap.remove(head.uuid.toString())
             size--
         }
         else
@@ -129,18 +122,6 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @return the `queueType` [String] if a [QueueMessage] exists with the provided [UUID] otherwise [Optional.empty]
      */
     fun containsUUID(uuid: String): Optional<String>
-    {
-        val queueTypeForUUID: String? = uuidMap[uuid]
-        if (queueTypeForUUID.isNullOrBlank())
-        {
-            LOG.debug("No queue type exists for UUID: [{}].", uuid)
-        }
-        else
-        {
-            LOG.debug("Found queue type [{}] for UUID: [{}].", queueTypeForUUID, uuid)
-        }
-        return Optional.ofNullable(queueTypeForUUID)
-    }
 
     /**
      * Any overridden methods to update the signature for all implementing [MultiQueue] classes.
@@ -202,7 +183,6 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
                     if (wasRemoved)
                     {
                         LOG.debug("Removed message with uuid [{}] as it does not exist in retain list.", entry.uuid)
-                        uuidMap.remove(entry.uuid.toString())
                         size--
                     }
                     else
@@ -238,11 +218,10 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     }
 
     /**
-     * Call [HashMap.clear] on [uuidMap], and set [size] to `0`.
+     * Set [size] to `0`.
      */
     override fun clear()
     {
-        uuidMap.clear()
         size = 0
     }
 

@@ -50,7 +50,7 @@ class MessageQueueSettings
     @Value("\${$REDIS_PREFIX:''}")
     lateinit var redisPrefix: String
 
-    @Value("\${environment.$REDIS_ENDPOINT:$REDIS_ENDPOINT_DEFAULT}")
+    @Value("\${$REDIS_ENDPOINT:$REDIS_ENDPOINT_DEFAULT}")
     lateinit var redisEndpoint: String
 
     @Value("\${$REDIS_PORT:$REDIS_PORT_DEFAULT}")
