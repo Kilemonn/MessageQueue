@@ -47,7 +47,7 @@ class MessageQueueSettings
     /**
      * Uses the [REDIS_PREFIX] to set a prefix used for all redis entry keys.
      */
-    @Value("\${$REDIS_PREFIX:''}")
+    @Value("\${$REDIS_PREFIX:}")
     lateinit var redisPrefix: String
 
     @Value("\${$REDIS_ENDPOINT:$REDIS_ENDPOINT_DEFAULT}")

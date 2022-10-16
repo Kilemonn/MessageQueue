@@ -1,17 +1,16 @@
 package au.kilemon.messagequeue.message
 
-import lombok.EqualsAndHashCode
 import java.io.Serializable
-import java.util.UUID
+import java.util.*
 
 /**
  * A base [QueueMessage] object which will wrap any object that is placed into the `MultiQueue`.
- * This object wraps a [Serializable] type `T` which is the payload to be stored in the queue.
+ * This object wraps a [Any] type `T` which is the payload to be stored in the queue. (This is actually a [Serializable] but causes issues in initialisation
+ * if the type is an `interface`. This needs to be [Serializable] if you want to use it with `Redis` or anything else).
  *
  * @author github.com/KyleGonzalez
  */
-@EqualsAndHashCode
-class QueueMessage(val payload: Any?, val type: String, @EqualsAndHashCode.Exclude var assigned: Boolean = false, @EqualsAndHashCode.Exclude var assignedTo: String? = null): Serializable
+class QueueMessage(val payload: Any?, val type: String, var assigned: Boolean = false, var assignedTo: String? = null): Serializable
 {
     var uuid: UUID = UUID.randomUUID()
 
@@ -37,5 +36,24 @@ class QueueMessage(val payload: Any?, val type: String, @EqualsAndHashCode.Exclu
         {
             minimalDetails
         }
+    }
+
+    override fun equals(other: Any?): Boolean
+    {
+        if (other == null || other !is QueueMessage)
+        {
+            return false
+        }
+
+        return other.uuid.toString() == this.uuid.toString()
+                && this.payload == other.payload
+                && this.type == other.type
+    }
+
+    override fun hashCode(): Int {
+        var result = payload?.hashCode() ?: 0
+        result = 31 * result + type.hashCode()
+        result = 31 * result + uuid.hashCode()
+        return result
     }
 }

@@ -46,6 +46,7 @@ class RedisMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
     companion object
     {
         private const val REDIS_PORT: Int = 6379
+        private const val REDIS_CONTAINER: String = "redis:7.0.5-alpine"
 
         lateinit var redis: GenericContainer<*>
 
@@ -58,7 +59,7 @@ class RedisMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
         @JvmStatic
         fun beforeClass()
         {
-            redis = GenericContainer(DockerImageName.parse("redis:7.0.5-alpine"))
+            redis = GenericContainer(DockerImageName.parse(REDIS_CONTAINER))
                 .withExposedPorts(REDIS_PORT).withReuse(false)
             redis.start()
 
@@ -144,5 +145,6 @@ class RedisMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
     fun beforeEach()
     {
         Assertions.assertTrue(redis.isRunning)
+        multiQueue.clear()
     }
 }

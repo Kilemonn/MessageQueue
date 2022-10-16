@@ -6,6 +6,7 @@ import au.kilemon.messagequeue.message.QueueMessage
 import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.jvm.Throws
 
 /**
  * A [MultiQueue] interface, which extends [Queue].
@@ -50,9 +51,12 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     /**
      * Clears the underlying [Queue] for the provided [String]. By calling [Queue.clear].
      *
+     * This method should update the [size] property as part of the clearing of the sub-queue.
+     *
      * @param queueType the [String] of the [Queue] to clear
+     * @return the number of entries removed
      */
-    fun clearForType(queueType: String)
+    fun clearForType(queueType: String): Int
 
     /**
      * Indicates whether the underlying [Queue] for the provided [String] is empty. By calling [Queue.isEmpty].
@@ -133,6 +137,63 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      */
     @Throws(DuplicateMessageException::class)
     override fun add(element: QueueMessage): Boolean
+    {
+        val elementIsMappedToType = containsUUID(element.uuid.toString())
+        if ( !elementIsMappedToType.isPresent)
+        {
+            val wasAdded = performAdd(element)
+            return if (wasAdded)
+            {
+                size++
+                LOG.debug("Added new message with uuid [{}] to queue with type [{}].", element.uuid, element.type)
+                true
+            }
+            else
+            {
+                LOG.error("Failed to add message with uuid [{}] to queue with type [{}].", element.uuid, element.type)
+                false
+            }
+        }
+        else
+        {
+            val existingQueueType = elementIsMappedToType.get()
+            LOG.warn("Did not add new message with uuid [{}] to queue with type [{}] as it already exists in queue with type [{}].", element.uuid, element.type, existingQueueType)
+            throw DuplicateMessageException(element.uuid.toString(), existingQueueType)
+        }
+    }
+
+    /**
+     * The internal add method to be called.
+     * This is not to  be called directly.
+     *
+     * @param element the element to add
+     * @return `true` if the element was added successfully, otherwise `false`.
+     */
+    fun performAdd(element: QueueMessage): Boolean
+
+    override fun remove(element: QueueMessage): Boolean
+    {
+        val wasRemoved = performRemove(element)
+        if (wasRemoved)
+        {
+            size--
+            LOG.debug("Removed element with UUID [{}] from queue with type [{}].", element.uuid, element.type)
+        }
+        else
+        {
+            LOG.error("Failed to remove element with UUID [{}] from queue with type [{}].", element.uuid, element.type)
+        }
+        return wasRemoved
+    }
+
+    /**
+     * The internal remove method to be called.
+     * This is not to be called directly.
+     *
+     * @param element the element to remove
+     * @return `true` if the element was removed successfully, otherwise `false`.
+     */
+    fun performRemove(element: QueueMessage): Boolean
 
     override fun contains(element: QueueMessage?): Boolean
     {
@@ -217,12 +278,16 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
         return size == 0
     }
 
-    /**
-     * Set [size] to `0`.
-     */
     override fun clear()
     {
-        size = 0
+        val keys = keys()
+        var removedEntryCount = 0
+        for (key in keys)
+        {
+            val amountRemovedForQueue = clearForType(key)
+            removedEntryCount += amountRemovedForQueue
+        }
+        LOG.debug("Cleared multi-queue, removed [{}] message entries over [{}] queue types.", removedEntryCount, keys)
     }
 
     /**

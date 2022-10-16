@@ -16,6 +16,7 @@ import org.springframework.data.redis.core.RedisTemplate
 
 /**
  *
+ * @author github.com/KyleGonzalez
  */
 @Configuration
 class RedisConfiguration: HasLogger
@@ -24,8 +25,9 @@ class RedisConfiguration: HasLogger
 
     companion object
     {
-        const val REDIS_CLIENT_NAME = "Multi-Queue-Client-Name"
-
+        /**
+         * The default Redis Sentinel port.
+         */
         const val REDIS_SENTINEL_DEFAULT_PORT: String = "26379"
     }
 
@@ -34,7 +36,6 @@ class RedisConfiguration: HasLogger
 
     @Bean
     @ConditionalOnProperty(name=[MessageQueueSettings.MULTI_QUEUE_TYPE], havingValue="REDIS")
-//    @ConditionalOnExpression("#{systemEnvironment['${MessageQueueSettings.MULTI_QUEUE_TYPE}'].equals('REDIS')}")
     fun getConnectionFactory(): RedisConnectionFactory
     {
         if (messageQueueSettings.redisUseSentinels.toBoolean())
@@ -73,9 +74,13 @@ class RedisConfiguration: HasLogger
         }
     }
 
+    /**
+     * Create the [RedisTemplate] from [getConnectionFactory].
+     *
+     * @return the [RedisTemplate] used to interface with the [RedisTemplate] cache.
+     */
     @Bean
     @ConditionalOnProperty(name=[MessageQueueSettings.MULTI_QUEUE_TYPE], havingValue="REDIS")
-//    @ConditionalOnExpression("#{systemEnvironment['${MessageQueueSettings.MULTI_QUEUE_TYPE}'].equals('REDIS')}")
     fun getRedisTemplate(): RedisTemplate<String, QueueMessage>
     {
         val template = RedisTemplate<String, QueueMessage>()

@@ -54,76 +54,63 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         messageQueue[queueType] = queue
     }
 
-    override fun clear()
+    override fun clearForType(queueType: String): Int
     {
-        super.clear()
-        val removedEntryCount = messageQueue.size
-        uuidMap.clear()
-        messageQueue.clear()
-        LOG.debug("Cleared multi-queue, removed [{}] message entries.", removedEntryCount)
-    }
-
-    override fun clearForType(queueType: String)
-    {
+        var amountRemoved = 0
         val queueForType: Queue<QueueMessage>? = messageQueue[queueType]
         if (queueForType != null)
         {
-            val removedEntryCount = queueForType.size
-            size -= removedEntryCount
+            amountRemoved = queueForType.size
+            size -= amountRemoved
             queueForType.forEach { message -> uuidMap.remove(message.uuid.toString()) }
             queueForType.clear()
-            LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, removedEntryCount)
+            messageQueue.remove(queueType)
+            LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, amountRemoved)
         }
         else
         {
             LOG.debug("Attempting to clear non-existent queue for type [{}]. No messages cleared.", queueType)
         }
+        return amountRemoved
     }
 
     @Throws(DuplicateMessageException::class)
     override fun add(element: QueueMessage): Boolean
     {
-        val elementIsMappedToType = containsUUID(element.uuid.toString())
-        if ( !elementIsMappedToType.isPresent)
+        val wasAdded = super.add(element)
+        if (wasAdded)
         {
-            val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
-            val wasAdded = queueForType.add(element)
-            return if (wasAdded)
-            {
-                uuidMap[element.uuid.toString()] = element.type
-                size++
-                LOG.debug("Added new message with uuid [{}] to queue with type [{}].", element.uuid, element.type)
-                true
-            }
-            else
-            {
-                LOG.error("Failed to add message with uuid [{}] to queue with type [{}].", element.uuid, element.type)
-                false
-            }
+            uuidMap[element.uuid.toString()] = element.type
         }
-        else
-        {
-            val existingQueueType = elementIsMappedToType.get()
-            LOG.warn("Did not add new message with uuid [{}] to queue with type [{}] as it already exists in queue with type [{}].", element.uuid, element.type, existingQueueType)
-            throw DuplicateMessageException(element.uuid.toString(), existingQueueType)
-        }
+        return wasAdded
+    }
+
+    /**
+     * Delegate to the [Queue.add] method.
+     */
+    override fun performAdd(element: QueueMessage): Boolean
+    {
+        val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
+        return queueForType.add(element)
     }
 
     override fun remove(element: QueueMessage): Boolean
     {
-        val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
-        val wasRemoved = queueForType.remove(element)
+        val wasRemoved  = super.remove(element)
         if (wasRemoved)
         {
             uuidMap.remove(element.uuid.toString())
-            size--
-            LOG.debug("Removed element with UUID [{}] from queue with type [{}].", element.uuid, element.type)
-        }
-        else
-        {
-            LOG.error("Failed to remove element with UUID [{}] from queue with type [{}].", element.uuid, element.type)
         }
         return wasRemoved
+    }
+
+    /**
+     * Delegate to the [Queue.remove] method.
+     */
+    override fun performRemove(element: QueueMessage): Boolean
+    {
+        val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
+        return queueForType.remove(element)
     }
 
     override fun isEmptyForType(queueType: String): Boolean
