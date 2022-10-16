@@ -5,14 +5,13 @@ import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.redis.connection.RedisConnectionFactory
 import org.springframework.data.redis.connection.RedisSentinelConfiguration
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration
-import org.springframework.data.redis.connection.jedis.JedisClientConfiguration
-import org.springframework.data.redis.connection.jedis.JedisConnectionFactory
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
 import org.springframework.data.redis.core.RedisTemplate
 
 /**
@@ -34,8 +33,9 @@ class RedisConfiguration: HasLogger
     lateinit var messageQueueSettings: MessageQueueSettings
 
     @Bean
-    @ConditionalOnExpression("#{(environment.${MessageQueueSettings.MULTI_QUEUE_TYPE}).equals('REDIS')}")
-    fun getJedisConnectionFactory(): JedisConnectionFactory
+    @ConditionalOnProperty(name=[MessageQueueSettings.MULTI_QUEUE_TYPE], havingValue="REDIS")
+//    @ConditionalOnExpression("#{systemEnvironment['${MessageQueueSettings.MULTI_QUEUE_TYPE}'].equals('REDIS')}")
+    fun getConnectionFactory(): RedisConnectionFactory
     {
         if (messageQueueSettings.redisUseSentinels.toBoolean())
         {
@@ -59,7 +59,7 @@ class RedisConfiguration: HasLogger
                     redisSentinelConfiguration.sentinel(host, port.toInt())
                 }
             }
-            return JedisConnectionFactory(redisSentinelConfiguration)
+            return LettuceConnectionFactory(redisSentinelConfiguration)
         }
         else
         {
@@ -69,16 +69,17 @@ class RedisConfiguration: HasLogger
             redisConfiguration.hostName = messageQueueSettings.redisEndpoint
             redisConfiguration.port = messageQueueSettings.redisPort.toInt()
 
-            return JedisConnectionFactory(redisConfiguration)
+            return LettuceConnectionFactory(redisConfiguration)
         }
     }
 
     @Bean
-    @ConditionalOnExpression("#{(environment.${MessageQueueSettings.MULTI_QUEUE_TYPE}).equals('REDIS')}")
+    @ConditionalOnProperty(name=[MessageQueueSettings.MULTI_QUEUE_TYPE], havingValue="REDIS")
+//    @ConditionalOnExpression("#{systemEnvironment['${MessageQueueSettings.MULTI_QUEUE_TYPE}'].equals('REDIS')}")
     fun getRedisTemplate(): RedisTemplate<String, Set<QueueMessage>>
     {
         val template = RedisTemplate<String, Set<QueueMessage>>()
-        template.connectionFactory = getJedisConnectionFactory()
+        template.connectionFactory = getConnectionFactory()
         return template
     }
 }
