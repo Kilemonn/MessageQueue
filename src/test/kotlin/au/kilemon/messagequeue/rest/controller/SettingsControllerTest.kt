@@ -8,9 +8,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.MvcResult
@@ -23,7 +26,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
  * @author github.com/KyleGonzalez
  */
 @ExtendWith(SpringExtension::class)
-@WebMvcTest(controllers = [SettingsController::class])
+@WebMvcTest(controllers = [SettingsController::class], properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=IN_MEMORY"])
 class SettingsControllerTest
 {
     /**
@@ -32,10 +35,14 @@ class SettingsControllerTest
      * @author github.com/KyleGonzalez
      */
     @TestConfiguration
-    open class TestConfig
+    internal class TestConfig
     {
+        /**
+         * The bean initialise here will have all its properties overridden by environment variables.
+         * Don't set the here, set them in the [WebMvcTest.properties].
+         */
         @Bean
-        open fun getSettings(): MessageQueueSettings
+        fun getSettings(): MessageQueueSettings
         {
             return MessageQueueSettings()
         }
@@ -52,7 +59,7 @@ class SettingsControllerTest
     @Test
     fun testGetSettings()
     {
-        val mvcResult: MvcResult =  mockMvc.perform(MockMvcRequestBuilders.get(SettingsController.SETTINGS_PATH)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(SettingsController.SETTINGS_PATH)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
