@@ -27,8 +27,14 @@ import org.testcontainers.utility.DockerImageName
 /**
  * A test class for the [RedisMultiQueue] `Component` class.
  *
- * This class relies on a lot of beans being [Lazy], so we can set up the [System] `Properties` before they are properly used.
+ * Because the `SpringContext` and related beans in [TestConfiguration] are initialised before the [BeforeAll] we need to
+ * mark a lot of the beans as [Lazy] to ensure that nothing is initialised until the container is initialised and its host and port
+ * are placed into the [System] `Properties`.
+ * Once this is done the tests will run and the lazy loading will initialise the required beans.
+ *
  * Other implementation classes could break these tests. Keep this in mind when reviewing broken tests.
+ * This could also impact how the application actually runs since everything is [Lazy] initialised, so it could cause potentially some
+ * delay when initialising the beans in some scenarios. At the moment everything is generally small, so it should be okay.
  *
  * @author github.com/KyleGonzalez
  */
