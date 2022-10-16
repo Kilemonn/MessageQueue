@@ -27,21 +27,6 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     protected lateinit var multiQueue: T
 
     /**
-     * Ensure the [MultiQueue] is cleared before each test.
-     */
-    @BeforeEach
-    fun setup()
-    {
-        multiQueue.clear()
-        duringSetup()
-    }
-
-    /**
-     * Called in the [BeforeEach] after the parent has done its preparation.
-     */
-    abstract fun duringSetup()
-
-    /**
      * Ensure that when a new entry is added, that the [MultiQueue] is no longer empty and reports the correct size.
      *
      * @param data the incoming [Serializable] data to store in the [MultiQueue] to test that we can cater for multiple types
