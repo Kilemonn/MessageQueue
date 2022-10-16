@@ -6,6 +6,7 @@ import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.data.redis.core.RedisTemplate
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -20,9 +21,11 @@ class RedisMultiQueue : MultiQueue, HasLogger
     override var size: Int = 0
 
     @Autowired
+    @Lazy
     lateinit var messageQueueSettings: MessageQueueSettings
 
     @Autowired
+    @Lazy
     lateinit var redisTemplate: RedisTemplate<String, QueueMessage>
 
     /**
