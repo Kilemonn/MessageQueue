@@ -75,19 +75,27 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      */
     fun pollForType(queueType: String): Optional<QueueMessage>
     {
-        val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
-        val head = queueForType.poll()
-        if (head != null)
+        val head = performPoll(queueType)
+        if (head.isPresent)
         {
-            LOG.debug("Found and removed head element with UUID [{}] from queue with type [{}].", head.uuid, queueType)
+            LOG.debug("Found and removed head element with UUID [{}] from queue with type [{}].", head.get().uuid, queueType)
             size--
         }
         else
         {
             LOG.debug("No head element found when polling queue with type [{}].", queueType)
         }
-        return Optional.ofNullable(head)
+        return head
     }
+
+    /**
+     * The internal poll method to be called.
+     * This is not to  be called directly.
+     *
+     * @param queueType the sub-queue to poll
+     * @return the first message wrapped as an [Optional] otherwise [Optional.empty]
+     */
+    fun performPoll(queueType: String): Optional<QueueMessage>
 
     /**
      * Calls [Queue.peek] on the underlying [Queue] for the provided [String].
@@ -99,16 +107,16 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     fun peekForType(queueType: String): Optional<QueueMessage>
     {
         val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
-        val peeked = queueForType.peek()
-        if (peeked != null)
+        val peeked = Optional.ofNullable(queueForType.peek())
+        if (peeked.isPresent)
         {
-            LOG.debug("Found head element with UUID [{}] from queue with type [{}].", peeked.uuid, queueType)
+            LOG.debug("Found head element with UUID [{}] from queue with type [{}].", peeked.get().uuid, queueType)
         }
         else
         {
             LOG.debug("No head element found when peeking queue with type [{}].", queueType)
         }
-        return Optional.ofNullable(peeked)
+        return peeked
     }
 
     /**
@@ -239,12 +247,11 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
                 if ( !elements.contains(entry))
                 {
                     LOG.debug("Message with uuid [{}] does not exist in retain list, attempting to remove.", entry.uuid)
-                    val wasRemoved = queueForKey.remove(entry)
+                    val wasRemoved = remove(entry)
                     anyWasRemoved = wasRemoved || anyWasRemoved
                     if (wasRemoved)
                     {
                         LOG.debug("Removed message with uuid [{}] as it does not exist in retain list.", entry.uuid)
-                        size--
                     }
                     else
                     {

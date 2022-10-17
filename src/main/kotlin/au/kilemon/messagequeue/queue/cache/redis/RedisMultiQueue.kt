@@ -105,9 +105,20 @@ class RedisMultiQueue : MultiQueue, HasLogger
         return getQueueForType(queueType).isEmpty()
     }
 
+    override fun performPoll(queueType: String): Optional<QueueMessage>
+    {
+        val set = redisTemplate.opsForSet().members(appendPrefix(queueType))
+        if (!set.isNullOrEmpty())
+        {
+            val next = set.iterator().next()
+            redisTemplate.opsForSet().remove(appendPrefix(queueType), next)
+            return Optional.of(next)
+        }
+        return Optional.empty()
+    }
+
     override fun keys(includeEmpty: Boolean): Set<String>
     {
-//        val keys = redisTemplate.keys(appendPrefix("*"))
         val scanOptions = ScanOptions.scanOptions().match(appendPrefix("*")).build()
         val cursor = redisTemplate.scan(scanOptions)
         val keys = HashSet<String>()

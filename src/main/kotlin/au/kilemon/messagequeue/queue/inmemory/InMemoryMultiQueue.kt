@@ -170,4 +170,10 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
 
         return message
     }
+
+    override fun performPoll(queueType: String): Optional<QueueMessage>
+    {
+        val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
+        return Optional.ofNullable(queueForType.poll())
+    }
 }
