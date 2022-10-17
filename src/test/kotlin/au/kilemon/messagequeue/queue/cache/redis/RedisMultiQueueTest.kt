@@ -121,6 +121,7 @@ class RedisMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
         @Lazy
         open fun getRedisConnectionFactory(): RedisConnectionFactory
         {
+            Assertions.assertFalse(getMessageQueueSettings().redisUseSentinels.toBoolean())
             val redisConfiguration = RedisStandaloneConfiguration()
             redisConfiguration.hostName = getMessageQueueSettings().redisEndpoint
             redisConfiguration.port = getMessageQueueSettings().redisPort.toInt()
