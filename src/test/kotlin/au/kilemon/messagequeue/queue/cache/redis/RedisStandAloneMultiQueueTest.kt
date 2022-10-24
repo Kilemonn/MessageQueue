@@ -22,6 +22,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
+import java.util.*
 
 
 /**
@@ -41,7 +42,7 @@ import org.testcontainers.utility.DockerImageName
 @ExtendWith(SpringExtension::class)
 @TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=REDIS"])
 @Testcontainers
-class RedisMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
+class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
 {
     companion object
     {
@@ -49,6 +50,8 @@ class RedisMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
         private const val REDIS_CONTAINER: String = "redis:7.0.5-alpine"
 
         lateinit var redis: GenericContainer<*>
+
+        lateinit var initialProperties: Properties
 
         /**
          * Force start the container, so we can place its host and dynamic ports into the system properties.
@@ -63,6 +66,7 @@ class RedisMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
                 .withExposedPorts(REDIS_PORT).withReuse(false)
             redis.start()
 
+            initialProperties = System.getProperties()
             val properties = System.getProperties()
             properties[MessageQueueSettings.REDIS_ENDPOINT] = redis.host
             properties[MessageQueueSettings.REDIS_PORT] = redis.getMappedPort(REDIS_PORT).toString()
@@ -77,11 +81,14 @@ class RedisMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
         fun afterClass()
         {
             redis.stop()
+
+            System.setProperties(initialProperties)
         }
     }
 
     /**
      * A Spring configuration that is used for this test class.
+     * Creates a [RedisStandaloneConfiguration] as the [RedisConnectionFactory] [Bean].
      *
      * This is specifically creating the [RedisMultiQueue] to be autowired in the parent
      * class and used in all the tests.

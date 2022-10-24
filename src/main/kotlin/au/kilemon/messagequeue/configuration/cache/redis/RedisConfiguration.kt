@@ -15,6 +15,8 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.data.redis.core.RedisTemplate
 
 /**
+ * A class that creates the required [Bean] objects when redis is enabled.
+ * This will create either a standalone configuration or a sentinel configuration based on the provided properties.
  *
  * @author github.com/KyleGonzalez
  */
