@@ -29,7 +29,7 @@ import kotlin.collections.HashMap
 /**
  * A test class for the [RedisMultiQueue] `Component` class running in the Sentinel mode.
  *
- * Very similar to [RedisStandAloneMultiQueueTest], refer to comments there for more detail about the flow of this tests.
+ * Very similar to [RedisStandAloneMultiQueueTest], refer to comments there for more detail about the flow of these tests.
  *
  * @author github.com/KyleGonzalez
  */
@@ -60,12 +60,12 @@ class RedisSentinelMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
         fun beforeClass()
         {
             redis = GenericContainer(DockerImageName.parse(REDIS_CONTAINER))
-                .withExposedPorts(MessageQueueSettings.REDIS_PORT_DEFAULT.toInt()).withReuse(false)
+                .withExposedPorts(RedisConfiguration.REDIS_DEFAULT_PORT.toInt()).withReuse(false)
             redis.start()
 
             val envMap = HashMap<String, String>()
             envMap["MASTER"] = redis.host
-            envMap["REDIS_PORT"] = redis.getMappedPort(MessageQueueSettings.REDIS_PORT_DEFAULT.toInt()).toString()
+            envMap["REDIS_PORT"] = redis.getMappedPort(RedisConfiguration.REDIS_DEFAULT_PORT.toInt()).toString()
             envMap["MASTER_NAME"] = MessageQueueSettings.REDIS_MASTER_NAME_DEFAULT
             sentinel = GenericContainer(DockerImageName.parse(REDIS_SENTINEL_CONTAINER))
                 .withExposedPorts(RedisConfiguration.REDIS_SENTINEL_DEFAULT_PORT.toInt()).withReuse(false)
@@ -138,15 +138,9 @@ class RedisSentinelMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
             Assertions.assertTrue(getMessageQueueSettings().redisUseSentinels.toBoolean())
             val redisSentinelConfiguration = RedisSentinelConfiguration()
             redisSentinelConfiguration.master(getMessageQueueSettings().redisMasterName)
-            val sentinelEndpoints = getMessageQueueSettings().redisEndpoint.trim().split(",")
-            val splitByColon = sentinelEndpoints[0].trim().split(":")
-            val host = splitByColon[0]
-            var port = RedisConfiguration.REDIS_SENTINEL_DEFAULT_PORT
-            if (splitByColon.size > 1)
-            {
-                port = splitByColon[1].trim()
-            }
-            redisSentinelConfiguration.sentinel(host, port.toInt())
+            val sentinelEndpoints = RedisConfiguration.stringToInetSocketAddresses(getMessageQueueSettings().redisEndpoint, RedisConfiguration.REDIS_SENTINEL_DEFAULT_PORT)
+            sentinelEndpoints.forEach{ endpoint -> redisSentinelConfiguration.sentinel(endpoint.hostName, endpoint.port) }
+
             return LettuceConnectionFactory(redisSentinelConfiguration)
         }
 

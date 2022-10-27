@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.queue.cache.redis
 
+import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
@@ -68,8 +69,7 @@ class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
 
             initialProperties = System.getProperties()
             val properties = System.getProperties()
-            properties[MessageQueueSettings.REDIS_ENDPOINT] = redis.host
-            properties[MessageQueueSettings.REDIS_PORT] = redis.getMappedPort(REDIS_PORT).toString()
+            properties[MessageQueueSettings.REDIS_ENDPOINT] = "${redis.host}:${redis.getMappedPort(REDIS_PORT)}"
             System.setProperties(properties)
         }
 
@@ -104,7 +104,7 @@ class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
 
         /**
          * The bean initialise here will have all its properties overridden by environment variables.
-         * Don't set the here, set them in the [WebMvcTest.properties].
+         * Don't set them here, set them in the [WebMvcTest.properties].
          */
         @Bean
         @Lazy
@@ -115,7 +115,7 @@ class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
 
         /**
          * The bean initialise here will have all its properties overridden by environment variables.
-         * Don't set the here, set them in the [WebMvcTest.properties].
+         * Don't set them here, set them in the [WebMvcTest.properties].
          */
         @Bean
         @Lazy
@@ -130,8 +130,10 @@ class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
         {
             Assertions.assertFalse(getMessageQueueSettings().redisUseSentinels.toBoolean())
             val redisConfiguration = RedisStandaloneConfiguration()
-            redisConfiguration.hostName = getMessageQueueSettings().redisEndpoint
-            redisConfiguration.port = getMessageQueueSettings().redisPort.toInt()
+            val redisEndpoints = RedisConfiguration.stringToInetSocketAddresses(getMessageQueueSettings().redisEndpoint, RedisConfiguration.REDIS_DEFAULT_PORT)
+            Assertions.assertEquals(1, redisEndpoints.size)
+            redisConfiguration.hostName = redisEndpoints[0].hostName
+            redisConfiguration.port = redisEndpoints[0].port
 
             return LettuceConnectionFactory(redisConfiguration)
         }
