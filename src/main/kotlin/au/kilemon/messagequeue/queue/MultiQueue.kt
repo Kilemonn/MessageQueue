@@ -278,11 +278,12 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     }
 
     /**
-     * @return `true` if the [size] is `0`, otherwise `false`.
+     * @return `true` any of the [keys] returns `false` for [isEmptyForType], otherwise `false`.
      */
     override fun isEmpty(): Boolean
     {
-        return size == 0
+        val anyHasElements = keys(false).stream().anyMatch { key -> !isEmptyForType(key) }
+        return !anyHasElements
     }
 
     override fun clear()
