@@ -55,16 +55,19 @@ class RedisConfiguration: HasLogger
             val splitEndpoints = endpoints.trim().split(",")
             for (endpoint in splitEndpoints)
             {
-                val splitByColon = endpoint.trim().split(":")
-                if (splitByColon.isNotEmpty())
+                if (endpoint.isNotBlank())
                 {
-                    val host = splitByColon[0].trim()
-                    var port = defaultPort
-                    if (splitByColon.size > 1)
+                    val splitByColon = endpoint.trim().split(":")
+                    if (splitByColon.isNotEmpty())
                     {
-                        port = splitByColon[1].trim()
+                        val host = splitByColon[0].trim()
+                        var port = defaultPort
+                        if (splitByColon.size > 1)
+                        {
+                            port = splitByColon[1].trim()
+                        }
+                        list.add(InetSocketAddress.createUnresolved(host, port.toInt()))
                     }
-                    list.add(InetSocketAddress(host, port.toInt()))
                 }
             }
 
