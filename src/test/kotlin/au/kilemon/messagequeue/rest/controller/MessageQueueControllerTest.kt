@@ -146,7 +146,7 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getEntry] to ensure that [HttpStatus.NOT_FOUND] is returned when a [UUID] that does not exist is provided.
+     * Test [MessageQueueController.getEntry] to ensure that [HttpStatus.NO_CONTENT] is returned when a [UUID] that does not exist is provided.
      */
     @Test
     fun testGetEntry_ResponseBody_NotExists()
@@ -154,7 +154,7 @@ class MessageQueueControllerTest
         val uuid = "invalid-not-found-uuid"
         mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().isNotFound)
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
     /**
@@ -235,6 +235,22 @@ class MessageQueueControllerTest
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .content(gson.toJson(message)))
             .andExpect(MockMvcResultMatchers.status().isConflict)
+    }
+
+    /**
+     * Calling create with provided [QueueMessage.assigned] but no [QueueMessage.assignedTo] to make sure a [HttpStatus.BAD_REQUEST] is returned.
+     */
+    @Test
+    fun testCreateQueueEntry_withAssignedButNoAssignedTo()
+    {
+        val message = createQueueMessage(type = "testCreateQueueEntry_withAssignedButNoAssignedTo")
+        message.assigned = true
+        message.assignedTo = null
+
+        mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .content(gson.toJson(message)))
+            .andExpect(MockMvcResultMatchers.status().isBadRequest)
     }
 
     /**
@@ -387,18 +403,17 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.assignMessage] to ensure that [HttpStatus.NOT_FOUND] is returned when a [QueueMessage] with the provided [UUID] does not exist.
+     * Test [MessageQueueController.assignMessage] to ensure that [HttpStatus.NO_CONTENT] is returned when a [QueueMessage] with the provided [UUID] does not exist.
      */
     @Test
     fun testAssignMessage_doesNotExist()
     {
         val uuid = UUID.randomUUID().toString()
         val assignedTo = "assigned"
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN)
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("assignedTo", assignedTo)
-            .param("uuid", uuid))
-            .andExpect(MockMvcResultMatchers.status().isNotFound)
+            .param("assignedTo", assignedTo))
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
     /**
@@ -570,16 +585,15 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.releaseMessage] to ensure that [HttpStatus.NOT_FOUND] is returned when a [QueueMessage] with the provided [UUID] does not exist.
+     * Test [MessageQueueController.releaseMessage] to ensure that [HttpStatus.NO_CONTENT] is returned when a [QueueMessage] with the provided [UUID] does not exist.
      */
     @Test
     fun testReleaseMessage_doesNotExist()
     {
         val uuid = UUID.randomUUID().toString()
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE)
-            .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("uuid", uuid))
-            .andExpect(MockMvcResultMatchers.status().isNotFound)
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + uuid)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
     /**
@@ -694,7 +708,7 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.removeMessage] to ensure that [HttpStatus.NOT_FOUND] is returned when a [QueueMessage] with the provided [UUID] does not exist.
+     * Test [MessageQueueController.removeMessage] to ensure that [HttpStatus.NO_CONTENT] is returned when a [QueueMessage] with the provided [UUID] does not exist.
      */
     @Test
     fun testRemoveMessage_notFound()
@@ -703,7 +717,7 @@ class MessageQueueControllerTest
 
         mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().isNotFound)
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
     /**

@@ -90,6 +90,12 @@ class RedisConfiguration: HasLogger
             redisSentinelConfiguration.master(messageQueueSettings.redisMasterName)
             val sentinelEndpoints = stringToInetSocketAddresses(messageQueueSettings.redisEndpoint, REDIS_SENTINEL_DEFAULT_PORT)
 
+            if (sentinelEndpoints.isEmpty())
+            {
+                LOG.error("No redis endpoints defined for sentinel configuration. Unable to initialise redis configuration.")
+                throw RedisInitialisationException("No redis endpoint(s) provided.")
+            }
+
             for (sentinelEndpoint in sentinelEndpoints)
             {
                 LOG.debug("Initialising redis sentinel configuration with host {} and port {}.", sentinelEndpoint.hostName, sentinelEndpoint.port)
@@ -106,7 +112,7 @@ class RedisConfiguration: HasLogger
             if (redisEndpoints.isEmpty())
             {
                 LOG.error("No redis endpoints defined for standalone configuration. Unable to initialise redis configuration.")
-                throw RedisInitialisationException("No redis endpoint provided.")
+                throw RedisInitialisationException("No redis endpoint(s) provided.")
             }
             else if (redisEndpoints.size > 1)
             {
