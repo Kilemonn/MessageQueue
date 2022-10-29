@@ -1,7 +1,9 @@
 package au.kilemon.messagequeue.queue
 
 import au.kilemon.messagequeue.exception.DuplicateMessageException
+import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
+import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.jvm.Throws
@@ -13,12 +15,16 @@ import kotlin.jvm.Throws
  *
  * @author github.com/KyleGonzalez
  */
-interface MultiQueue: Queue<QueueMessage>
+interface MultiQueue: Queue<QueueMessage>, HasLogger
 {
     companion object
     {
         private const val NOT_IMPLEMENTED_METHOD: String = "Method is not implemented."
     }
+
+    override val LOG: Logger
+
+    override var size: Int
 
     /**
      * New methods for the [MultiQueue] that are required by implementing classes.
@@ -45,9 +51,12 @@ interface MultiQueue: Queue<QueueMessage>
     /**
      * Clears the underlying [Queue] for the provided [String]. By calling [Queue.clear].
      *
+     * This method should update the [size] property as part of the clearing of the sub-queue.
+     *
      * @param queueType the [String] of the [Queue] to clear
+     * @return the number of entries removed
      */
-    fun clearForType(queueType: String)
+    fun clearForType(queueType: String): Int
 
     /**
      * Indicates whether the underlying [Queue] for the provided [String] is empty. By calling [Queue.isEmpty].
@@ -65,6 +74,28 @@ interface MultiQueue: Queue<QueueMessage>
      * @return the head element or `null`
      */
     fun pollForType(queueType: String): Optional<QueueMessage>
+    {
+        val head = performPoll(queueType)
+        if (head.isPresent)
+        {
+            LOG.debug("Found and removed head element with UUID [{}] from queue with type [{}].", head.get().uuid, queueType)
+            size--
+        }
+        else
+        {
+            LOG.debug("No head element found when polling queue with type [{}].", queueType)
+        }
+        return head
+    }
+
+    /**
+     * The internal poll method to be called.
+     * This is not to  be called directly.
+     *
+     * @param queueType the sub-queue to poll
+     * @return the first message wrapped as an [Optional] otherwise [Optional.empty]
+     */
+    fun performPoll(queueType: String): Optional<QueueMessage>
 
     /**
      * Calls [Queue.peek] on the underlying [Queue] for the provided [String].
@@ -74,6 +105,19 @@ interface MultiQueue: Queue<QueueMessage>
      * @return the head element or `null`
      */
     fun peekForType(queueType: String): Optional<QueueMessage>
+    {
+        val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
+        val peeked = Optional.ofNullable(queueForType.peek())
+        if (peeked.isPresent)
+        {
+            LOG.debug("Found head element with UUID [{}] from queue with type [{}].", peeked.get().uuid, queueType)
+        }
+        else
+        {
+            LOG.debug("No head element found when peeking queue with type [{}].", queueType)
+        }
+        return peeked
+    }
 
     /**
      * Retrieves the underlying key list as a set.
@@ -101,6 +145,157 @@ interface MultiQueue: Queue<QueueMessage>
      */
     @Throws(DuplicateMessageException::class)
     override fun add(element: QueueMessage): Boolean
+    {
+        val elementIsMappedToType = containsUUID(element.uuid.toString())
+        if ( !elementIsMappedToType.isPresent)
+        {
+            val wasAdded = performAdd(element)
+            return if (wasAdded)
+            {
+                size++
+                LOG.debug("Added new message with uuid [{}] to queue with type [{}].", element.uuid, element.type)
+                true
+            }
+            else
+            {
+                LOG.error("Failed to add message with uuid [{}] to queue with type [{}].", element.uuid, element.type)
+                false
+            }
+        }
+        else
+        {
+            val existingQueueType = elementIsMappedToType.get()
+            LOG.warn("Did not add new message with uuid [{}] to queue with type [{}] as it already exists in queue with type [{}].", element.uuid, element.type, existingQueueType)
+            throw DuplicateMessageException(element.uuid.toString(), existingQueueType)
+        }
+    }
+
+    /**
+     * The internal add method to be called.
+     * This is not to  be called directly.
+     *
+     * @param element the element to add
+     * @return `true` if the element was added successfully, otherwise `false`.
+     */
+    fun performAdd(element: QueueMessage): Boolean
+
+    override fun remove(element: QueueMessage): Boolean
+    {
+        val wasRemoved = performRemove(element)
+        if (wasRemoved)
+        {
+            size--
+            LOG.debug("Removed element with UUID [{}] from queue with type [{}].", element.uuid, element.type)
+        }
+        else
+        {
+            LOG.error("Failed to remove element with UUID [{}] from queue with type [{}].", element.uuid, element.type)
+        }
+        return wasRemoved
+    }
+
+    /**
+     * The internal remove method to be called.
+     * This is not to be called directly.
+     *
+     * @param element the element to remove
+     * @return `true` if the element was removed successfully, otherwise `false`.
+     */
+    fun performRemove(element: QueueMessage): Boolean
+
+    override fun contains(element: QueueMessage?): Boolean
+    {
+        if (element == null)
+        {
+            return false
+        }
+        val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
+        return queueForType.contains(element)
+    }
+
+    override fun containsAll(elements: Collection<QueueMessage>): Boolean
+    {
+        return elements.stream().allMatch{ element -> this.contains(element) }
+    }
+
+    override fun addAll(elements: Collection<QueueMessage>): Boolean
+    {
+        var allAdded = true
+        for (element: QueueMessage in elements)
+        {
+            allAdded = try {
+                val wasAdded = add(element)
+                allAdded && wasAdded
+            }
+            catch (ex: DuplicateMessageException)
+            {
+                false
+            }
+        }
+        return allAdded
+    }
+
+    override fun retainAll(elements: Collection<QueueMessage>): Boolean
+    {
+        var anyWasRemoved = false
+        for (key: String in keys(false))
+        {
+            // The queue should never be new or created since we passed `false` into `keys()` above.
+            val queueForKey: Queue<QueueMessage> = getQueueForType(key)
+            for(entry: QueueMessage in queueForKey)
+            {
+                if ( !elements.contains(entry))
+                {
+                    LOG.debug("Message with uuid [{}] does not exist in retain list, attempting to remove.", entry.uuid)
+                    val wasRemoved = remove(entry)
+                    anyWasRemoved = wasRemoved || anyWasRemoved
+                    if (wasRemoved)
+                    {
+                        LOG.debug("Removed message with uuid [{}] as it does not exist in retain list.", entry.uuid)
+                    }
+                    else
+                    {
+                        LOG.error("Failed to remove message with uuid [{}].", entry.uuid)
+                    }
+                }
+                else
+                {
+                    LOG.debug("Retaining element with uuid [{}] as it exists in the retain list.", entry.uuid)
+                }
+            }
+        }
+        return anyWasRemoved
+    }
+
+    override fun removeAll(elements: Collection<QueueMessage>): Boolean
+    {
+        var wasRemoved = false
+        for (element: QueueMessage in elements)
+        {
+            wasRemoved = remove(element) || wasRemoved
+        }
+        return wasRemoved
+    }
+
+    /**
+     * @return `true` if the [size] is `0`, otherwise `false`.
+     */
+    override fun isEmpty(): Boolean
+    {
+        return size == 0
+    }
+
+    override fun clear()
+    {
+        val keys = keys()
+        var removedEntryCount = 0
+        for (key in keys)
+        {
+            val amountRemovedForQueue = clearForType(key)
+            removedEntryCount += amountRemovedForQueue
+        }
+        LOG.debug("Cleared multi-queue, removed [{}] message entries over [{}] queue types.", removedEntryCount, keys)
+    }
 
     /**
      * Any unsupported methods from the [Queue] interface that are not implemented.

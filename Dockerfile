@@ -1,9 +1,5 @@
 FROM gradle:7.5.1-jdk11-alpine as builder
 
-#RUN groupadd -r builder.group
-#RUN useradd -r -g builder.group builder.user
-#USER builder.user
-
 WORKDIR /builder
 
 # Copy everything in

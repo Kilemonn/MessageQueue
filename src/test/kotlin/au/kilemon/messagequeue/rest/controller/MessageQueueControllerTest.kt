@@ -1,7 +1,7 @@
 package au.kilemon.messagequeue.rest.controller
 
-import au.kilemon.messagequeue.Payload
-import au.kilemon.messagequeue.PayloadEnum
+import au.kilemon.messagequeue.rest.model.Payload
+import au.kilemon.messagequeue.rest.model.PayloadEnum
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.rest.response.MessageResponse
@@ -74,7 +74,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetQueueTypeInfo()
     {
-        val queueType = "test"
+        val queueType = "testGetQueueTypeInfo"
         Assertions.assertEquals(0, multiQueue.getQueueForType(queueType).size)
         mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE + "/" + queueType)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
@@ -103,8 +103,8 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.content().json("0"))
 
-        val message = createQueueMessage(type = "type1")
-        val message2 = createQueueMessage(type = "type2")
+        val message = createQueueMessage(type = "testGetAllQueueTypeInfo_type1")
+        val message2 = createQueueMessage(type = "testGetAllQueueTypeInfo_type2")
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.add(message2))
@@ -125,7 +125,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetEntry()
     {
-        val message = createQueueMessage()
+        val message = createQueueMessage(type = "testGetEntry")
 
         Assertions.assertTrue(multiQueue.add(message))
 
@@ -146,7 +146,7 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getEntry] to ensure that [HttpStatus.NOT_FOUND] is returned when a [UUID] that does not exist is provided.
+     * Test [MessageQueueController.getEntry] to ensure that [HttpStatus.NO_CONTENT] is returned when a [UUID] that does not exist is provided.
      */
     @Test
     fun testGetEntry_ResponseBody_NotExists()
@@ -154,7 +154,7 @@ class MessageQueueControllerTest
         val uuid = "invalid-not-found-uuid"
         mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().isNotFound)
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
     /**
@@ -164,7 +164,7 @@ class MessageQueueControllerTest
     @Test
     fun testCreateQueueEntry_withProvidedDefaults()
     {
-        val message = createQueueMessage(assignedTo = "assignedTo")
+        val message = createQueueMessage(type = "testCreateQueueEntry_withProvidedDefaults", assignedTo = "assignedTo")
 
         val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -196,7 +196,7 @@ class MessageQueueControllerTest
     @Test
     fun testCreateQueueEntry_withOutDefaults()
     {
-        val message = createQueueMessage()
+        val message = createQueueMessage(type = "testCreateQueueEntry_withOutDefaults")
 
         val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -227,7 +227,7 @@ class MessageQueueControllerTest
     @Test
     fun testCreateEntry_Conflict()
     {
-        val message = createQueueMessage()
+        val message = createQueueMessage(type = "testCreateEntry_Conflict")
 
         Assertions.assertTrue(multiQueue.add(message))
 
@@ -235,6 +235,22 @@ class MessageQueueControllerTest
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .content(gson.toJson(message)))
             .andExpect(MockMvcResultMatchers.status().isConflict)
+    }
+
+    /**
+     * Calling create with provided [QueueMessage.assigned] but no [QueueMessage.assignedTo] to make sure a [HttpStatus.BAD_REQUEST] is returned.
+     */
+    @Test
+    fun testCreateQueueEntry_withAssignedButNoAssignedTo()
+    {
+        val message = createQueueMessage(type = "testCreateQueueEntry_withAssignedButNoAssignedTo")
+        message.assigned = true
+        message.assignedTo = null
+
+        mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .content(gson.toJson(message)))
+            .andExpect(MockMvcResultMatchers.status().isBadRequest)
     }
 
     /**
@@ -360,7 +376,7 @@ class MessageQueueControllerTest
     fun testGetOwned_SomeOwned()
     {
         val assignedTo = "my-assigned-to-identifier"
-        val type = "my-type"
+        val type = "testGetOwned_SomeOwned"
         val message1 = createQueueMessage(assignedTo = assignedTo, type = type)
         val message2 = createQueueMessage(assignedTo = assignedTo, type = type)
 
@@ -387,18 +403,17 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.assignMessage] to ensure that [HttpStatus.NOT_FOUND] is returned when a [QueueMessage] with the provided [UUID] does not exist.
+     * Test [MessageQueueController.assignMessage] to ensure that [HttpStatus.NO_CONTENT] is returned when a [QueueMessage] with the provided [UUID] does not exist.
      */
     @Test
     fun testAssignMessage_doesNotExist()
     {
         val uuid = UUID.randomUUID().toString()
         val assignedTo = "assigned"
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN)
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("assignedTo", assignedTo)
-            .param("uuid", uuid))
-            .andExpect(MockMvcResultMatchers.status().isNotFound)
+            .param("assignedTo", assignedTo))
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
     /**
@@ -408,7 +423,7 @@ class MessageQueueControllerTest
     fun testAssignMessage_messageIsAssigned()
     {
         val assignedTo = "assigned"
-        val message = createQueueMessage()
+        val message = createQueueMessage(type = "testAssignMessage_messageIsAssigned")
         Assertions.assertFalse(message.assigned)
         Assertions.assertNull(message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
@@ -437,7 +452,7 @@ class MessageQueueControllerTest
     fun testAssignMessage_alreadyAssignedToSameID()
     {
         val assignedTo = "assigned"
-        val message = createQueueMessage(assignedTo = assignedTo)
+        val message = createQueueMessage(type = "testAssignMessage_alreadyAssignedToSameID", assignedTo = assignedTo)
 
         Assertions.assertTrue(message.assigned)
         Assertions.assertEquals(assignedTo, message.assignedTo)
@@ -467,7 +482,7 @@ class MessageQueueControllerTest
     fun testAssignMessage_alreadyAssignedToOtherID()
     {
         val assignedTo = "assignee"
-        val message = createQueueMessage(assignedTo = assignedTo)
+        val message = createQueueMessage(type = "testAssignMessage_alreadyAssignedToOtherID", assignedTo = assignedTo)
 
         Assertions.assertTrue(message.assigned)
         Assertions.assertEquals(assignedTo, message.assignedTo)
@@ -499,7 +514,7 @@ class MessageQueueControllerTest
     fun testGetNext_noNewMessages()
     {
         val assignedTo = "assignee"
-        val type = "type"
+        val type = "testGetNext_noNewMessages"
         mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param("queueType", type)
@@ -516,7 +531,7 @@ class MessageQueueControllerTest
     fun testGetNext_noNewUnAssignedMessages()
     {
         val assignedTo = "assignee"
-        val type = "type"
+        val type = "testGetNext_noNewUnAssignedMessages"
         val message = createQueueMessage(type = type, assignedTo = assignedTo)
         val message2 = createQueueMessage(type = type, assignedTo = assignedTo)
 
@@ -539,7 +554,7 @@ class MessageQueueControllerTest
     fun testGetNext()
     {
         val assignedTo = "assignee"
-        val type = "type"
+        val type = "testGetNext"
         val message = createQueueMessage(type = type, assignedTo = assignedTo)
         val message2 = createQueueMessage(type = type)
 
@@ -570,16 +585,15 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.releaseMessage] to ensure that [HttpStatus.NOT_FOUND] is returned when a [QueueMessage] with the provided [UUID] does not exist.
+     * Test [MessageQueueController.releaseMessage] to ensure that [HttpStatus.NO_CONTENT] is returned when a [QueueMessage] with the provided [UUID] does not exist.
      */
     @Test
     fun testReleaseMessage_doesNotExist()
     {
         val uuid = UUID.randomUUID().toString()
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE)
-            .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("uuid", uuid))
-            .andExpect(MockMvcResultMatchers.status().isNotFound)
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + uuid)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
     /**
@@ -589,7 +603,7 @@ class MessageQueueControllerTest
     fun testReleaseMessage_messageIsReleased()
     {
         val assignedTo = "assignee"
-        val message = createQueueMessage(assignedTo = assignedTo)
+        val message = createQueueMessage(type = "testReleaseMessage_messageIsReleased", assignedTo = assignedTo)
 
         Assertions.assertTrue(message.assigned)
         Assertions.assertEquals(assignedTo, message.assignedTo)
@@ -619,7 +633,7 @@ class MessageQueueControllerTest
     fun testReleaseMessage_messageIsReleased_withoutAssignedToInQuery()
     {
         val assignedTo = "assigned"
-        val message = createQueueMessage(assignedTo = assignedTo)
+        val message = createQueueMessage(type = "testReleaseMessage_messageIsReleased_withoutAssignedToInQuery", assignedTo = assignedTo)
 
         Assertions.assertTrue(message.assigned)
         Assertions.assertEquals(assignedTo, message.assignedTo)
@@ -647,7 +661,7 @@ class MessageQueueControllerTest
     @Test
     fun testReleaseMessage_alreadyReleased()
     {
-        val message = createQueueMessage()
+        val message = createQueueMessage(type = "testReleaseMessage_alreadyReleased")
         Assertions.assertFalse(message.assigned)
         Assertions.assertNull(message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
@@ -676,7 +690,7 @@ class MessageQueueControllerTest
     fun testReleaseMessage_cannotBeReleasedWithMisMatchingID()
     {
         val assignedTo = "assigned"
-        val message = createQueueMessage(assignedTo = assignedTo)
+        val message = createQueueMessage(type = "testReleaseMessage_cannotBeReleasedWithMisMatchingID", assignedTo = assignedTo)
 
         Assertions.assertTrue(message.assigned)
         Assertions.assertEquals(assignedTo, message.assignedTo)
@@ -694,7 +708,7 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.removeMessage] to ensure that [HttpStatus.NOT_FOUND] is returned when a [QueueMessage] with the provided [UUID] does not exist.
+     * Test [MessageQueueController.removeMessage] to ensure that [HttpStatus.NO_CONTENT] is returned when a [QueueMessage] with the provided [UUID] does not exist.
      */
     @Test
     fun testRemoveMessage_notFound()
@@ -703,7 +717,7 @@ class MessageQueueControllerTest
 
         mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().isNotFound)
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
     /**
@@ -712,7 +726,7 @@ class MessageQueueControllerTest
     @Test
     fun testRemoveMessage_removed()
     {
-        val message = createQueueMessage()
+        val message = createQueueMessage(type = "testRemoveMessage_removed")
         Assertions.assertTrue(multiQueue.add(message))
 
         mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid.toString())
@@ -730,7 +744,7 @@ class MessageQueueControllerTest
     fun testRemoveMessage_assignedToAnotherID()
     {
         val assignedTo = "assignee"
-        val message = createQueueMessage(assignedTo = assignedTo)
+        val message = createQueueMessage(type = "testRemoveMessage_assignedToAnotherID", assignedTo = assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
         val wrongAssignedTo = "wrong-assignee"
@@ -772,7 +786,7 @@ class MessageQueueControllerTest
      * @param assignedTo indicates whether the [QueueMessage.assignedTo] should be non-null and [QueueMessage.assigned] should be `true`.
      * @return a [QueueMessage] initialised with multiple parameters
      */
-    private fun createQueueMessage(type: String = "a-type", assignedTo: String? = null): QueueMessage
+    private fun createQueueMessage(type: String, assignedTo: String? = null): QueueMessage
     {
         val uuid = UUID.randomUUID().toString()
         val payload = Payload("test", 12, true, PayloadEnum.C)

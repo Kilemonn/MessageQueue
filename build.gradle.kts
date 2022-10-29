@@ -23,12 +23,16 @@ dependencies {
     // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-ui
     implementation("org.springdoc:springdoc-openapi-ui:1.6.11")
 
+    implementation("org.springframework.boot:spring-boot-starter-data-redis:2.7.3")
+
     implementation("com.google.code.gson:gson:2.9.1")
 
     compileOnly("org.projectlombok:lombok:1.18.24")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test:2.7.3")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
+    testImplementation("org.testcontainers:testcontainers:1.17.5")
+    testImplementation("org.testcontainers:junit-jupiter:1.17.5")
     testImplementation(kotlin("test"))
 }
 

@@ -1,7 +1,7 @@
 package au.kilemon.messagequeue.queue
 
-import au.kilemon.messagequeue.Payload
-import au.kilemon.messagequeue.PayloadEnum
+import au.kilemon.messagequeue.rest.model.Payload
+import au.kilemon.messagequeue.rest.model.PayloadEnum
 import au.kilemon.messagequeue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.message.QueueMessage
 import org.junit.jupiter.api.*
@@ -25,21 +25,6 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
 {
     @Autowired
     protected lateinit var multiQueue: T
-
-    /**
-     * Ensure the [MultiQueue] is cleared before each test.
-     */
-    @BeforeEach
-    fun setup()
-    {
-        multiQueue.clear()
-        duringSetup()
-    }
-
-    /**
-     * Called in the [BeforeEach] after the parent has done its preparation.
-     */
-    abstract fun duringSetup()
 
     /**
      * Ensure that when a new entry is added, that the [MultiQueue] is no longer empty and reports the correct size.
@@ -199,6 +184,16 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     }
 
     /**
+     * Ensure that `false` is returned from [MultiQueue.contains] when the input object is `null`.
+     */
+    @Test
+    fun testContains_null()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        Assertions.assertFalse(multiQueue.contains(null))
+    }
+
+    /**
      * Ensure that all elements are added, and contained and removed via the provided [Collection].
      */
     @Test
@@ -232,7 +227,8 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertFalse(multiQueue.pollForType(message.type).isPresent)
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
-        Assertions.assertEquals(message, multiQueue.pollForType(message.type).get())
+        val polledMessage = multiQueue.pollForType(message.type).get()
+        Assertions.assertEquals(message, polledMessage)
         Assertions.assertTrue(multiQueue.isEmpty())
     }
 
@@ -249,9 +245,9 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertFalse(multiQueue.peekForType(message.type).isPresent)
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
-        Assertions.assertEquals(message, multiQueue.peekForType(message.type).get())
+        val peekedMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertTrue(message == peekedMessage)
         Assertions.assertFalse(multiQueue.isEmpty())
-
     }
 
     /**

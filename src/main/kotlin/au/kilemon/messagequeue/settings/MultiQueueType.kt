@@ -8,5 +8,13 @@ package au.kilemon.messagequeue.settings
  */
 enum class MultiQueueType
 {
-    IN_MEMORY;
+    /**
+     * Will initialise an in-memory multiqueue to store queue messages.
+     */
+    IN_MEMORY,
+
+    /**
+     * Will connect to the defined redis service to store queue messages.
+     */
+    REDIS;
 }
