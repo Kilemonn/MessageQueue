@@ -184,6 +184,16 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     }
 
     /**
+     * Ensure that `false` is returned from [MultiQueue.contains] when the input object is `null`.
+     */
+    @Test
+    fun testContains_null()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        Assertions.assertFalse(multiQueue.contains(null))
+    }
+
+    /**
      * Ensure that all elements are added, and contained and removed via the provided [Collection].
      */
     @Test
