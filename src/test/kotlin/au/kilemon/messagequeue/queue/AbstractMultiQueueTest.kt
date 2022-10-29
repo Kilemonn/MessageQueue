@@ -1,7 +1,7 @@
 package au.kilemon.messagequeue.queue
 
-import au.kilemon.messagequeue.Payload
-import au.kilemon.messagequeue.PayloadEnum
+import au.kilemon.messagequeue.rest.model.Payload
+import au.kilemon.messagequeue.rest.model.PayloadEnum
 import au.kilemon.messagequeue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.message.QueueMessage
 import org.junit.jupiter.api.*

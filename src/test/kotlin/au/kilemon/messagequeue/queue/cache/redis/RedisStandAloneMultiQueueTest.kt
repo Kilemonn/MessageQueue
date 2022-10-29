@@ -67,7 +67,7 @@ class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
                 .withExposedPorts(REDIS_PORT).withReuse(false)
             redis.start()
 
-            initialProperties = System.getProperties()
+            initialProperties = Properties(System.getProperties())
             val properties = System.getProperties()
             properties[MessageQueueSettings.REDIS_ENDPOINT] = "${redis.host}:${redis.getMappedPort(REDIS_PORT)}"
             System.setProperties(properties)
@@ -102,13 +102,17 @@ class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
         @Lazy
         lateinit var connectionFactory: RedisConnectionFactory
 
+        @Autowired
+        @Lazy
+        lateinit var messageQueueSettings: MessageQueueSettings
+
         /**
          * The bean initialise here will have all its properties overridden by environment variables.
          * Don't set them here, set them in the [WebMvcTest.properties].
          */
         @Bean
         @Lazy
-        open fun getMessageQueueSettings(): MessageQueueSettings
+        open fun getMessageQueueSettingsBean(): MessageQueueSettings
         {
             return MessageQueueSettings()
         }
@@ -128,9 +132,9 @@ class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
         @Lazy
         open fun getRedisConnectionFactory(): RedisConnectionFactory
         {
-            Assertions.assertFalse(getMessageQueueSettings().redisUseSentinels.toBoolean())
+            Assertions.assertFalse(messageQueueSettings.redisUseSentinels.toBoolean())
             val redisConfiguration = RedisStandaloneConfiguration()
-            val redisEndpoints = RedisConfiguration.stringToInetSocketAddresses(getMessageQueueSettings().redisEndpoint, RedisConfiguration.REDIS_DEFAULT_PORT)
+            val redisEndpoints = RedisConfiguration.stringToInetSocketAddresses(messageQueueSettings.redisEndpoint, RedisConfiguration.REDIS_DEFAULT_PORT)
             Assertions.assertEquals(1, redisEndpoints.size)
             redisConfiguration.hostName = redisEndpoints[0].hostName
             redisConfiguration.port = redisEndpoints[0].port

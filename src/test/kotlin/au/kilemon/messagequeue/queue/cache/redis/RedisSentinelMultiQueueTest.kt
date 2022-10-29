@@ -24,7 +24,6 @@ import org.testcontainers.containers.GenericContainer
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
 import java.util.*
-import kotlin.collections.HashMap
 
 /**
  * A test class for the [RedisMultiQueue] `Component` class running in the Sentinel mode.
@@ -64,6 +63,7 @@ class RedisSentinelMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
             redis.start()
 
             val envMap = HashMap<String, String>()
+            // For the sentinel container to determine where the master node is accessible from
             envMap["MASTER"] = redis.host
             envMap["REDIS_PORT"] = redis.getMappedPort(RedisConfiguration.REDIS_DEFAULT_PORT.toInt()).toString()
             envMap["MASTER_NAME"] = MessageQueueSettings.REDIS_MASTER_NAME_DEFAULT
@@ -72,7 +72,7 @@ class RedisSentinelMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
                 .withEnv(envMap)
             sentinel.start()
 
-            initialProperties = System.getProperties()
+            initialProperties = Properties(System.getProperties())
             val properties = System.getProperties()
             properties[MessageQueueSettings.REDIS_ENDPOINT] = "${sentinel.host}:${sentinel.getMappedPort(RedisConfiguration.REDIS_SENTINEL_DEFAULT_PORT.toInt())}"
             properties[MessageQueueSettings.REDIS_USE_SENTINELS] = true.toString()
@@ -109,13 +109,17 @@ class RedisSentinelMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
         @Lazy
         lateinit var connectionFactory: RedisConnectionFactory
 
+        @Autowired
+        @Lazy
+        lateinit var messageQueueSettings: MessageQueueSettings
+
         /**
          * The bean initialise here will have all its properties overridden by environment variables.
          * Don't set the here, set them in the [WebMvcTest.properties].
          */
         @Bean
         @Lazy
-        open fun getMessageQueueSettings(): MessageQueueSettings
+        open fun getMessageQueueSettingsBean(): MessageQueueSettings
         {
             return MessageQueueSettings()
         }
@@ -135,10 +139,10 @@ class RedisSentinelMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
         @Lazy
         open fun getRedisConnectionFactory(): RedisConnectionFactory
         {
-            Assertions.assertTrue(getMessageQueueSettings().redisUseSentinels.toBoolean())
+            Assertions.assertTrue(messageQueueSettings.redisUseSentinels.toBoolean())
             val redisSentinelConfiguration = RedisSentinelConfiguration()
-            redisSentinelConfiguration.master(getMessageQueueSettings().redisMasterName)
-            val sentinelEndpoints = RedisConfiguration.stringToInetSocketAddresses(getMessageQueueSettings().redisEndpoint, RedisConfiguration.REDIS_SENTINEL_DEFAULT_PORT)
+            redisSentinelConfiguration.master(messageQueueSettings.redisMasterName)
+            val sentinelEndpoints = RedisConfiguration.stringToInetSocketAddresses(messageQueueSettings.redisEndpoint, RedisConfiguration.REDIS_SENTINEL_DEFAULT_PORT)
             sentinelEndpoints.forEach{ endpoint -> redisSentinelConfiguration.sentinel(endpoint.hostName, endpoint.port) }
 
             return LettuceConnectionFactory(redisSentinelConfiguration)

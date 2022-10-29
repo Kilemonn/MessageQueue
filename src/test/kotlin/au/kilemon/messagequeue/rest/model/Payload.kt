@@ -1,4 +1,4 @@
-package au.kilemon.messagequeue
+package au.kilemon.messagequeue.rest.model
 
 import java.io.Serializable
 

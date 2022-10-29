@@ -65,7 +65,7 @@ class MessageQueueSettings
      * If set to `true` the `MultiQueue` will create a sentinel pool connection instead of a direct connection which is what would occur if this is left as `false`.
      * By default, this is `false`.
      */
-    @Value("\${$REDIS_USE_SENTINELS:'false'}")
+    @Value("\${$REDIS_USE_SENTINELS:false}")
     lateinit var redisUseSentinels: String
 
     /**

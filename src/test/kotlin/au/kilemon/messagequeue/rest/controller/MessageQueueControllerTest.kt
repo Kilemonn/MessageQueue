@@ -1,7 +1,7 @@
 package au.kilemon.messagequeue.rest.controller
 
-import au.kilemon.messagequeue.Payload
-import au.kilemon.messagequeue.PayloadEnum
+import au.kilemon.messagequeue.rest.model.Payload
+import au.kilemon.messagequeue.rest.model.PayloadEnum
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.rest.response.MessageResponse
