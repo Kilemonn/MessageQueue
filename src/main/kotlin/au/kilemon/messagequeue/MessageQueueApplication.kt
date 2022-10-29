@@ -5,6 +5,7 @@ import au.kilemon.messagequeue.logging.Messages
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.cache.redis.RedisMultiQueue
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
+import au.kilemon.messagequeue.queue.sql.SQLMultiQueue
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import au.kilemon.messagequeue.settings.MultiQueueType
 import org.slf4j.Logger
@@ -61,6 +62,10 @@ open class MessageQueueApplication : HasLogger
             MultiQueueType.REDIS.toString() ->
             {
                 RedisMultiQueue()
+            }
+            MultiQueueType.SQL_DATABASE.toString() ->
+            {
+                SQLMultiQueue()
             }
             else ->
             {

@@ -16,5 +16,10 @@ enum class MultiQueueType
     /**
      * Will connect to the defined redis service to store queue messages.
      */
-    REDIS;
+    REDIS,
+
+    /**
+     * Will initialise and connect to a defined SQL database instance to store queue messages against.
+     */
+    SQL_DATABASE;
 }
