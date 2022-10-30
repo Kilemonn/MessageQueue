@@ -47,6 +47,9 @@ class MessageQueueSettings
         const val SQL_USERNAME: String = "SQL_USERNAME"
 
         const val SQL_PASSWORD: String = "SQL_PASSWORD"
+
+        const val SQL_TABLE_NAME: String = "SQL_TABLE_NAME"
+        const val SQL_TABLE_NAME_DEFAULT: String = "multiqueuemessages"
     }
 
     /**
@@ -129,4 +132,12 @@ class MessageQueueSettings
      */
     @Value("\${$SQL_PASSWORD:}")
     lateinit var sqlPassword: String
+
+    /**
+     * `Optional` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL_DATABASE].
+     * This is used to define the table name used to store events. Define this value to override the default table name.
+     * The default is
+     */
+//    @Value("\${$SQL_TABLE_NAME:$SQL_TABLE_NAME_DEFAULT}")
+//    lateinit var sqlTableName: String
 }
