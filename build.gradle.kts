@@ -10,7 +10,7 @@ plugins {
 group = "au.kilemon"
 // Make sure version matches version defined in MessageQueueApplication
 version = "0.1.4"
-java.sourceCompatibility = JavaVersion.VERSION_1_8
+java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
     mavenCentral()
@@ -49,5 +49,5 @@ tasks.test {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "17"
 }
