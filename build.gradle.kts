@@ -29,6 +29,14 @@ dependencies {
 
     compileOnly("org.projectlombok:lombok:1.18.24")
 
+    // Database drivers
+    // https://mvnrepository.com/artifact/com.mysql/mysql-connector-j
+    implementation("com.mysql:mysql-connector-j:8.0.31")
+    // https://mvnrepository.com/artifact/org.postgresql/postgresql
+    implementation("org.postgresql:postgresql:42.5.0")
+    // https://mvnrepository.com/artifact/com.oracle.database.jdbc/ojdbc10
+    implementation("com.oracle.database.jdbc:ojdbc10:19.16.0.0")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test:2.7.3")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
     testImplementation("org.testcontainers:testcontainers:1.17.5")
