@@ -24,7 +24,21 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
 
     override val LOG: Logger
 
-    override var size: Int
+    /**
+     * Get the underlying size of the [MultiQueue].
+     * This is done by summing the length of each [getQueueForType] for each key in [keys].
+     *
+     * This is to allow the underlying storage to be the source of truth instead of any temporary counters, since the underlying storage could
+     * change at any timeout without direct interaction from the [MultiQueue].
+     */
+    override val size: Int
+        get() {
+            var internalSize = 0
+            keys(false).forEach { key ->
+                internalSize += getQueueForType(key).size
+            }
+            return internalSize
+        }
 
     /**
      * New methods for the [MultiQueue] that are required by implementing classes.
@@ -79,7 +93,6 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
         if (head.isPresent)
         {
             LOG.debug("Found and removed head element with UUID [{}] from queue with type [{}].", head.get().uuid, queueType)
-            size--
         }
         else
         {
@@ -152,7 +165,6 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
             val wasAdded = performAdd(element)
             return if (wasAdded)
             {
-                size++
                 LOG.debug("Added new message with uuid [{}] to queue with type [{}].", element.uuid, element.type)
                 true
             }
@@ -184,7 +196,6 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
         val wasRemoved = performRemove(element)
         if (wasRemoved)
         {
-            size--
             LOG.debug("Removed element with UUID [{}] from queue with type [{}].", element.uuid, element.type)
         }
         else

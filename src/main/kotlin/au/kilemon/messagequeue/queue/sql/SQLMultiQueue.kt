@@ -13,8 +13,6 @@ class SQLMultiQueue : MultiQueue, HasLogger
 {
     override val LOG: Logger = initialiseLogger()
 
-    override var size: Int = 0
-
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {
         TODO("Not yet implemented")

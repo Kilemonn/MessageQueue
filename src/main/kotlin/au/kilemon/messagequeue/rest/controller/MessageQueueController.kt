@@ -102,8 +102,9 @@ open class MessageQueueController : HasLogger
     @ApiResponse(responseCode = "200", description = "Successfully returns the information payload.")
     fun getAllQueueTypeInfo(): ResponseEntity<String>
     {
-        LOG.debug("Returning total multi-queue size [{}].", messageQueue.size)
-        return ResponseEntity.ok(messageQueue.size.toString())
+        val size = messageQueue.size
+        LOG.debug("Returning total multi-queue size [{}].", size)
+        return ResponseEntity.ok(size.toString())
     }
 
     /**

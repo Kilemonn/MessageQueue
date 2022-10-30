@@ -23,8 +23,6 @@ class RedisMultiQueue : MultiQueue, HasLogger
 {
     override val LOG: Logger = initialiseLogger()
 
-    override var size: Int = 0
-
     @Autowired
     @Lazy
     lateinit var messageQueueSettings: MessageQueueSettings
@@ -89,7 +87,6 @@ class RedisMultiQueue : MultiQueue, HasLogger
         if (queueForType.isNotEmpty())
         {
             amountRemoved = queueForType.size
-            size -= amountRemoved
             redisTemplate.delete(queueType)
             LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, amountRemoved)
         }

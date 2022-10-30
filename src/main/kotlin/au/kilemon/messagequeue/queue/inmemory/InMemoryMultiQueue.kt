@@ -30,8 +30,6 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
      */
     private val messageQueue: ConcurrentHashMap<String, Queue<QueueMessage>> = ConcurrentHashMap()
 
-    override var size: Int = 0
-
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {
         var queueForType: Queue<QueueMessage>? = messageQueue[queueType]
@@ -61,7 +59,6 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         if (queueForType != null)
         {
             amountRemoved = queueForType.size
-            size -= amountRemoved
             queueForType.forEach { message -> uuidMap.remove(message.uuid.toString()) }
             queueForType.clear()
             messageQueue.remove(queueType)
