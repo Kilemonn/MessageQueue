@@ -75,7 +75,14 @@ class SqlMultiQueue : MultiQueue, HasLogger
             try
             {
                 val results = statement.executeQuery()
-                LOG.info("Table with name [{}], already exists using table to store messages.", MessageQueueSettings.SQL_TABLE_NAME_DEFAULT)
+                if (!results.wasNull())
+                {
+                    LOG.info("Table with name [{}], already exists using table to store messages.", MessageQueueSettings.SQL_TABLE_NAME_DEFAULT)
+                }
+                else
+                {
+                    LOG.error("Table with name [{}], exists but select 1 returned an empty result.", MessageQueueSettings.SQL_TABLE_NAME_DEFAULT)
+                }
             }
             catch (ex: PSQLException)
             {
@@ -87,12 +94,11 @@ class SqlMultiQueue : MultiQueue, HasLogger
 
     private fun createTable()
     {
-        val createTableQuery = sqlType.getCreateStatement()
         connection.createStatement().use { statement ->
             try
             {
-                val results = statement.executeQuery(createTableQuery)
-                LOG.info("Successfully created table [{}].", MessageQueueSettings.SQL_TABLE_NAME_DEFAULT)
+                val result = statement.executeUpdate(sqlType.getCreateStatement())
+                LOG.info("Successfully created table [{}], result: [{}].", MessageQueueSettings.SQL_TABLE_NAME_DEFAULT, result)
             }
             catch (ex: PSQLException)
             {
