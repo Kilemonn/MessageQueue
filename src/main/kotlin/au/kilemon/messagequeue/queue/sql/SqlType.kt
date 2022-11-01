@@ -50,9 +50,13 @@ enum class SqlType(private val driverName: String)
     private fun postgresCreateStatement(): String
     {
         return "CREATE TABLE $SQL_TABLE_NAME_DEFAULT (\n" +
-                "    did     integer,\n" +
-                "    name    varchar(40),\n" +
-                "    CONSTRAINT con1 CHECK (did > 100 AND name <> '')\n" +
+                "   id SERIAL PRIMARY KEY,\n" +
+                "   type VARCHAR(200) NOT NULL,\n" +
+                "   \"uuid\" UUID NOT NULL,\n" +
+                "   assigned BOOLEAN DEFAULT FALSE,\n" +
+                "   assignedto VARCHAR(200),\n" +
+                "   payload JSON NOT NULL,\n" +
+                "   CONSTRAINT unique_uuid UNIQUE (\"uuid\")\n" +
                 ")"
     }
 
