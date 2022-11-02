@@ -21,5 +21,5 @@ enum class MultiQueueType
     /**
      * Will initialise and connect to a defined SQL database instance to store queue messages against.
      */
-    SQL_DATABASE;
+    SQL;
 }

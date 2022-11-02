@@ -1,6 +1,6 @@
 package au.kilemon.messagequeue.queue
 
-import au.kilemon.messagequeue.exception.DuplicateMessageException
+import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import org.slf4j.Logger

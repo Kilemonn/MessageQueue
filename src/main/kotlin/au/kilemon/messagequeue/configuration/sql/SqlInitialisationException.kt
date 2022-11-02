@@ -1,4 +1,4 @@
-package au.kilemon.messagequeue.queue.sql
+package au.kilemon.messagequeue.configuration.sql
 
 /**
  * A custom [RuntimeException] used to indicate that there was an error during the [SqlMultiQueue] initialisation.

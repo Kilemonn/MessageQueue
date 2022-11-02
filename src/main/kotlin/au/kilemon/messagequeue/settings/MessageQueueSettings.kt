@@ -41,15 +41,10 @@ class MessageQueueSettings
          * Start SQL related properties
          */
         const val SQL_DRIVER: String = "SQL_DRIVER"
-
+        const val SQL_DIALECT: String = "SQL_DIALECT"
         const val SQL_ENDPOINT: String = "SQL_ENDPOINT"
-
         const val SQL_USERNAME: String = "SQL_USERNAME"
-
         const val SQL_PASSWORD: String = "SQL_PASSWORD"
-
-        const val SQL_TABLE_NAME: String = "SQL_TABLE_NAME"
-        const val SQL_TABLE_NAME_DEFAULT: String = "multiqueuemessages"
     }
 
     /**
@@ -99,20 +94,19 @@ class MessageQueueSettings
     lateinit var redisMasterName: String
 
     /**
-     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL_DATABASE].
+     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
      *  Defines the underlying driver which is used to connect to the requested database.
      *
      *  Currently supports:
      *  - `com.mysql.jdbc.Driver`
      *  - `org.postgresql.Driver`
      *  - `oracle.jdbc.driver.OracleDriver`
-     *  This will be used to implicitly call the driver before a connection is made using `Class.forName("<driver-name>");`.
      */
     @Value("\${$SQL_DRIVER:}")
     lateinit var sqlDriver: String
 
     /**
-     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL_DATABASE].
+     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
      * This defines the database connection string e.g:
      * `"jdbc:mysql://localhost:3306/message-queue"`
      */
@@ -120,24 +114,27 @@ class MessageQueueSettings
     lateinit var sqlEndpoint: String
 
     /**
-     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL_DATABASE].
+     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
      * This is the username/account name used to access the database defined in [SQL_ENDPOINT].
      */
     @Value("\${$SQL_USERNAME:}")
     lateinit var sqlUsername: String
 
     /**
-     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL_DATABASE].
+     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
      * This is the password used to access the database defined in [SQL_ENDPOINT].
      */
     @Value("\${$SQL_PASSWORD:}")
     lateinit var sqlPassword: String
 
     /**
-     * `Optional` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL_DATABASE].
-     * This is used to define the table name used to store events. Define this value to override the default table name.
-     * The default is
+     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
+     * This is the dialect that hibernate will use when interacting with the underlying database.
+     * E.g.
+     * - `org.hibernate.dialect.MySQLDialect`
+     * - `org.hibernate.dialect.PostgreSQLDialect`
+     * - `org.hibernate.dialect.OracleDialect`
      */
-//    @Value("\${$SQL_TABLE_NAME:$SQL_TABLE_NAME_DEFAULT}")
-//    lateinit var sqlTableName: String
+    @Value("\${$SQL_DIALECT:}")
+    lateinit var sqlDialect: String
 }

@@ -63,7 +63,7 @@ open class MessageQueueApplication : HasLogger
             {
                 RedisMultiQueue()
             }
-            MultiQueueType.SQL_DATABASE.toString() ->
+            MultiQueueType.SQL.toString() ->
             {
                 SqlMultiQueue()
             }

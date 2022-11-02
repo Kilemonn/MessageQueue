@@ -20,6 +20,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web:2.7.5")
     implementation("org.springframework.boot:spring-boot-starter-validation:2.7.5")
 
+    // JPA dependency
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.7.5")
+
     // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-ui
     implementation("org.springdoc:springdoc-openapi-ui:1.6.11")
 

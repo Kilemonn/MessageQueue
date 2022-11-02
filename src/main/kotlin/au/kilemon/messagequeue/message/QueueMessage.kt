@@ -1,7 +1,10 @@
 package au.kilemon.messagequeue.message
 
+import au.kilemon.messagequeue.settings.MessageQueueSettings
+import com.fasterxml.jackson.annotation.JsonIgnore
 import java.io.Serializable
 import java.util.*
+import javax.persistence.*
 
 /**
  * A base [QueueMessage] object which will wrap any object that is placed into the `MultiQueue`.
@@ -10,9 +13,22 @@ import java.util.*
  *
  * @author github.com/KyleGonzalez
  */
-class QueueMessage(val payload: Any?, val type: String, var assigned: Boolean = false, var assignedTo: String? = null): Serializable
+@Entity
+@Table(name = QueueMessage.TABLE_NAME)
+class QueueMessage(val payload: Any?, @Column(nullable = false) val type: String, @Column(nullable = false) var assigned: Boolean = false, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
 {
+    companion object
+    {
+        const val TABLE_NAME: String = "multiqueuemessages"
+    }
+
+    @Column(nullable = false, unique = true)
     var uuid: UUID = UUID.randomUUID()
+
+    @JsonIgnore
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Int? = null
 
     /**
      * Required for JSON deserialisation.

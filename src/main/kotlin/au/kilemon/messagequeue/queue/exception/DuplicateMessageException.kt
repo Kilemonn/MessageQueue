@@ -1,4 +1,4 @@
-package au.kilemon.messagequeue.exception
+package au.kilemon.messagequeue.queue.exception
 
 /**
  * A specific exception used to indicate that an exist `QueueMessage` with the same `UUID` already exists and the new `QueueMessage` can not be added to the queue.
