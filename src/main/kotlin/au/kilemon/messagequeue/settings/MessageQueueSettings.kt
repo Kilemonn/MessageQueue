@@ -101,6 +101,7 @@ class MessageQueueSettings
      *  - `com.mysql.jdbc.Driver`
      *  - `org.postgresql.Driver`
      *  - `oracle.jdbc.driver.OracleDriver`
+     *  -
      */
     @Value("\${$SQL_DRIVER:}")
     lateinit var sqlDriver: String
@@ -134,6 +135,7 @@ class MessageQueueSettings
      * - `org.hibernate.dialect.MySQLDialect`
      * - `org.hibernate.dialect.PostgreSQLDialect`
      * - `org.hibernate.dialect.OracleDialect`
+     * - `org.hibernate.dialect.SQLServerDialect`
      */
     @Value("\${$SQL_DIALECT:}")
     lateinit var sqlDialect: String

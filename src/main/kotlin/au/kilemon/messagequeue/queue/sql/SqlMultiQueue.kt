@@ -33,7 +33,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
 
     override fun clearForType(queueType: String): Int
     {
-        TODO("Not yet implemented")
+        return queueMessageRepository.deleteByType(queueType)
     }
 
     override fun isEmptyForType(queueType: String): Boolean
@@ -46,9 +46,12 @@ class SqlMultiQueue : MultiQueue, HasLogger
         TODO("Not yet implemented")
     }
 
+    /**
+     * The [includeEmpty] has no benefit here, it is always `false`.
+     */
     override fun keys(includeEmpty: Boolean): Set<String>
     {
-        TODO("Not yet implemented")
+        return queueMessageRepository.findDistinctType().toSet()
     }
 
     override fun containsUUID(uuid: String): Optional<String>

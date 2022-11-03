@@ -1,6 +1,7 @@
 package au.kilemon.messagequeue.configuration.sql
 
 import au.kilemon.messagequeue.logging.HasLogger
+import au.kilemon.messagequeue.queue.sql.SqlType
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.hibernate.Session
 import org.slf4j.Logger
@@ -20,8 +21,16 @@ class SqlConfiguration: HasLogger
 
     companion object
     {
+        /**
+         *
+         */
         fun createDatabaseProperties(messageQueueSettings: MessageQueueSettings): Properties
         {
+            if (!SqlType.matchingDriverAndDialect(messageQueueSettings.sqlDriver, messageQueueSettings.sqlDialect))
+            {
+                throw SqlInitialisationException("Provided driver [{}] and dialect [{}] are either not supported or not compatible.")
+            }
+
             val properties = Properties()
             properties["hibernate.dialect"] = messageQueueSettings.sqlDialect
             properties["hibernate.connection.driver_class"] = messageQueueSettings.sqlDriver
@@ -37,6 +46,9 @@ class SqlConfiguration: HasLogger
     @Autowired
     lateinit var messageQueueSettings: MessageQueueSettings
 
+    /**
+     *
+     */
     @Bean
     @ConditionalOnProperty(name=[MessageQueueSettings.MULTI_QUEUE_TYPE], havingValue="SQL")
     fun createHibernateSession(): Session
@@ -47,6 +59,9 @@ class SqlConfiguration: HasLogger
         return configuration.configure().buildSessionFactory().currentSession
     }
 
+    /**
+     *
+     */
     private fun logPropertiesWithoutPassword(properties: Properties)
     {
         val propertiesWithoutPassword = Properties(properties)

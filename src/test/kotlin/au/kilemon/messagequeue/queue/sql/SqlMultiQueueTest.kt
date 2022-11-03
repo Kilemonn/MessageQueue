@@ -2,9 +2,11 @@ package au.kilemon.messagequeue.queue.sql
 
 import au.kilemon.messagequeue.configuration.sql.SqlConfiguration
 import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
+import au.kilemon.messagequeue.queue.sql.repository.QueueMessageRepository
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.hibernate.Session
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
@@ -13,12 +15,17 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Lazy
+import org.springframework.stereotype.Service
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import org.testcontainers.containers.GenericContainer
 import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.utility.DockerImageName
 import java.util.*
 
-
+/**
+ *
+ */
 @ExtendWith(SpringExtension::class)
 @TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=SQL"])
 @Testcontainers
@@ -26,9 +33,12 @@ class SqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
 {
     companion object
     {
-//        lateinit var redis: GenericContainer<*>
+        lateinit var database: GenericContainer<*>
 
-        lateinit var initialProperties: Properties
+        private lateinit var initialProperties: Properties
+
+        private const val POSTGRES_CONTAINER = "postgres:14.5"
+        private const val POSTGRES_PORT = 5432
 
         /**
          * Force start the container, so we can place its host and dynamic ports into the system properties.
@@ -39,17 +49,21 @@ class SqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
         @JvmStatic
         fun beforeClass()
         {
-//            redis = GenericContainer(DockerImageName.parse(REDIS_CONTAINER))
-//                .withExposedPorts(REDIS_PORT).withReuse(false)
-//            redis.start()
+            val password = "password"
+            val envMap = HashMap<String, String>()
+            envMap["POSTGRES_PASSWORD"] = password
+
+            database = GenericContainer(DockerImageName.parse(POSTGRES_CONTAINER))
+                .withExposedPorts(POSTGRES_PORT).withReuse(false).withEnv(envMap)
+            database.start()
 
             initialProperties = Properties(System.getProperties())
             val properties = System.getProperties()
             properties[MessageQueueSettings.SQL_DRIVER] = "org.postgresql.Driver"
             properties[MessageQueueSettings.SQL_DIALECT] = "org.hibernate.dialect.PostgreSQLDialect"
-            properties[MessageQueueSettings.SQL_ENDPOINT] = "jdbc:postgresql://127.0.0.1:5432/postgres"
+            properties[MessageQueueSettings.SQL_ENDPOINT] = "jdbc:postgresql://${database.host}:${database.getMappedPort(POSTGRES_PORT)}/postgres"
             properties[MessageQueueSettings.SQL_USERNAME] = "postgres"
-            properties[MessageQueueSettings.SQL_PASSWORD] = "password"
+            properties[MessageQueueSettings.SQL_PASSWORD] = password
             System.setProperties(properties)
         }
 
@@ -60,8 +74,7 @@ class SqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
         @JvmStatic
         fun afterClass()
         {
-//            redis.stop()
-
+            database.stop()
             System.setProperties(initialProperties)
         }
     }
@@ -128,7 +141,7 @@ class SqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
     @BeforeEach
     fun beforeEach()
     {
-//        Assertions.assertTrue(redis.isRunning)
+        Assertions.assertTrue(database.isRunning)
         multiQueue.clear()
     }
 }

@@ -37,8 +37,10 @@ dependencies {
     implementation("com.mysql:mysql-connector-j:8.0.31")
     // https://mvnrepository.com/artifact/org.postgresql/postgresql
     implementation("org.postgresql:postgresql:42.5.0")
-    // https://mvnrepository.com/artifact/com.oracle.database.jdbc/ojdbc10
-    implementation("com.oracle.database.jdbc:ojdbc10:19.16.0.0")
+    // https://mvnrepository.com/artifact/com.oracle.database.jdbc/ojdbc11
+    implementation("com.oracle.database.jdbc:ojdbc11:21.7.0.0")
+    // https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc
+    implementation("com.microsoft.sqlserver:mssql-jdbc:11.2.1.jre17")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test:2.7.5")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
