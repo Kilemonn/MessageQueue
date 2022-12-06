@@ -55,14 +55,6 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     fun getQueueForType(queueType: String): Queue<QueueMessage>
 
     /**
-     * Initialise and register the provided [Queue] against the [String].
-     *
-     * @param queueType the [String] to register the [Queue] against
-     * @param queue the queue to register
-     */
-    fun initialiseQueueForType(queueType: String, queue: Queue<QueueMessage>)
-
-    /**
      * Clears the underlying [Queue] for the provided [String]. By calling [Queue.clear].
      *
      * This method should update the [size] property as part of the clearing of the sub-queue.
@@ -92,6 +84,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
         val head = performPoll(queueType)
         if (head.isPresent)
         {
+            performRemove(head.get())
             LOG.debug("Found and removed head element with UUID [{}] from queue with type [{}].", head.get().uuid, queueType)
         }
         else
@@ -104,6 +97,9 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     /**
      * The internal poll method to be called.
      * This is not to  be called directly.
+     *
+     * This method should return the first element in the queue for the provided [queueType].
+     * *The caller will remove this element*.
      *
      * @param queueType the sub-queue to poll
      * @return the first message wrapped as an [Optional] otherwise [Optional.empty]

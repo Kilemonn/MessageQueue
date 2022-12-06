@@ -8,6 +8,7 @@ import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
 import java.util.*
+import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
  *
@@ -23,12 +24,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
 
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {
-        TODO("Not yet implemented")
-    }
-
-    override fun initialiseQueueForType(queueType: String, queue: Queue<QueueMessage>)
-    {
-        TODO("Not yet implemented")
+        return ConcurrentLinkedQueue(queueMessageRepository.findByTypeOrderByIdAsc(queueType))
     }
 
     override fun clearForType(queueType: String): Int
@@ -38,12 +34,20 @@ class SqlMultiQueue : MultiQueue, HasLogger
 
     override fun isEmptyForType(queueType: String): Boolean
     {
-        TODO("Not yet implemented")
+        return queueMessageRepository.findByTypeOrderByIdAsc(queueType).isEmpty()
     }
 
     override fun performPoll(queueType: String): Optional<QueueMessage>
     {
-        TODO("Not yet implemented")
+        val messages = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
+        return if (messages.isNotEmpty())
+        {
+            return Optional.of(messages[0])
+        }
+        else
+        {
+            Optional.empty()
+        }
     }
 
     /**
@@ -56,16 +60,33 @@ class SqlMultiQueue : MultiQueue, HasLogger
 
     override fun containsUUID(uuid: String): Optional<String>
     {
-        TODO("Not yet implemented")
+        val message = queueMessageRepository.findByUuid(uuid)
+        return if (message.isPresent)
+        {
+            Optional.of(message.get().type)
+        }
+        else
+        {
+            Optional.empty()
+        }
     }
 
     override fun performAdd(element: QueueMessage): Boolean
     {
-        TODO("Not yet implemented")
+        val saved = queueMessageRepository.save(element)
+        return saved.id != null
     }
 
     override fun performRemove(element: QueueMessage): Boolean
     {
-        TODO("Not yet implemented")
+        return try
+        {
+            queueMessageRepository.delete(element)
+            true
+        }
+        catch (ex: Exception)
+        {
+            false
+        }
     }
 }

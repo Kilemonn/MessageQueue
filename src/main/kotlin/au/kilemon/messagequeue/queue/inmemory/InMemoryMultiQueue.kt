@@ -46,7 +46,13 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         return queueForType
     }
 
-    override fun initialiseQueueForType(queueType: String, queue: Queue<QueueMessage>)
+    /**
+     * Initialise and register the provided [Queue] against the [String].
+     *
+     * @param queueType the [String] to register the [Queue] against
+     * @param queue the queue to register
+     */
+    private fun initialiseQueueForType(queueType: String, queue: Queue<QueueMessage>)
     {
         LOG.debug("Initialising new queue for type [{}].", queueType)
         messageQueue[queueType] = queue
@@ -171,6 +177,13 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
     override fun performPoll(queueType: String): Optional<QueueMessage>
     {
         val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
-        return Optional.ofNullable(queueForType.poll())
+        return if (queueForType.isNotEmpty())
+        {
+            Optional.of(queueForType.iterator().next())
+        }
+        else
+        {
+            Optional.empty()
+        }
     }
 }

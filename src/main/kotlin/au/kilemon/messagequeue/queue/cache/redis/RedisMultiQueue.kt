@@ -60,14 +60,6 @@ class RedisMultiQueue : MultiQueue, HasLogger
         return queue
     }
 
-    /**
-     * Not required for Redis as we can add messages directly without initialising the cache.
-     */
-    override fun initialiseQueueForType(queueType: String, queue: Queue<QueueMessage>)
-    {
-        // Not used
-    }
-
     override fun performAdd(element: QueueMessage): Boolean
     {
         val result = redisTemplate.opsForSet().add(appendPrefix(element.type), element)
@@ -107,9 +99,7 @@ class RedisMultiQueue : MultiQueue, HasLogger
         val set = redisTemplate.opsForSet().members(appendPrefix(queueType))
         if (!set.isNullOrEmpty())
         {
-            val next = set.iterator().next()
-            redisTemplate.opsForSet().remove(appendPrefix(queueType), next)
-            return Optional.of(next)
+            return Optional.of(set.iterator().next())
         }
         return Optional.empty()
     }
