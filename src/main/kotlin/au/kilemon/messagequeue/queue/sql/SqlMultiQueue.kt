@@ -11,6 +11,8 @@ import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
+ * A database backed [MultiQueue]. All operations are performed directly on the database it is the complete source of truth.
+ * It allows the messages to never go out of sync in a case where there are multiple [MultiQueue]s working on the same data source.
  *
  * @author github.com/KyleGonzalez
  */
@@ -29,7 +31,9 @@ class SqlMultiQueue : MultiQueue, HasLogger
 
     override fun clearForType(queueType: String): Int
     {
-        return queueMessageRepository.deleteByType(queueType)
+        val amountCleared = queueMessageRepository.deleteByType(queueType)
+        LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, amountCleared)
+        return amountCleared
     }
 
     override fun isEmptyForType(queueType: String): Boolean
@@ -51,22 +55,27 @@ class SqlMultiQueue : MultiQueue, HasLogger
     }
 
     /**
-     * The [includeEmpty] has no benefit here, it is always `false`.
+     * The [includeEmpty] value makes no difference it is always effectively `false`.
      */
     override fun keys(includeEmpty: Boolean): Set<String>
     {
-        return queueMessageRepository.findDistinctType().toSet()
+        val keySet = queueMessageRepository.findDistinctType().toSet()
+        LOG.debug("Total amount of queue keys [{}].", keySet.size)
+        return keySet
     }
 
     override fun containsUUID(uuid: String): Optional<String>
     {
-        val message = queueMessageRepository.findByUuid(uuid)
-        return if (message.isPresent)
+        val optionalMessage = queueMessageRepository.findByUuid(uuid)
+        return if (optionalMessage.isPresent)
         {
-            Optional.of(message.get().type)
+            val message = optionalMessage.get()
+            LOG.debug("Found queue type [{}] for UUID: [{}].", message.type, uuid)
+            Optional.of(message.type)
         }
         else
         {
+            LOG.debug("No queue type exists for UUID: [{}].", uuid)
             Optional.empty()
         }
     }
