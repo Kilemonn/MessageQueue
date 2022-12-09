@@ -1,6 +1,5 @@
 package au.kilemon.messagequeue.message
 
-import au.kilemon.messagequeue.settings.MessageQueueSettings
 import com.fasterxml.jackson.annotation.JsonIgnore
 import java.io.Serializable
 import java.util.*

@@ -82,20 +82,15 @@ class SqlMultiQueue : MultiQueue, HasLogger
 
     override fun performAdd(element: QueueMessage): Boolean
     {
+        // I would check that the saved is the same as the incoming element
+        // But we ensure the same message does not already exist (with the same UUID)
         val saved = queueMessageRepository.save(element)
         return saved.id != null
     }
 
     override fun performRemove(element: QueueMessage): Boolean
     {
-        return try
-        {
-            queueMessageRepository.delete(element)
-            true
-        }
-        catch (ex: Exception)
-        {
-            false
-        }
+        queueMessageRepository.delete(element)
+        return true
     }
 }
