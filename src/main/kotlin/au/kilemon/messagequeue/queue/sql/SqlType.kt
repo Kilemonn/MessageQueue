@@ -8,7 +8,7 @@ import java.util.*
  *
  * @author github.com/KyleGonzalez
  */
-enum class SqlType(private val driverName: String, private val dialects: List<String>)
+enum class SqlType(val driverName: String, val dialects: List<String>)
 {
     MYSQL("com.mysql.jdbc.Driver", listOf("org.hibernate.dialect.MySQLDialect", "org.hibernate.dialect.MySQLInnoDBDialect", "org.hibernate.dialect.MySQLMyISAMDialect")),
     POSTGRES("org.postgresql.Driver", listOf("org.hibernate.dialect.PostgreSQLDialect")),

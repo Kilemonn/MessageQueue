@@ -1,9 +1,7 @@
 package au.kilemon.messagequeue.queue.sql
 
-import au.kilemon.messagequeue.configuration.sql.SqlConfiguration
 import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
-import org.hibernate.Session
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -62,7 +60,6 @@ class SqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
     /**
      *
      * @author github.com/KyleGonzalez
-     *
      */
     internal class Initializer : ApplicationContextInitializer<ConfigurableApplicationContext>
     {
@@ -86,8 +83,8 @@ class SqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
 
             initialProperties = Properties(System.getProperties())
             val properties = System.getProperties()
-            properties[MessageQueueSettings.SQL_DRIVER] = "org.postgresql.Driver"
-            properties[MessageQueueSettings.SQL_DIALECT] = "org.hibernate.dialect.PostgreSQLDialect"
+            properties[MessageQueueSettings.SQL_DRIVER] = SqlType.POSTGRES.driverName
+            properties[MessageQueueSettings.SQL_DIALECT] = SqlType.POSTGRES.dialects[0]
             properties[MessageQueueSettings.SQL_ENDPOINT] = endpoint
             properties[MessageQueueSettings.SQL_USERNAME] = username
             properties[MessageQueueSettings.SQL_PASSWORD] = password
@@ -137,24 +134,6 @@ class SqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
         {
             return SqlMultiQueue()
         }
-
-        @Bean
-        @Lazy
-        open fun createHibernateSession(): Session
-        {
-            val properties = SqlConfiguration.createDatabaseProperties(messageQueueSettings)
-            val configuration = org.hibernate.cfg.Configuration().setProperties(properties)
-            return configuration.configure().buildSessionFactory().currentSession
-        }
-
-//        @Bean
-//        @Lazy
-//        fun getEntityFactory(): LocalContainerEntityManagerFactoryBean
-//        {
-//            val manager = LocalContainerEntityManagerFactoryBean()
-//
-//            return manager
-//        }
     }
 
     /**
