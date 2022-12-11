@@ -2,20 +2,23 @@ package au.kilemon.messagequeue.queue.sql
 
 import au.kilemon.messagequeue.configuration.sql.SqlConfiguration
 import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
-import au.kilemon.messagequeue.queue.sql.repository.QueueMessageRepository
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.hibernate.Session
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.boot.test.util.TestPropertyValues
+import org.springframework.context.ApplicationContextInitializer
+import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Lazy
-import org.springframework.stereotype.Service
+import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.testcontainers.containers.GenericContainer
@@ -23,12 +26,16 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
 import java.util.*
 
+
 /**
  *
  */
 @ExtendWith(SpringExtension::class)
 @TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=SQL"])
 @Testcontainers
+@DataJpaTest
+@ContextConfiguration(initializers = [SqlMultiQueueTest.Initializer::class])
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class SqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
 {
     companion object
@@ -41,13 +48,30 @@ class SqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
         private const val POSTGRES_PORT = 5432
 
         /**
+         * Stop the container at the end of all the tests.
+         */
+        @AfterAll
+        @JvmStatic
+        fun afterClass()
+        {
+            database.stop()
+            System.setProperties(initialProperties)
+        }
+    }
+
+    /**
+     *
+     * @author github.com/KyleGonzalez
+     *
+     */
+    internal class Initializer : ApplicationContextInitializer<ConfigurableApplicationContext>
+    {
+        /**
          * Force start the container, so we can place its host and dynamic ports into the system properties.
          *
          * Set the environment variables before any of the beans are initialised.
          */
-        @BeforeAll
-        @JvmStatic
-        fun beforeClass()
+        override fun initialize(configurableApplicationContext: ConfigurableApplicationContext)
         {
             val password = "password"
             val envMap = HashMap<String, String>()
@@ -57,25 +81,23 @@ class SqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
                 .withExposedPorts(POSTGRES_PORT).withReuse(false).withEnv(envMap)
             database.start()
 
+            val endpoint = "jdbc:postgresql://${database.host}:${database.getMappedPort(POSTGRES_PORT)}/postgres"
+            val username = "postgres"
+
             initialProperties = Properties(System.getProperties())
             val properties = System.getProperties()
             properties[MessageQueueSettings.SQL_DRIVER] = "org.postgresql.Driver"
             properties[MessageQueueSettings.SQL_DIALECT] = "org.hibernate.dialect.PostgreSQLDialect"
-            properties[MessageQueueSettings.SQL_ENDPOINT] = "jdbc:postgresql://${database.host}:${database.getMappedPort(POSTGRES_PORT)}/postgres"
-            properties[MessageQueueSettings.SQL_USERNAME] = "postgres"
+            properties[MessageQueueSettings.SQL_ENDPOINT] = endpoint
+            properties[MessageQueueSettings.SQL_USERNAME] = username
             properties[MessageQueueSettings.SQL_PASSWORD] = password
             System.setProperties(properties)
-        }
 
-        /**
-         * Stop the container at the end of all the tests.
-         */
-        @AfterAll
-        @JvmStatic
-        fun afterClass()
-        {
-            database.stop()
-            System.setProperties(initialProperties)
+            TestPropertyValues.of(
+                "spring.datasource.url=$endpoint",
+                "spring.datasource.username=$username",
+                "spring.datasource.password=$password"
+            ).applyTo(configurableApplicationContext.environment)
         }
     }
 

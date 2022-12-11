@@ -7,6 +7,9 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import java.util.*
 
+/**
+ *
+ */
 @Repository
 interface QueueMessageRepository: JpaRepository<QueueMessage, Int>
 {

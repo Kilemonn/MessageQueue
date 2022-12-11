@@ -14,7 +14,7 @@ import javax.persistence.*
  */
 @Entity
 @Table(name = QueueMessage.TABLE_NAME)
-class QueueMessage(val payload: Any?, @Column(nullable = false) val type: String, @Column(nullable = false) var assigned: Boolean = false, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
+class QueueMessage(@Lob @Column(columnDefinition = "BLOB") val payload: Any?, @Column(nullable = false) val type: String, @Column(nullable = false) var assigned: Boolean = false, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
 {
     companion object
     {
