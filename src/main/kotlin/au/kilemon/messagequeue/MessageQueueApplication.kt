@@ -30,11 +30,6 @@ open class MessageQueueApplication : HasLogger
     companion object
     {
         /**
-         * The `resource` path to the `messages.properties` file that holds external source messages.
-         */
-        const val SOURCE_MESSAGES: String = "classpath:messages"
-
-        /**
          * Application version number, make sure this matches what is defined in `build.gradle.kts`.
          */
         const val VERSION: String = "0.1.4"
@@ -44,7 +39,7 @@ open class MessageQueueApplication : HasLogger
     lateinit var messageQueueSettings: MessageQueueSettings
 
     @Autowired
-    lateinit var messagesSource: MessageSource
+    lateinit var messageSource: ReloadableResourceBundleMessageSource
 
     /**
      * Initialise the [MultiQueue] [Bean] based on the [MessageQueueSettings.multiQueueType].
@@ -52,7 +47,7 @@ open class MessageQueueApplication : HasLogger
     @Bean
     open fun getMultiQueue(): MultiQueue
     {
-        LOG.info(messagesSource.getMessage(Messages.VERSION_START_UP, null, Locale.getDefault()), VERSION)
+        LOG.info(messageSource.getMessage(Messages.VERSION_START_UP, null, Locale.getDefault()), VERSION)
         val queue: MultiQueue = when (messageQueueSettings.multiQueueType)
         {
             MultiQueueType.IN_MEMORY.toString() ->
@@ -75,18 +70,6 @@ open class MessageQueueApplication : HasLogger
         LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType)
 
         return queue
-    }
-
-    /**
-     * Initialise the [MessageSource] [Bean] to read from [MessageQueueApplication.SOURCE_MESSAGES].
-     */
-    @Bean
-    open fun getMessageSource(): MessageSource
-    {
-        val messageSource = ReloadableResourceBundleMessageSource()
-        messageSource.setBasename(SOURCE_MESSAGES)
-        LOG.debug(messageSource.getMessage(Messages.INITIALISING_MESSAGE_SOURCE, null, Locale.getDefault()), SOURCE_MESSAGES)
-        return messageSource
     }
 }
 

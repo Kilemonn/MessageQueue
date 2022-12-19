@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.rest.controller
 
+import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import au.kilemon.messagequeue.settings.MultiQueueType
 import com.google.gson.Gson
@@ -27,6 +28,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
  */
 @ExtendWith(SpringExtension::class)
 @WebMvcTest(controllers = [SettingsController::class], properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=IN_MEMORY"])
+@Import(LoggingConfiguration::class)
 class SettingsControllerTest
 {
     /**

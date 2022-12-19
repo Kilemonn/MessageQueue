@@ -32,6 +32,9 @@ dependencies {
 
     compileOnly("org.projectlombok:lombok:1.18.24")
 
+    // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-reflect
+    runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.7.20")
+
     // Database drivers
     // https://mvnrepository.com/artifact/com.mysql/mysql-connector-j
     implementation("com.mysql:mysql-connector-j:8.0.31")

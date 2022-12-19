@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.message
 
+import au.kilemon.messagequeue.settings.MessageQueueSettings
 import com.fasterxml.jackson.annotation.JsonIgnore
 import java.io.Serializable
 import java.util.*
@@ -13,7 +14,7 @@ import javax.persistence.*
  * @author github.com/KyleGonzalez
  */
 @Entity
-@Table(name = QueueMessage.TABLE_NAME)
+@Table(name = QueueMessage.TABLE_NAME) // TODO: Schema configuration schema = "\${${MessageQueueSettings.SQL_SCHEMA}:${MessageQueueSettings.SQL_SCHEMA_DEFAULT}}")
 class QueueMessage(@Lob @Column(columnDefinition = "BLOB") val payload: Any?, @Column(nullable = false) val type: String, @Column(nullable = false) var assigned: Boolean = false, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
 {
     companion object
@@ -53,6 +54,13 @@ class QueueMessage(@Lob @Column(columnDefinition = "BLOB") val payload: Any?, @C
         }
     }
 
+    /**
+     * Overriding to only include specific properties when checking if messages are equal.
+     * This checks the following are equal in order to return `true`:
+     * - UUID
+     * - payload value
+     * - type
+     */
     override fun equals(other: Any?): Boolean
     {
         if (other == null || other !is QueueMessage)
@@ -65,6 +73,9 @@ class QueueMessage(@Lob @Column(columnDefinition = "BLOB") val payload: Any?, @C
                 && this.type == other.type
     }
 
+    /**
+     * Only performs a hashcode on the properties checked in [QueueMessage.equals].
+     */
     override fun hashCode(): Int {
         var result = payload?.hashCode() ?: 0
         result = 31 * result + type.hashCode()

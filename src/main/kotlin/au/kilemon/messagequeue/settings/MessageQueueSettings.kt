@@ -45,6 +45,12 @@ class MessageQueueSettings
         const val SQL_ENDPOINT: String = "SQL_ENDPOINT"
         const val SQL_USERNAME: String = "SQL_USERNAME"
         const val SQL_PASSWORD: String = "SQL_PASSWORD"
+
+        /**
+         * SQL Schema properties
+         */
+        const val SQL_SCHEMA: String = "SQL_SCHEMA"
+        const val SQL_SCHEMA_DEFAULT: String = "public"
     }
 
     /**

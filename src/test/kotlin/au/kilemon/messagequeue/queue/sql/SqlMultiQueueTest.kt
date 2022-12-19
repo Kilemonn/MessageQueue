@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.queue.sql
 
+import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
@@ -15,9 +16,9 @@ import org.springframework.boot.test.util.TestPropertyValues
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Lazy
 import org.springframework.test.context.ContextConfiguration
-import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.junit.jupiter.Testcontainers
@@ -26,14 +27,16 @@ import java.util.*
 
 
 /**
+ * https://reflectoring.io/spring-boot-test/
  *
+ * @author github.com/KyleGonzalez
  */
 @ExtendWith(SpringExtension::class)
-@TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=SQL"])
 @Testcontainers
-@DataJpaTest
+@DataJpaTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=SQL"])
 @ContextConfiguration(initializers = [SqlMultiQueueTest.Initializer::class])
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import(LoggingConfiguration::class)
 class SqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
 {
     companion object

@@ -13,6 +13,7 @@ import java.util.*
 
 /**
  *
+ * @author github.com/KyleGonzalez
  */
 @Configuration
 class SqlConfiguration: HasLogger
