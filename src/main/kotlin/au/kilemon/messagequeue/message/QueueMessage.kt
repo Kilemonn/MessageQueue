@@ -1,7 +1,7 @@
 package au.kilemon.messagequeue.message
 
-import au.kilemon.messagequeue.settings.MessageQueueSettings
 import com.fasterxml.jackson.annotation.JsonIgnore
+import org.hibernate.annotations.Type
 import java.io.Serializable
 import java.util.*
 import javax.persistence.*
@@ -15,7 +15,7 @@ import javax.persistence.*
  */
 @Entity
 @Table(name = QueueMessage.TABLE_NAME) // TODO: Schema configuration schema = "\${${MessageQueueSettings.SQL_SCHEMA}:${MessageQueueSettings.SQL_SCHEMA_DEFAULT}}")
-class QueueMessage(@Lob @Column(columnDefinition = "BLOB") val payload: Any?, @Column(nullable = false) val type: String, @Column(nullable = false) var assigned: Boolean = false, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
+class QueueMessage(@Lob @Type(type = "org.hibernate.type.BinaryType") @Column val payload: Any?, @Column(nullable = false) val type: String, @Column(nullable = false) var assigned: Boolean = false, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
 {
     companion object
     {
@@ -23,7 +23,7 @@ class QueueMessage(@Lob @Column(columnDefinition = "BLOB") val payload: Any?, @C
     }
 
     @Column(nullable = false, unique = true)
-    var uuid: UUID = UUID.randomUUID()
+    var uuid: String = UUID.randomUUID().toString()
 
     @JsonIgnore
     @Id

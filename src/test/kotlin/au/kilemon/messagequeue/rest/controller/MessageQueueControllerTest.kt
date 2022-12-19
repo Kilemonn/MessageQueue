@@ -794,7 +794,7 @@ class MessageQueueControllerTest
         val uuid = UUID.randomUUID().toString()
         val payload = Payload("test", 12, true, PayloadEnum.C)
         val message = QueueMessage(payload = payload, type = type)
-        message.uuid = UUID.fromString(uuid)
+        message.uuid = UUID.fromString(uuid).toString()
 
         if (assignedTo != null)
         {

@@ -90,7 +90,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
 
     override fun performRemove(element: QueueMessage): Boolean
     {
-        queueMessageRepository.delete(element)
-        return true
+        val removedCount = queueMessageRepository.deleteByUuid(element.uuid.toString())
+        return removedCount > 0
     }
 }

@@ -27,7 +27,6 @@ import java.util.*
 
 
 /**
- * https://reflectoring.io/spring-boot-test/
  *
  * @author github.com/KyleGonzalez
  */

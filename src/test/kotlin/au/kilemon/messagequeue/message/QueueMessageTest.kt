@@ -18,7 +18,7 @@ class QueueMessageTest
     @Test
     fun testEquals()
     {
-        val uuid = UUID.randomUUID()
+        val uuid = UUID.randomUUID().toString()
         val message1 = QueueMessage()
         message1.uuid = uuid
         val message2 = QueueMessage()

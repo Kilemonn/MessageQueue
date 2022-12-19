@@ -27,11 +27,6 @@ class SqlConfiguration: HasLogger
          */
         fun createDatabaseProperties(messageQueueSettings: MessageQueueSettings): Properties
         {
-            if (!SqlType.matchingDriverAndDialect(messageQueueSettings.sqlDriver, messageQueueSettings.sqlDialect))
-            {
-                throw SqlInitialisationException("Provided driver [{}] and dialect [{}] are either not supported or not compatible.")
-            }
-
             val properties = Properties()
             properties["hibernate.dialect"] = messageQueueSettings.sqlDialect
             properties["hibernate.connection.driver_class"] = messageQueueSettings.sqlDriver
@@ -69,6 +64,5 @@ class SqlConfiguration: HasLogger
         propertiesWithoutPassword.remove("hibernate.connection.password")
         // Keep the password out of the property map before its logged
         LOG.info("Initialising Sql connection with the following properties: [{}], Password length [{}].", properties.toString(), messageQueueSettings.sqlPassword.length)
-
     }
 }

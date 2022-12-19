@@ -49,4 +49,7 @@ interface QueueMessageRepository: JpaRepository<QueueMessage, Int>
      * @return the [Optional] that may contain the found [QueueMessage]
      */
     fun findByUuid(uuid: String): Optional<QueueMessage>
+
+    @Modifying
+    fun deleteByUuid(uuid: String): Int
 }
