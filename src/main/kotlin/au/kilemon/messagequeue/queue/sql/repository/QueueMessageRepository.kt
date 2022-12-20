@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
 /**
@@ -23,6 +24,7 @@ interface QueueMessageRepository: JpaRepository<QueueMessage, Int>
      * @return the number of deleted entities
      */
     @Modifying
+    @Transactional
     @Query("DELETE FROM QueueMessage WHERE type = ?1")
     fun deleteByType(type: String): Int
 
@@ -50,6 +52,13 @@ interface QueueMessageRepository: JpaRepository<QueueMessage, Int>
      */
     fun findByUuid(uuid: String): Optional<QueueMessage>
 
+    /**
+     * Delete a [QueueMessage] by `uuid`.
+     *
+     * @param uuid the UUID of the [QueueMessage.uuid] to remove
+     * @return the number of removed entries (most likely one since the UUID is unique)
+     */
     @Modifying
+    @Transactional
     fun deleteByUuid(uuid: String): Int
 }

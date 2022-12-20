@@ -246,7 +246,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
         val peekedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertTrue(message == peekedMessage)
+        Assertions.assertEquals(message, peekedMessage)
         Assertions.assertFalse(multiQueue.isEmpty())
     }
 

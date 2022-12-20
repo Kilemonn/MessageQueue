@@ -26,7 +26,8 @@ class SqlMultiQueue : MultiQueue, HasLogger
 
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {
-        return ConcurrentLinkedQueue(queueMessageRepository.findByTypeOrderByIdAsc(queueType))
+        val entries = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
+        return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
     }
 
     override fun clearForType(queueType: String): Int
@@ -46,7 +47,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
         val messages = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
         return if (messages.isNotEmpty())
         {
-            return Optional.of(messages[0])
+            return Optional.of(messages[0].resolvePayloadObject())
         }
         else
         {
@@ -90,7 +91,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
 
     override fun performRemove(element: QueueMessage): Boolean
     {
-        val removedCount = queueMessageRepository.deleteByUuid(element.uuid.toString())
+        val removedCount = queueMessageRepository.deleteByUuid(element.uuid)
         return removedCount > 0
     }
 }
