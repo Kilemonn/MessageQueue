@@ -41,12 +41,22 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertFalse(multiQueue.isEmpty())
         Assertions.assertEquals(1, multiQueue.size)
 
+        // Getting the element two ways, via the queue for type and via poll to ensure both ways resolve the object payload properly
+        val queue = multiQueue.getQueueForType(message.type)
+        Assertions.assertEquals(1, queue.size)
+        val storedElement = queue.elementAt(0)
+
         val retrievedMessage = multiQueue.pollForType(message.type)
         Assertions.assertTrue(multiQueue.isEmpty())
         Assertions.assertEquals(0, multiQueue.size)
 
+        Assertions.assertEquals(message, storedElement)
         Assertions.assertTrue(retrievedMessage.isPresent)
-        Assertions.assertEquals(data, retrievedMessage.get().payload)
+        Assertions.assertEquals(message, retrievedMessage.get())
+
+        // Triple checking the payloads are equal to ensure the resolvePayloadObject() method is called
+        Assertions.assertEquals(message.payload, storedElement.payload)
+        Assertions.assertEquals(message.payload, retrievedMessage.get().payload)
     }
 
     /**
