@@ -32,7 +32,8 @@ import java.util.*
  */
 @ExtendWith(SpringExtension::class)
 @Testcontainers
-@DataJpaTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=SQL"])
+@DataJpaTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=SQL", "spring.jpa.hibernate.ddl-auto=create", "hibernate.show_sql=true",
+        "hibernate.format_sql=true", "logging.level.org.hibernate.SQL=DEBUG", "logging.level.org.hibernate.type=TRACE", "spring.jpa.show-sql=true", "spring.jpa.properties.hibernate.format_sql=true"])
 @ContextConfiguration(initializers = [SqlMultiQueueTest.Initializer::class])
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(LoggingConfiguration::class)
@@ -41,8 +42,6 @@ class SqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
     companion object
     {
         lateinit var database: GenericContainer<*>
-
-        private lateinit var initialProperties: Properties
 
         private const val POSTGRES_CONTAINER = "postgres:14.5"
         private const val POSTGRES_PORT = 5432
@@ -55,7 +54,6 @@ class SqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
         fun afterClass()
         {
             database.stop()
-            System.setProperties(initialProperties)
         }
     }
 
@@ -83,19 +81,10 @@ class SqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
             val endpoint = "jdbc:postgresql://${database.host}:${database.getMappedPort(POSTGRES_PORT)}/postgres"
             val username = "postgres"
 
-            initialProperties = Properties(System.getProperties())
-            val properties = System.getProperties()
-            properties[MessageQueueSettings.SQL_DRIVER] = SqlType.POSTGRES.driverName
-            properties[MessageQueueSettings.SQL_DIALECT] = SqlType.POSTGRES.dialects[0]
-            properties[MessageQueueSettings.SQL_ENDPOINT] = endpoint
-            properties[MessageQueueSettings.SQL_USERNAME] = username
-            properties[MessageQueueSettings.SQL_PASSWORD] = password
-            System.setProperties(properties)
-
             TestPropertyValues.of(
                 "spring.datasource.url=$endpoint",
                 "spring.datasource.username=$username",
-                "spring.datasource.password=$password"
+                "spring.datasource.password=$password",
             ).applyTo(configurableApplicationContext.environment)
         }
     }

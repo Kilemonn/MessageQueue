@@ -12,6 +12,21 @@ import org.springframework.stereotype.Component
  * - The type of `MultiQueue` being used
  * - Other utility configuration for the application to use.
  *
+ * This does not hold the dialect and driver information for the database mode.
+ * This is the dialect that hibernate will use when interacting with the underlying database.
+ * Supported dialects are listed below:
+ * - MySQL (e.g. `org.hibernate.dialect.MySQLDialect`)
+ * - Postgresql (e.g. `org.hibernate.dialect.PostgreSQLDialect`)
+ * - Oracle (e.g. `org.hibernate.dialect.OracleDialect`)
+ * - Microsoft (e.g. `org.hibernate.dialect.SQLServerDialect`)
+ *
+ * Defines the underlying driver which is used to connect to the requested database.
+ * Currently supports:
+ * - MySQL (e.g. `com.mysql.jdbc.Driver`)
+ * - Postgresql (e.g. `org.postgresql.Driver`)
+ * - Oracle (e.g. `oracle.jdbc.driver.OracleDriver`)
+ * - Microsoft (e.g. `com.microsoft.sqlserver.jdbc.SQLServerDriver`)
+ *
  * @author github.com/KyleGonzalez
  */
 @Component
@@ -40,11 +55,9 @@ class MessageQueueSettings
         /**
          * Start SQL related properties
          */
-        const val SQL_DRIVER: String = "SQL_DRIVER"
-        const val SQL_DIALECT: String = "SQL_DIALECT"
-        const val SQL_ENDPOINT: String = "SQL_ENDPOINT"
-        const val SQL_USERNAME: String = "SQL_USERNAME"
-        const val SQL_PASSWORD: String = "SQL_PASSWORD"
+        const val SQL_ENDPOINT: String = "spring.datasource.url"
+        const val SQL_USERNAME: String = "spring.datasource.username"
+        const val SQL_PASSWORD: String = "spring.datasource.password"
 
         /**
          * SQL Schema properties
@@ -101,19 +114,6 @@ class MessageQueueSettings
 
     /**
      * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
-     *  Defines the underlying driver which is used to connect to the requested database.
-     *
-     *  Currently supports:
-     *  - `com.mysql.jdbc.Driver`
-     *  - `org.postgresql.Driver`
-     *  - `oracle.jdbc.driver.OracleDriver`
-     *  -
-     */
-    @Value("\${$SQL_DRIVER:}")
-    lateinit var sqlDriver: String
-
-    /**
-     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
      * This defines the database connection string e.g:
      * `"jdbc:mysql://localhost:3306/message-queue"`
      */
@@ -133,16 +133,4 @@ class MessageQueueSettings
      */
     @Value("\${$SQL_PASSWORD:}")
     lateinit var sqlPassword: String
-
-    /**
-     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
-     * This is the dialect that hibernate will use when interacting with the underlying database.
-     * E.g.
-     * - `org.hibernate.dialect.MySQLDialect`
-     * - `org.hibernate.dialect.PostgreSQLDialect`
-     * - `org.hibernate.dialect.OracleDialect`
-     * - `org.hibernate.dialect.SQLServerDialect`
-     */
-    @Value("\${$SQL_DIALECT:}")
-    lateinit var sqlDialect: String
 }
