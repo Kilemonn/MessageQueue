@@ -5,4 +5,4 @@ package au.kilemon.messagequeue.queue.exception
  *
  * @author github.com/KyleGonzalez
  */
-class DuplicateMessageException(uuid: String, queueType: String, ) : Exception("Duplicate message with UUID [$uuid] exists in queue with type [$queueType].")
+class DuplicateMessageException(uuid: String, queueType: String) : Exception("Duplicate message with UUID [$uuid] exists in queue with type [$queueType].")

@@ -17,6 +17,6 @@ class SqlInitialisationExceptionTest
     fun testTypeOfExceptionIsRuntime()
     {
         val e = SqlInitialisationException("exception message")
-        Assertions.assertTrue(e is RuntimeException)
+        Assertions.assertTrue(RuntimeException::class.isInstance(e))
     }
 }
