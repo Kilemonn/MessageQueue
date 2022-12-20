@@ -1,7 +1,6 @@
 package au.kilemon.messagequeue.queue.cache.redis
 
 import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
-import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
@@ -12,12 +11,15 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.boot.test.util.TestPropertyValues
+import org.springframework.context.ApplicationContextInitializer
+import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Lazy
 import org.springframework.data.redis.connection.RedisConnectionFactory
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
-import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.testcontainers.containers.GenericContainer
@@ -43,6 +45,8 @@ import java.util.*
 @ExtendWith(SpringExtension::class)
 @TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=REDIS"])
 @Testcontainers
+@ContextConfiguration(initializers = [RedisStandAloneMultiQueueTest.Initializer::class])
+@Import(RedisConfiguration::class)
 class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
 {
     companion object
@@ -52,27 +56,6 @@ class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
 
         lateinit var redis: GenericContainer<*>
 
-        lateinit var initialProperties: Properties
-
-        /**
-         * Force start the container, so we can place its host and dynamic ports into the system properties.
-         *
-         * Set the environment variables before any of the beans are initialised.
-         */
-        @BeforeAll
-        @JvmStatic
-        fun beforeClass()
-        {
-            redis = GenericContainer(DockerImageName.parse(REDIS_CONTAINER))
-                .withExposedPorts(REDIS_PORT).withReuse(false)
-            redis.start()
-
-            initialProperties = Properties(System.getProperties())
-            val properties = System.getProperties()
-            properties[MessageQueueSettings.REDIS_ENDPOINT] = "${redis.host}:${redis.getMappedPort(REDIS_PORT)}"
-            System.setProperties(properties)
-        }
-
         /**
          * Stop the container at the end of all the tests.
          */
@@ -81,8 +64,29 @@ class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
         fun afterClass()
         {
             redis.stop()
+        }
+    }
 
-            System.setProperties(initialProperties)
+    /**
+     *
+     * @author github.com/KyleGonzalez
+     */
+    internal class Initializer : ApplicationContextInitializer<ConfigurableApplicationContext>
+    {
+        /**
+         * Force start the container, so we can place its host and dynamic ports into the system properties.
+         *
+         * Set the environment variables before any of the beans are initialised.
+         */
+        override fun initialize(configurableApplicationContext: ConfigurableApplicationContext)
+        {
+            redis = GenericContainer(DockerImageName.parse(REDIS_CONTAINER))
+                .withExposedPorts(REDIS_PORT).withReuse(false)
+            redis.start()
+
+            TestPropertyValues.of(
+                "${MessageQueueSettings.REDIS_ENDPOINT}=${redis.host}:${redis.getMappedPort(REDIS_PORT)}"
+            ).applyTo(configurableApplicationContext.environment)
         }
     }
 
@@ -126,29 +130,6 @@ class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
         open fun getRedisMultiQueue(): RedisMultiQueue
         {
             return RedisMultiQueue()
-        }
-
-        @Bean
-        @Lazy
-        open fun getRedisConnectionFactory(): RedisConnectionFactory
-        {
-            Assertions.assertFalse(messageQueueSettings.redisUseSentinels.toBoolean())
-            val redisConfiguration = RedisStandaloneConfiguration()
-            val redisEndpoints = RedisConfiguration.stringToInetSocketAddresses(messageQueueSettings.redisEndpoint, RedisConfiguration.REDIS_DEFAULT_PORT)
-            Assertions.assertEquals(1, redisEndpoints.size)
-            redisConfiguration.hostName = redisEndpoints[0].hostName
-            redisConfiguration.port = redisEndpoints[0].port
-
-            return LettuceConnectionFactory(redisConfiguration)
-        }
-
-        @Bean
-        @Lazy
-        open fun redisTemplate(): RedisTemplate<String, QueueMessage>
-        {
-            val template = RedisTemplate<String, QueueMessage>()
-            template.connectionFactory = connectionFactory
-            return template
         }
     }
 
