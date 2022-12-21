@@ -28,12 +28,18 @@ import java.util.*
 
 /**
  *
+ * Properties to assist with debugging:
+ * - "hibernate.show_sql=true"
+ * - "hibernate.format_sql=true",
+ * - "logging.level.org.hibernate.type=TRACE",
+ * - "spring.jpa.show-sql=true",
+ * - "spring.jpa.properties.hibernate.format_sql=true"
+ *
  * @author github.com/KyleGonzalez
  */
 @ExtendWith(SpringExtension::class)
 @Testcontainers
-@DataJpaTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=SQL", "spring.jpa.hibernate.ddl-auto=create", "hibernate.show_sql=true",
-        "hibernate.format_sql=true", "logging.level.org.hibernate.SQL=DEBUG", "logging.level.org.hibernate.type=TRACE", "spring.jpa.show-sql=true", "spring.jpa.properties.hibernate.format_sql=true"])
+@DataJpaTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=SQL", "spring.jpa.hibernate.ddl-auto=create"])
 @ContextConfiguration(initializers = [SqlMultiQueueTest.Initializer::class])
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(LoggingConfiguration::class)
@@ -58,6 +64,7 @@ class SqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
     }
 
     /**
+     * The test initialiser for [SqlMultiQueueTest] to initialise the container and test properties.
      *
      * @author github.com/KyleGonzalez
      */

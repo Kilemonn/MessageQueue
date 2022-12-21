@@ -68,6 +68,7 @@ class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
     }
 
     /**
+     * The test initialiser for [RedisStandAloneMultiQueueTest] to initialise the container and test properties.
      *
      * @author github.com/KyleGonzalez
      */
