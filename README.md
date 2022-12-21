@@ -87,7 +87,7 @@ environment:
 ## SQL Database
 
 The `SQL` mechanism requires some configuration too similarly to `Redis`.
-To set the application into `Redis` mode you need to provide the following environment variable with the appropriate value: `MULTI_QUEUE_TYPE=SQL`.
+To set the application into `SQL` mode you need to provide the following environment variable with the appropriate value: `MULTI_QUEUE_TYPE=SQL`.
 
 ### SQL Environment Properties
 
