@@ -43,7 +43,7 @@ import java.util.*
  * @author github.com/KyleGonzalez
  */
 @ExtendWith(SpringExtension::class)
-@TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=REDIS"])
+@TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=REDIS", "${MessageQueueSettings.REDIS_PREFIX}=test"])
 @Testcontainers
 @ContextConfiguration(initializers = [RedisStandAloneMultiQueueTest.Initializer::class])
 @Import(RedisConfiguration::class)

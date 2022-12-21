@@ -13,7 +13,9 @@ import org.springframework.data.redis.connection.RedisSentinelConfiguration
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.serializer.StringRedisSerializer
 import java.net.InetSocketAddress
+
 
 /**
  * A class that creates the required [Bean] objects when redis is enabled.
@@ -136,6 +138,7 @@ class RedisConfiguration: HasLogger
     {
         val template = RedisTemplate<String, QueueMessage>()
         template.connectionFactory = getConnectionFactory()
+        template.keySerializer = StringRedisSerializer()
         return template
     }
 }

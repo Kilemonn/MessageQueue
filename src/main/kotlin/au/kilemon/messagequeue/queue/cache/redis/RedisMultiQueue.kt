@@ -79,7 +79,7 @@ class RedisMultiQueue : MultiQueue, HasLogger
         if (queueForType.isNotEmpty())
         {
             amountRemoved = queueForType.size
-            redisTemplate.delete(queueType)
+            redisTemplate.delete(appendPrefix(queueType))
             LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, amountRemoved)
         }
         else
@@ -137,7 +137,7 @@ class RedisMultiQueue : MultiQueue, HasLogger
         for (key in keys())
         {
             val queue = getQueueForType(key)
-            val anyMatchTheUUID = queue.stream().anyMatch{ message -> uuid == message.uuid.toString() }
+            val anyMatchTheUUID = queue.stream().anyMatch{ message -> uuid == message.uuid }
             if (anyMatchTheUUID)
             {
                 LOG.debug("Found queue type [{}] for UUID: [{}].", key, uuid)
