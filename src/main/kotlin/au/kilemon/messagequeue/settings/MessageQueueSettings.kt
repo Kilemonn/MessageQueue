@@ -23,6 +23,10 @@ import org.springframework.stereotype.Component
  * - MySQL (e.g. `com.mysql.jdbc.Driver`)
  * - Postgresql (e.g. `org.postgresql.Driver`)
  *
+ * When `SQL` is used, the following property must be provided:
+ * `spring.jpa.hibernate.ddl-auto=create`
+ * This will ensure the underlying tables will be created on start up if they do not exist.
+ *
  * @author github.com/KyleGonzalez
  */
 @Component
