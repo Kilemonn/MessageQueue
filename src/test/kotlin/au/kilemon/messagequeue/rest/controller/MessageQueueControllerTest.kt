@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.rest.controller
 
+import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
 import au.kilemon.messagequeue.message.QueueMessage
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.junit.jupiter.SpringExtension
@@ -32,7 +34,8 @@ import java.util.*
  * @author github.com/KyleGonzalez
  */
 @ExtendWith(SpringExtension::class)
-@WebMvcTest(controllers = [MessageQueueController::class])
+@WebMvcTest(controllers = [MessageQueueController::class], properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=IN_MEMORY"])
+@Import(LoggingConfiguration::class)
 class MessageQueueControllerTest
 {
     /**
@@ -791,7 +794,7 @@ class MessageQueueControllerTest
         val uuid = UUID.randomUUID().toString()
         val payload = Payload("test", 12, true, PayloadEnum.C)
         val message = QueueMessage(payload = payload, type = type)
-        message.uuid = UUID.fromString(uuid)
+        message.uuid = UUID.fromString(uuid).toString()
 
         if (assignedTo != null)
         {

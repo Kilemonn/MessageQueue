@@ -1,6 +1,6 @@
 package au.kilemon.messagequeue.queue
 
-import au.kilemon.messagequeue.exception.DuplicateMessageException
+import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import org.slf4j.Logger
@@ -24,7 +24,21 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
 
     override val LOG: Logger
 
-    override var size: Int
+    /**
+     * Get the underlying size of the [MultiQueue].
+     * This is done by summing the length of each [getQueueForType] for each key in [keys].
+     *
+     * This is to allow the underlying storage to be the source of truth instead of any temporary counters, since the underlying storage could
+     * change at any timeout without direct interaction from the [MultiQueue].
+     */
+    override val size: Int
+        get() {
+            var internalSize = 0
+            keys(false).forEach { key ->
+                internalSize += getQueueForType(key).size
+            }
+            return internalSize
+        }
 
     /**
      * New methods for the [MultiQueue] that are required by implementing classes.
@@ -39,14 +53,6 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @return the [Queue] matching the provided [String]
      */
     fun getQueueForType(queueType: String): Queue<QueueMessage>
-
-    /**
-     * Initialise and register the provided [Queue] against the [String].
-     *
-     * @param queueType the [String] to register the [Queue] against
-     * @param queue the queue to register
-     */
-    fun initialiseQueueForType(queueType: String, queue: Queue<QueueMessage>)
 
     /**
      * Clears the underlying [Queue] for the provided [String]. By calling [Queue.clear].
@@ -78,8 +84,8 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
         val head = performPoll(queueType)
         if (head.isPresent)
         {
+            performRemove(head.get())
             LOG.debug("Found and removed head element with UUID [{}] from queue with type [{}].", head.get().uuid, queueType)
-            size--
         }
         else
         {
@@ -91,6 +97,9 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     /**
      * The internal poll method to be called.
      * This is not to  be called directly.
+     *
+     * This method should return the first element in the queue for the provided [queueType].
+     * *The caller will remove this element*.
      *
      * @param queueType the sub-queue to poll
      * @return the first message wrapped as an [Optional] otherwise [Optional.empty]
@@ -146,13 +155,12 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     @Throws(DuplicateMessageException::class)
     override fun add(element: QueueMessage): Boolean
     {
-        val elementIsMappedToType = containsUUID(element.uuid.toString())
+        val elementIsMappedToType = containsUUID(element.uuid)
         if ( !elementIsMappedToType.isPresent)
         {
             val wasAdded = performAdd(element)
             return if (wasAdded)
             {
-                size++
                 LOG.debug("Added new message with uuid [{}] to queue with type [{}].", element.uuid, element.type)
                 true
             }
@@ -184,7 +192,6 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
         val wasRemoved = performRemove(element)
         if (wasRemoved)
         {
-            size--
             LOG.debug("Removed element with UUID [{}] from queue with type [{}].", element.uuid, element.type)
         }
         else
@@ -278,11 +285,12 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     }
 
     /**
-     * @return `true` if the [size] is `0`, otherwise `false`.
+     * @return `true` any of the [keys] returns `false` for [isEmptyForType], otherwise `false`.
      */
     override fun isEmpty(): Boolean
     {
-        return size == 0
+        val anyHasElements = keys(false).stream().anyMatch { key -> !isEmptyForType(key) }
+        return !anyHasElements
     }
 
     override fun clear()

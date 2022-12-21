@@ -1,9 +1,9 @@
 package au.kilemon.messagequeue.queue
 
+import au.kilemon.messagequeue.message.QueueMessage
+import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
-import au.kilemon.messagequeue.exception.DuplicateMessageException
-import au.kilemon.messagequeue.message.QueueMessage
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -41,12 +41,22 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertFalse(multiQueue.isEmpty())
         Assertions.assertEquals(1, multiQueue.size)
 
+        // Getting the element two ways, via the queue for type and via poll to ensure both ways resolve the object payload properly
+        val queue = multiQueue.getQueueForType(message.type)
+        Assertions.assertEquals(1, queue.size)
+        val storedElement = queue.elementAt(0)
+
         val retrievedMessage = multiQueue.pollForType(message.type)
         Assertions.assertTrue(multiQueue.isEmpty())
         Assertions.assertEquals(0, multiQueue.size)
 
+        Assertions.assertEquals(message, storedElement)
         Assertions.assertTrue(retrievedMessage.isPresent)
-        Assertions.assertEquals(data, retrievedMessage.get().payload)
+        Assertions.assertEquals(message, retrievedMessage.get())
+
+        // Triple checking the payloads are equal to ensure the resolvePayloadObject() method is called
+        Assertions.assertEquals(message.payload, storedElement.payload)
+        Assertions.assertEquals(message.payload, retrievedMessage.get().payload)
     }
 
     /**
@@ -246,7 +256,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
         val peekedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertTrue(message == peekedMessage)
+        Assertions.assertEquals(message, peekedMessage)
         Assertions.assertFalse(multiQueue.isEmpty())
     }
 

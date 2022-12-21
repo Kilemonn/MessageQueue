@@ -23,8 +23,6 @@ class RedisMultiQueue : MultiQueue, HasLogger
 {
     override val LOG: Logger = initialiseLogger()
 
-    override var size: Int = 0
-
     @Autowired
     @Lazy
     lateinit var messageQueueSettings: MessageQueueSettings
@@ -62,14 +60,6 @@ class RedisMultiQueue : MultiQueue, HasLogger
         return queue
     }
 
-    /**
-     * Not required for Redis as we can add messages directly without initialising the cache.
-     */
-    override fun initialiseQueueForType(queueType: String, queue: Queue<QueueMessage>)
-    {
-        // Not used
-    }
-
     override fun performAdd(element: QueueMessage): Boolean
     {
         val result = redisTemplate.opsForSet().add(appendPrefix(element.type), element)
@@ -89,8 +79,7 @@ class RedisMultiQueue : MultiQueue, HasLogger
         if (queueForType.isNotEmpty())
         {
             amountRemoved = queueForType.size
-            size -= amountRemoved
-            redisTemplate.delete(queueType)
+            redisTemplate.delete(appendPrefix(queueType))
             LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, amountRemoved)
         }
         else
@@ -110,9 +99,7 @@ class RedisMultiQueue : MultiQueue, HasLogger
         val set = redisTemplate.opsForSet().members(appendPrefix(queueType))
         if (!set.isNullOrEmpty())
         {
-            val next = set.iterator().next()
-            redisTemplate.opsForSet().remove(appendPrefix(queueType), next)
-            return Optional.of(next)
+            return Optional.of(set.iterator().next())
         }
         return Optional.empty()
     }
@@ -150,7 +137,7 @@ class RedisMultiQueue : MultiQueue, HasLogger
         for (key in keys())
         {
             val queue = getQueueForType(key)
-            val anyMatchTheUUID = queue.stream().anyMatch{ message -> uuid == message.uuid.toString() }
+            val anyMatchTheUUID = queue.stream().anyMatch{ message -> uuid == message.uuid }
             if (anyMatchTheUUID)
             {
                 LOG.debug("Found queue type [{}] for UUID: [{}].", key, uuid)

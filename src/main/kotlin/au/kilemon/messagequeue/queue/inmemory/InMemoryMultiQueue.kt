@@ -1,6 +1,6 @@
 package au.kilemon.messagequeue.queue.inmemory
 
-import au.kilemon.messagequeue.exception.DuplicateMessageException
+import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
@@ -30,8 +30,6 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
      */
     private val messageQueue: ConcurrentHashMap<String, Queue<QueueMessage>> = ConcurrentHashMap()
 
-    override var size: Int = 0
-
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {
         var queueForType: Queue<QueueMessage>? = messageQueue[queueType]
@@ -48,7 +46,13 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         return queueForType
     }
 
-    override fun initialiseQueueForType(queueType: String, queue: Queue<QueueMessage>)
+    /**
+     * Initialise and register the provided [Queue] against the [String].
+     *
+     * @param queueType the [String] to register the [Queue] against
+     * @param queue the queue to register
+     */
+    private fun initialiseQueueForType(queueType: String, queue: Queue<QueueMessage>)
     {
         LOG.debug("Initialising new queue for type [{}].", queueType)
         messageQueue[queueType] = queue
@@ -61,7 +65,6 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         if (queueForType != null)
         {
             amountRemoved = queueForType.size
-            size -= amountRemoved
             queueForType.forEach { message -> uuidMap.remove(message.uuid.toString()) }
             queueForType.clear()
             messageQueue.remove(queueType)
@@ -174,6 +177,13 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
     override fun performPoll(queueType: String): Optional<QueueMessage>
     {
         val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
-        return Optional.ofNullable(queueForType.poll())
+        return if (queueForType.isNotEmpty())
+        {
+            Optional.of(queueForType.iterator().next())
+        }
+        else
+        {
+            Optional.empty()
+        }
     }
 }

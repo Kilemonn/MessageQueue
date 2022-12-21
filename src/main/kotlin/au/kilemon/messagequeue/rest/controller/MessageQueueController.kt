@@ -1,6 +1,6 @@
 package au.kilemon.messagequeue.rest.controller
 
-import au.kilemon.messagequeue.exception.DuplicateMessageException
+import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
@@ -102,8 +102,9 @@ open class MessageQueueController : HasLogger
     @ApiResponse(responseCode = "200", description = "Successfully returns the information payload.")
     fun getAllQueueTypeInfo(): ResponseEntity<String>
     {
-        LOG.debug("Returning total multi-queue size [{}].", messageQueue.size)
-        return ResponseEntity.ok(messageQueue.size.toString())
+        val size = messageQueue.size
+        LOG.debug("Returning total multi-queue size [{}].", size)
+        return ResponseEntity.ok(size.toString())
     }
 
     /**
@@ -142,7 +143,7 @@ open class MessageQueueController : HasLogger
         {
             val queueTypeString = queueType.get()
             val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueTypeString)
-            val entry = queueForType.stream().filter{ message -> message.uuid.toString() == uuid }.findFirst()
+            val entry = queueForType.stream().filter{ message -> message.uuid == uuid }.findFirst()
             if (entry.isPresent)
             {
                 val foundEntry = entry.get()
@@ -202,7 +203,7 @@ open class MessageQueueController : HasLogger
         }
         catch (ex: DuplicateMessageException)
         {
-            val queueType = messageQueue.containsUUID(queueMessage.uuid.toString()).get()
+            val queueType = messageQueue.containsUUID(queueMessage.uuid).get()
             val errorMessage = "Failed to add entry with UUID [${queueMessage.uuid}], an entry with the same UUID already exists in queue with type [$queueType]."
             LOG.error(errorMessage)
             throw ResponseStatusException(HttpStatus.CONFLICT, errorMessage, ex)
@@ -304,7 +305,7 @@ open class MessageQueueController : HasLogger
         if (queueType.isPresent)
         {
             val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType.get())
-            val message = queueForType.stream().filter { message -> message.uuid.toString() == uuid }.findFirst()
+            val message = queueForType.stream().filter { message -> message.uuid == uuid }.findFirst()
             if (message.isPresent)
             {
                 val messageToRelease = message.get()
@@ -394,7 +395,7 @@ open class MessageQueueController : HasLogger
         if (queueType.isPresent)
         {
             val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType.get())
-            val message = queueForType.stream().filter { message -> message.uuid.toString() == uuid }.findFirst()
+            val message = queueForType.stream().filter { message -> message.uuid == uuid }.findFirst()
             if (message.isPresent)
             {
                 val messageToRelease = message.get()
@@ -449,7 +450,7 @@ open class MessageQueueController : HasLogger
         if (queueType.isPresent)
         {
             val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType.get())
-            val message = queueForType.stream().filter { message -> message.uuid.toString() == uuid }.findFirst()
+            val message = queueForType.stream().filter { message -> message.uuid == uuid }.findFirst()
             if (message.isPresent)
             {
                 val messageToRemove = message.get()
