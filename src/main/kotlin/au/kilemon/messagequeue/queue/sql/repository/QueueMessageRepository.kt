@@ -33,6 +33,7 @@ interface QueueMessageRepository: JpaRepository<QueueMessage, Int>
      *
      * @return a [List] of all the existing [QueueMessage.type] as [String]s
      */
+    @Transactional
     @Query("SELECT DISTINCT type FROM QueueMessage")
     fun findDistinctType(): List<String>
 
@@ -42,6 +43,7 @@ interface QueueMessageRepository: JpaRepository<QueueMessage, Int>
      * @param type the type to match [QueueMessage.type] with
      * @return a [List] of [QueueMessage] who have a matching [QueueMessage.type] with the provided [type]
      */
+    @Transactional
     fun findByTypeOrderByIdAsc(type: String): List<QueueMessage>
 
     /**
@@ -50,6 +52,7 @@ interface QueueMessageRepository: JpaRepository<QueueMessage, Int>
      * @param uuid the [QueueMessage.uuid] of the message to find
      * @return the [Optional] that may contain the found [QueueMessage]
      */
+    @Transactional
     fun findByUuid(uuid: String): Optional<QueueMessage>
 
     /**

@@ -32,6 +32,7 @@ class QueueMessage(@Transient var payload: Any?, @Column(nullable = false) var t
     val id: Int? = null
 
     @JsonIgnore
+    @Lob
     @Column
     val payloadBytes: ByteArray? = SerializationUtils.serialize(payload)
 

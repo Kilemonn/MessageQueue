@@ -155,7 +155,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     @Throws(DuplicateMessageException::class)
     override fun add(element: QueueMessage): Boolean
     {
-        val elementIsMappedToType = containsUUID(element.uuid.toString())
+        val elementIsMappedToType = containsUUID(element.uuid)
         if ( !elementIsMappedToType.isPresent)
         {
             val wasAdded = performAdd(element)
