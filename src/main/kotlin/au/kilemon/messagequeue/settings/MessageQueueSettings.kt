@@ -17,15 +17,11 @@ import org.springframework.stereotype.Component
  * Supported dialects are listed below:
  * - MySQL (e.g. `org.hibernate.dialect.MySQLDialect`)
  * - Postgresql (e.g. `org.hibernate.dialect.PostgreSQLDialect`)
- * - Oracle (e.g. `org.hibernate.dialect.OracleDialect`)
- * - Microsoft (e.g. `org.hibernate.dialect.SQLServerDialect`)
  *
  * Defines the underlying driver which is used to connect to the requested database.
  * Currently supports:
  * - MySQL (e.g. `com.mysql.jdbc.Driver`)
  * - Postgresql (e.g. `org.postgresql.Driver`)
- * - Oracle (e.g. `oracle.jdbc.driver.OracleDriver`)
- * - Microsoft (e.g. `com.microsoft.sqlserver.jdbc.SQLServerDriver`)
  *
  * @author github.com/KyleGonzalez
  */
