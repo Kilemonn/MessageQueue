@@ -80,6 +80,15 @@ class RedisConfiguration: HasLogger
     @Autowired
     lateinit var messageQueueSettings: MessageQueueSettings
 
+    /**
+     * Create the [RedisConnectionFactory] based on the loaded configuration.
+     * If [MessageQueueSettings.redisUseSentinels] is `true` then multiple endpoints are expected in [MessageQueueSettings.redisEndpoint] and will attempt to be parsed out
+     * and set into the [RedisSentinelConfiguration].
+     *
+     * Otherwise, the first endpoint and port provided will be used to create a [RedisStandaloneConfiguration].
+     *
+     * @return the created [RedisConnectionFactory] based on the configured [MessageQueueSettings]
+     */
     @Bean
     @ConditionalOnProperty(name=[MessageQueueSettings.MULTI_QUEUE_TYPE], havingValue="REDIS")
     fun getConnectionFactory(): RedisConnectionFactory

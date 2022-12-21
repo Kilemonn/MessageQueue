@@ -6,6 +6,8 @@ import java.lang.RuntimeException
 
 /**
  * A unit test class for the [SqlInitialisationException] for any specific tests related to this exception.
+ *
+ * @author github.com/KyleGonzalez
  */
 class SqlInitialisationExceptionTest
 {
