@@ -10,7 +10,7 @@ COPY gradle.properties .
 COPY settings.gradle.kts .
 
 # Run gradle build/package/tests
-RUN ["gradle", "build"]
+RUN ["gradle", "build", "-x", "test"]
 
 FROM openjdk:17-alpine as runner
 WORKDIR /messagequeue
