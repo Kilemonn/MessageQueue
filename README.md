@@ -12,6 +12,8 @@ The message storage mechanisms supported are:
 With plans to add support for the following mechanisms:
 - NoSQL
 
+## Rest API Documentation
+
 The application provides a REST API to interact with the messages queued within the Multi Queue.
 REST Documentation is provided as Swagger docs from the running application. 
 You can simply run the docker image:
