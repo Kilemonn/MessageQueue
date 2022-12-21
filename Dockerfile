@@ -1,8 +1,5 @@
 # Build image with tag
-# docker build -t messagequeue .
-#
-# Tag image properly
-# docker image tag messagequeue kilemon/message-queue:0.1.4
+# docker build -t kilemon/message-queue:0.1.4 .
 #
 # Push image to remote
 # docker push kilemon/message-queue:0.1.4

@@ -25,11 +25,13 @@ import org.testcontainers.junit.jupiter.Testcontainers
  * - "spring.jpa.show-sql=true",
  * - "spring.jpa.properties.hibernate.format_sql=true"
  *
+ * Need to define `spring.autoconfigure.exclude=` as empty to override the default in `application.properties` otherwise JPA will no auto initialise.
+ *
  * @author github.com/KyleGonzalez
  */
 @ExtendWith(SpringExtension::class)
 @Testcontainers
-@DataJpaTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=SQL", "spring.jpa.hibernate.ddl-auto=create"])
+@DataJpaTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=SQL", "spring.jpa.hibernate.ddl-auto=create", "spring.autoconfigure.exclude="])
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(LoggingConfiguration::class)
 abstract class AbstractSqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()

@@ -131,6 +131,8 @@ class MessageQueueSettings
      * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
      * This is the password used to access the database defined in [SQL_ENDPOINT].
      */
-    @Value("\${$SQL_PASSWORD:}")
-    lateinit var sqlPassword: String
+    // TODO: Commenting out since it is unused and returned in the settings endpoint without masking
+    // @JsonIgnore
+    // @Value("\${$SQL_PASSWORD:}")
+    // lateinit var sqlPassword: String
 }
