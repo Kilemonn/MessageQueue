@@ -9,7 +9,7 @@ plugins {
 
 group = "au.kilemon"
 // Make sure version matches version defined in MessageQueueApplication
-version = "0.1.4"
+version = "0.1.5"
 java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
