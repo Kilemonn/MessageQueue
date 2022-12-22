@@ -141,7 +141,6 @@ class MessageQueueControllerTest
 
         val deserialisedPayload = gson.fromJson(gson.toJson(messageResponse.message.payload), Payload::class.java)
         Assertions.assertEquals(message.payload, deserialisedPayload)
-        Assertions.assertFalse(messageResponse.message.assigned)
         Assertions.assertNull(messageResponse.message.assignedTo)
         Assertions.assertEquals(message.type, messageResponse.message.type)
         Assertions.assertEquals(message.type, messageResponse.queueType)
@@ -161,7 +160,7 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Calling create with provided [QueueMessage.assignedTo], [QueueMessage.assigned] and [QueueMessage.uuid] to
+     * Calling create with provided [QueueMessage.assignedTo] and [QueueMessage.uuid] to
      * ensure they are set correctly in the returned [MessageResponse].
      */
     @Test
@@ -179,21 +178,19 @@ class MessageQueueControllerTest
 
         val deserialisedPayload = gson.fromJson(gson.toJson(messageResponse.message.payload), Payload::class.java)
         Assertions.assertEquals(message.payload, deserialisedPayload)
-        Assertions.assertEquals(message.assigned, messageResponse.message.assigned)
         Assertions.assertEquals(message.assignedTo, messageResponse.message.assignedTo)
         Assertions.assertEquals(message.type, messageResponse.message.type)
         Assertions.assertEquals(message.type, messageResponse.queueType)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
 
         val createdMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertEquals(message.assigned, createdMessage.assigned)
         Assertions.assertEquals(message.assignedTo, createdMessage.assignedTo)
         Assertions.assertEquals(message.type, createdMessage.type)
         Assertions.assertEquals(message.uuid, createdMessage.uuid)
     }
 
     /**
-     * Calling create without [QueueMessage.assignedTo], [QueueMessage.assigned] and [QueueMessage.uuid] to
+     * Calling create without [QueueMessage.assignedTo] and [QueueMessage.uuid] to
      * ensure they are initialised as expected when they are not provided by the caller.
      */
     @Test
@@ -211,14 +208,12 @@ class MessageQueueControllerTest
 
         val deserialisedPayload = gson.fromJson(gson.toJson(messageResponse.message.payload), Payload::class.java)
         Assertions.assertEquals(message.payload, deserialisedPayload)
-        Assertions.assertFalse(messageResponse.message.assigned)
         Assertions.assertNull(messageResponse.message.assignedTo)
         Assertions.assertEquals(message.type, messageResponse.message.type)
         Assertions.assertEquals(message.type, messageResponse.queueType)
         Assertions.assertNotNull(messageResponse.message.uuid)
 
         val createdMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertFalse(createdMessage.assigned)
         Assertions.assertNull(createdMessage.assignedTo)
         Assertions.assertEquals(message.type, createdMessage.type)
         Assertions.assertEquals(message.uuid, createdMessage.uuid)
@@ -241,19 +236,22 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Calling create with provided [QueueMessage.assigned] but no [QueueMessage.assignedTo] to make sure a [HttpStatus.BAD_REQUEST] is returned.
+     * Calling create with a blank [QueueMessage.assignedTo] to make sure that [QueueMessage.assignedTo] is provided as `null` in the response.
      */
     @Test
-    fun testCreateQueueEntry_withAssignedButNoAssignedTo()
+    fun testCreateQueueEntry_withBlankAssignedTo()
     {
         val message = createQueueMessage(type = "testCreateQueueEntry_withAssignedButNoAssignedTo")
-        message.assigned = true
-        message.assignedTo = null
+        message.assignedTo = " "
 
-        mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+        val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .content(gson.toJson(message)))
-            .andExpect(MockMvcResultMatchers.status().isBadRequest)
+            .andExpect(MockMvcResultMatchers.status().isCreated)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+        Assertions.assertNull(messageResponse.message.assignedTo)
     }
 
     /**
@@ -400,7 +398,6 @@ class MessageQueueControllerTest
             Assertions.assertTrue(message.message.uuid == message1.uuid || message.message.uuid == message2.uuid)
             Assertions.assertEquals(type, message.queueType)
             Assertions.assertEquals(type, message.message.type)
-            Assertions.assertTrue(message.message.assigned)
             Assertions.assertEquals(assignedTo, message.message.assignedTo)
         }
     }
@@ -427,7 +424,6 @@ class MessageQueueControllerTest
     {
         val assignedTo = "assigned"
         val message = createQueueMessage(type = "testAssignMessage_messageIsAssigned")
-        Assertions.assertFalse(message.assigned)
         Assertions.assertNull(message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
@@ -438,12 +434,10 @@ class MessageQueueControllerTest
             .andReturn()
 
         val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertTrue(messageResponse.message.assigned)
         Assertions.assertEquals(assignedTo, messageResponse.message.assignedTo)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
 
         val assignedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertTrue(assignedMessage.assigned)
         Assertions.assertEquals(assignedTo, assignedMessage.assignedTo)
         Assertions.assertEquals(message.uuid, assignedMessage.uuid)
     }
@@ -457,7 +451,6 @@ class MessageQueueControllerTest
         val assignedTo = "assigned"
         val message = createQueueMessage(type = "testAssignMessage_alreadyAssignedToSameID", assignedTo = assignedTo)
 
-        Assertions.assertTrue(message.assigned)
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
@@ -468,12 +461,10 @@ class MessageQueueControllerTest
             .andReturn()
 
         val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertTrue(messageResponse.message.assigned)
         Assertions.assertEquals(message.assignedTo, messageResponse.message.assignedTo)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
 
         val assignedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertTrue(assignedMessage.assigned)
         Assertions.assertEquals(assignedTo, assignedMessage.assignedTo)
         Assertions.assertEquals(message.uuid, assignedMessage.uuid)
     }
@@ -487,13 +478,11 @@ class MessageQueueControllerTest
         val assignedTo = "assignee"
         val message = createQueueMessage(type = "testAssignMessage_alreadyAssignedToOtherID", assignedTo = assignedTo)
 
-        Assertions.assertTrue(message.assigned)
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
         // Check the message is set correctly
         var assignedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertTrue(assignedMessage.assigned)
         Assertions.assertEquals(assignedTo, assignedMessage.assignedTo)
         Assertions.assertEquals(message.uuid, assignedMessage.uuid)
 
@@ -505,7 +494,6 @@ class MessageQueueControllerTest
 
         // Check the message is still assigned to the correct ID
         assignedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertTrue(assignedMessage.assigned)
         Assertions.assertEquals(assignedTo, assignedMessage.assignedTo)
         Assertions.assertEquals(message.uuid, assignedMessage.uuid)
     }
@@ -565,7 +553,6 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.add(message2))
 
         val storedMessage2 = multiQueue.getQueueForType(type).stream().filter{ m -> m.uuid == message2.uuid }.findFirst().get()
-        Assertions.assertFalse(storedMessage2.assigned)
         Assertions.assertNull(storedMessage2.assignedTo)
         Assertions.assertEquals(message2.uuid, storedMessage2.uuid)
 
@@ -577,12 +564,10 @@ class MessageQueueControllerTest
             .andReturn()
 
         val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertTrue(messageResponse.message.assigned)
         Assertions.assertEquals(assignedTo, messageResponse.message.assignedTo)
         Assertions.assertEquals(message2.uuid, messageResponse.message.uuid)
 
         val assignedMessage2 = multiQueue.getQueueForType(type).stream().filter{ m -> m.uuid == message2.uuid }.findFirst().get()
-        Assertions.assertTrue(assignedMessage2.assigned)
         Assertions.assertEquals(assignedTo, assignedMessage2.assignedTo)
         Assertions.assertEquals(message2.uuid, assignedMessage2.uuid)
     }
@@ -608,7 +593,6 @@ class MessageQueueControllerTest
         val assignedTo = "assignee"
         val message = createQueueMessage(type = "testReleaseMessage_messageIsReleased", assignedTo = assignedTo)
 
-        Assertions.assertTrue(message.assigned)
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
@@ -619,12 +603,10 @@ class MessageQueueControllerTest
             .andReturn()
 
         val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertFalse(messageResponse.message.assigned)
         Assertions.assertNull(messageResponse.message.assignedTo)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
 
         val updatedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertFalse(updatedMessage.assigned)
         Assertions.assertNull(updatedMessage.assignedTo)
         Assertions.assertEquals(message.uuid, updatedMessage.uuid)
     }
@@ -638,7 +620,6 @@ class MessageQueueControllerTest
         val assignedTo = "assigned"
         val message = createQueueMessage(type = "testReleaseMessage_messageIsReleased_withoutAssignedToInQuery", assignedTo = assignedTo)
 
-        Assertions.assertTrue(message.assigned)
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
@@ -648,12 +629,10 @@ class MessageQueueControllerTest
             .andReturn()
 
         val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertFalse(messageResponse.message.assigned)
         Assertions.assertNull(messageResponse.message.assignedTo)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
 
         val updatedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertFalse(updatedMessage.assigned)
         Assertions.assertNull(updatedMessage.assignedTo)
         Assertions.assertEquals(message.uuid, updatedMessage.uuid)
     }
@@ -665,7 +644,6 @@ class MessageQueueControllerTest
     fun testReleaseMessage_alreadyReleased()
     {
         val message = createQueueMessage(type = "testReleaseMessage_alreadyReleased")
-        Assertions.assertFalse(message.assigned)
         Assertions.assertNull(message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
@@ -675,13 +653,11 @@ class MessageQueueControllerTest
             .andReturn()
 
         val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertFalse(messageResponse.message.assigned)
         Assertions.assertNull(messageResponse.message.assignedTo)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
 
         // Ensure the message is updated in the queue too
         val updatedMessage = multiQueue.peekForType(message.type).get()
-        Assertions.assertFalse(updatedMessage.assigned)
         Assertions.assertNull(updatedMessage.assignedTo)
         Assertions.assertEquals(message.uuid, updatedMessage.uuid)
     }
@@ -695,7 +671,6 @@ class MessageQueueControllerTest
         val assignedTo = "assigned"
         val message = createQueueMessage(type = "testReleaseMessage_cannotBeReleasedWithMisMatchingID", assignedTo = assignedTo)
 
-        Assertions.assertTrue(message.assigned)
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
@@ -706,7 +681,6 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isConflict)
 
         val assignedEntry = multiQueue.peekForType(message.type).get()
-        Assertions.assertTrue(assignedEntry.assigned)
         Assertions.assertEquals(assignedTo, assignedEntry.assignedTo)
     }
 
@@ -757,7 +731,6 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isForbidden)
 
         val assignedEntry = multiQueue.peekForType(message.type).get()
-        Assertions.assertTrue(assignedEntry.assigned)
         Assertions.assertEquals(assignedTo, assignedEntry.assignedTo)
     }
 
@@ -786,7 +759,7 @@ class MessageQueueControllerTest
      * A helper method to create a [QueueMessage] that can be easily re-used between each test.
      *
      * @param type the `queueType` to assign to the created [QueueMessage]
-     * @param assignedTo indicates whether the [QueueMessage.assignedTo] should be non-null and [QueueMessage.assigned] should be `true`.
+     * @param assignedTo the [QueueMessage.assignedTo] value to set
      * @return a [QueueMessage] initialised with multiple parameters
      */
     private fun createQueueMessage(type: String, assignedTo: String? = null): QueueMessage
@@ -796,11 +769,7 @@ class MessageQueueControllerTest
         val message = QueueMessage(payload = payload, type = type)
         message.uuid = UUID.fromString(uuid).toString()
 
-        if (assignedTo != null)
-        {
-            message.assigned = true
-            message.assignedTo = assignedTo
-        }
+        message.assignedTo = assignedTo
         return message
     }
 }
