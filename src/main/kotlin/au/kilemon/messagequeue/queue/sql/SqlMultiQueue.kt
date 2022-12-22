@@ -3,6 +3,7 @@ package au.kilemon.messagequeue.queue.sql
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
+import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.queue.sql.repository.QueueMessageRepository
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -93,5 +94,31 @@ class SqlMultiQueue : MultiQueue, HasLogger
     {
         val removedCount = queueMessageRepository.deleteByUuid(element.uuid)
         return removedCount > 0
+    }
+
+    override fun persistMessage(message: QueueMessage)
+    {
+        // We are working with an object from JPA if there is an existing ID
+        if (message.id != null)
+        {
+            val saved = queueMessageRepository.save(message)
+            if (saved == message)
+            {
+                return
+            }
+        }
+        else
+        {
+            val exists = queueMessageRepository.findByUuid(message.uuid)
+            if (exists.isPresent)
+            {
+                val saved = queueMessageRepository.save(message)
+                if (saved == message)
+                {
+                    return
+                }
+            }
+        }
+        throw MessageUpdateException(message.uuid)
     }
 }

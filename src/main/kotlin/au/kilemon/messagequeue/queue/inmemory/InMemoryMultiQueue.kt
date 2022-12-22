@@ -186,4 +186,12 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
             Optional.empty()
         }
     }
+
+    /**
+     * Not required, since in-memory object changes are performed immediately and require not further code to persist the change
+     */
+    override fun persistMessage(message: QueueMessage)
+    {
+
+    }
 }
