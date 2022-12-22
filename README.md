@@ -95,6 +95,13 @@ To set the application into `SQL` mode you need to provide the following environ
 
 Below are the required properties for `SQL` configuration.
 
+#### spring.jpa.hibernate.ddl-auto
+
+Depending on your setup this is probably required initially but may change based on your usage needs. Since the application uses Hibernate to create and generate the database structure.
+If the structure is not initialised, I recommend setting this property to `create` (E.g. `spring.jpa.hibernate.ddl-auto=create`).
+
+Please refer to https://docs.spring.io/spring-boot/docs/1.1.0.M1/reference/html/howto-database-initialization.html#howto-initialize-a-database-using-hibernate
+
 #### spring.autoconfigure.exclude
 
 ***This property is required***.
@@ -124,6 +131,7 @@ This is the password used to access the database at the configured endpoint.
 ```yaml
 environment:
  - MULTI_QUEUE_TYPE=SQL
+ - spring.jpa.hibernate.ddl-auto=create
  - spring.autoconfigure.exclude=
  - spring.datasource.url=jdbc:postgresql://127.0.0.1:5432/postgres
  - spring.datasource.username=postgres
