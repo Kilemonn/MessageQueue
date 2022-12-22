@@ -17,7 +17,7 @@ With plans to add support for the following mechanisms:
 The application provides a REST API to interact with the messages queued within the Multi Queue.
 REST Documentation is provided as Swagger docs from the running application. 
 You can simply run the docker image:
-> docker run -p8080:8080 kilemon/message-queue:0.1.4
+> docker run -p8080:8080 kilemon/message-queue:0.1.5
 
 Once the image is running you can reach the Swagger documentation from the following endpoint: `http://localhost:8080/swagger-ui/index.html`.
 
@@ -27,7 +27,7 @@ Once the image is running you can reach the Swagger documentation from the follo
 
 The `In-Memory` configuration is the default and requires no further configuration.
 Steps to run the In-Memory Multi Queue is as follows:
-- `docker run -p8080:8080 kilemon/message-queue:0.1.4`
+- `docker run -p8080:8080 kilemon/message-queue:0.1.5`
 - Once running the best endpoint to call at the moment is probably: `http://localhost:8080/queue/keys`
 
 If you really like you can provide an environment variable to the application to explicitly set the application into `In-Memory` mode: `MULTI_QUEUE_TYPE=IN_MEMORY`.

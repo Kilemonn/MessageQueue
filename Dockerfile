@@ -1,8 +1,8 @@
 # Build image with tag
-# docker build -t kilemon/message-queue:0.1.4 .
+# docker build -t kilemon/message-queue:0.1.5 .
 #
 # Push image to remote
-# docker push kilemon/message-queue:0.1.4
+# docker push kilemon/message-queue:0.1.5
 
 FROM gradle:7.5.1-jdk17-alpine as builder
 
