@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.settings
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.beans.factory.config.ConfigurableBeanFactory
 import org.springframework.context.annotation.Scope
@@ -71,6 +72,7 @@ class MessageQueueSettings
      * the underlying multi queue is persisted. It can be any value of [MultiQueueType].
      * Defaults to [MultiQueueType.IN_MEMORY] ([MULTI_QUEUE_TYPE_DEFAULT]).
      */
+    @JsonProperty(MULTI_QUEUE_TYPE)
     @Value("\${$MULTI_QUEUE_TYPE:$MULTI_QUEUE_TYPE_DEFAULT}")
     lateinit var multiQueueType: String
 
@@ -81,6 +83,7 @@ class MessageQueueSettings
      * E.g. if the initial value for the redis entry is "my-key" and no prefix is defined the entries would be stored under "my-key".
      * Using the same scenario if the prefix is "prefix" then the resultant key would be "prefixmy-key".
      */
+    @JsonProperty(REDIS_PREFIX)
     @Value("\${$REDIS_PREFIX:}")
     lateinit var redisPrefix: String
 
@@ -92,6 +95,7 @@ class MessageQueueSettings
      *
      * If not provided [REDIS_ENDPOINT_DEFAULT] will be used by default.
      */
+    @JsonProperty(REDIS_ENDPOINT)
     @Value("\${$REDIS_ENDPOINT:$REDIS_ENDPOINT_DEFAULT}")
     lateinit var redisEndpoint: String
 
@@ -101,6 +105,7 @@ class MessageQueueSettings
      * If set to `true` the `MultiQueue` will create a sentinel pool connection instead of a direct connection which is what would occur if this is left as `false`.
      * By default, this is `false`.
      */
+    @JsonProperty(REDIS_USE_SENTINELS)
     @Value("\${$REDIS_USE_SENTINELS:false}")
     lateinit var redisUseSentinels: String
 
@@ -109,6 +114,7 @@ class MessageQueueSettings
      * `Required` when [redisUseSentinels] is set to `true`. Is used to indicate the name of the redis master instance.
      * By default, this is [REDIS_MASTER_NAME_DEFAULT].
      */
+    @JsonProperty(REDIS_MASTER_NAME)
     @Value("\${$REDIS_MASTER_NAME:$REDIS_MASTER_NAME_DEFAULT}")
     lateinit var redisMasterName: String
 
@@ -117,6 +123,7 @@ class MessageQueueSettings
      * This defines the database connection string e.g:
      * `"jdbc:mysql://localhost:3306/message-queue"`
      */
+    @JsonProperty(SQL_ENDPOINT)
     @Value("\${$SQL_ENDPOINT:}")
     lateinit var sqlEndpoint: String
 
@@ -124,6 +131,7 @@ class MessageQueueSettings
      * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
      * This is the username/account name used to access the database defined in [SQL_ENDPOINT].
      */
+    @JsonProperty(SQL_USERNAME)
     @Value("\${$SQL_USERNAME:}")
     lateinit var sqlUsername: String
 
@@ -133,6 +141,7 @@ class MessageQueueSettings
      */
     // TODO: Commenting out since it is unused and returned in the settings endpoint without masking
     // @JsonIgnore
+    // @JsonProperty(SQL_PASSWORD)
     // @Value("\${$SQL_PASSWORD:}")
     // lateinit var sqlPassword: String
 }
