@@ -16,7 +16,7 @@ import javax.persistence.*
  */
 @Entity
 @Table(name = QueueMessage.TABLE_NAME) // TODO: Schema configuration schema = "\${${MessageQueueSettings.SQL_SCHEMA}:${MessageQueueSettings.SQL_SCHEMA_DEFAULT}}")
-class QueueMessage(@Transient var payload: Any?, @Column(nullable = false) var type: String, @Column(nullable = false) var assigned: Boolean = false, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
+class QueueMessage(@Transient var payload: Any?, @Column(nullable = false) var type: String, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
 {
     companion object
     {
@@ -72,7 +72,7 @@ class QueueMessage(@Transient var payload: Any?, @Column(nullable = false) var t
     fun toDetailedString(detailed: Boolean?): String
     {
         resolvePayloadObject()
-        val minimalDetails = "UUID: {$uuid}, QueueType: {$type}, Is Assigned: {$assigned}, Assigned to: {$assignedTo}"
+        val minimalDetails = "UUID: {$uuid}, QueueType: {$type}, Assigned to: {$assignedTo}"
         return if (detailed == true)
         {
              "$minimalDetails, Payload: ${payload.toString()}"

@@ -178,14 +178,7 @@ open class MessageQueueController : HasLogger
     {
         try
         {
-            if (queueMessage.assigned)
-            {
-                if (queueMessage.assignedTo == null)
-                {
-                    throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Message is marked as assigned but with not identifier.")
-                }
-            }
-            else
+            if (queueMessage.assignedTo != null && queueMessage.assignedTo!!.isBlank())
             {
                 queueMessage.assignedTo = null
             }
@@ -274,7 +267,7 @@ open class MessageQueueController : HasLogger
                  @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The sub queue to search for the assigned messages.") @RequestParam(required = true) queueType: String): ResponseEntity<List<MessageResponse>>
     {
         val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
-        val ownedMessages =  queueForType.stream().filter { message -> message.assigned && message.assignedTo == assignedTo }.map { message -> MessageResponse(message) }.collect(Collectors.toList())
+        val ownedMessages =  queueForType.stream().filter { message -> message.assignedTo == assignedTo }.map { message -> MessageResponse(message) }.collect(Collectors.toList())
         LOG.debug("Found [{}] owned entries within queue with type [{}] for user with identifier [{}].", ownedMessages.size, queueType, assignedTo)
         return ResponseEntity.ok(ownedMessages)
     }
@@ -309,7 +302,7 @@ open class MessageQueueController : HasLogger
             if (message.isPresent)
             {
                 val messageToRelease = message.get()
-                if (messageToRelease.assigned)
+                if (!messageToRelease.assignedTo.isNullOrBlank())
                 {
                     if (messageToRelease.assignedTo == assignedTo)
                     {
@@ -325,7 +318,6 @@ open class MessageQueueController : HasLogger
                 }
 
                 messageToRelease.assignedTo = assignedTo
-                messageToRelease.assigned = true
                 LOG.debug("Assigned message with UUID [{}] to identifier [{}].", messageToRelease.uuid, assignedTo)
                 return ResponseEntity.ok(MessageResponse(messageToRelease))
             }
@@ -353,12 +345,11 @@ open class MessageQueueController : HasLogger
                 @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The identifier to assign the next available message to if one exists.") @RequestParam(required = true) assignedTo: String): ResponseEntity<MessageResponse>
     {
         val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
-        val nextMessage = queueForType.stream().filter { message -> !message.assigned }.findFirst()
+        val nextMessage = queueForType.stream().filter { message -> message.assignedTo == null }.findFirst()
         return if (nextMessage.isPresent)
         {
             val nextUnassignedMessage = nextMessage.get()
             LOG.debug("Retrieving and assigning next message for queue type [{}] with UUID [{}] to identifier [{}].", queueType, nextUnassignedMessage.uuid, assignedTo)
-            nextUnassignedMessage.assigned = true
             nextUnassignedMessage.assignedTo = assignedTo
             ResponseEntity.ok(MessageResponse(nextUnassignedMessage))
         }
@@ -399,7 +390,7 @@ open class MessageQueueController : HasLogger
             if (message.isPresent)
             {
                 val messageToRelease = message.get()
-                if ( !messageToRelease.assigned)
+                if (messageToRelease.assignedTo == null)
                 {
                     // The message is already in this state, returning 202 to tell the client that it is accepted but no action was done
                     LOG.debug("Message with UUID [{}] is already released.", uuid)
@@ -413,7 +404,6 @@ open class MessageQueueController : HasLogger
                     throw ResponseStatusException(HttpStatus.CONFLICT, errorMessage)
                 }
                 messageToRelease.assignedTo = null
-                messageToRelease.assigned = false
                 LOG.debug("Released message with UUID [{}] on request from identifier [{}].", messageToRelease.uuid, assignedTo)
                 return ResponseEntity.ok(MessageResponse(messageToRelease))
             }
@@ -454,7 +444,7 @@ open class MessageQueueController : HasLogger
             if (message.isPresent)
             {
                 val messageToRemove = message.get()
-                if ( !assignedTo.isNullOrBlank() && messageToRemove.assigned && messageToRemove.assignedTo != assignedTo)
+                if ( !assignedTo.isNullOrBlank() && messageToRemove.assignedTo != assignedTo)
                 {
                     val errorMessage = "Unable to remove message with UUID $uuid in Queue $queueType because the provided assignee identifier: [$assignedTo] does not match the message's assignee identifier`: ${messageToRemove.assignedTo}"
                     LOG.error(errorMessage)
