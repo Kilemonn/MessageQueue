@@ -3,6 +3,7 @@ package au.kilemon.messagequeue.queue
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
+import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -43,6 +44,19 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     /**
      * New methods for the [MultiQueue] that are required by implementing classes.
      */
+
+    /**
+     * Used to persist the updated [QueueMessage] to the storage mechanism.
+     * It must match an existing message this should not create a new [QueueMessage].
+     *
+     * @throws MessageUpdateException if the message to update does not exist or there is an error
+     * in the underlying storage mechanism when performing the update.
+     *
+     * @param message the updated [QueueMessage] to persist
+     * @return `true` if the [QueueMessage] was updated successfully, otherwise `false`
+     */
+    @Throws(MessageUpdateException::class)
+    fun persistMessage(message: QueueMessage)
 
     /**
      * Retrieves or creates a new [Queue] of type [QueueMessage] for the provided [String].

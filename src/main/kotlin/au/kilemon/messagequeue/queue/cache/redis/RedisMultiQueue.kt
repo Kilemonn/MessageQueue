@@ -3,6 +3,7 @@ package au.kilemon.messagequeue.queue.cache.redis
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
+import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -146,5 +147,25 @@ class RedisMultiQueue : MultiQueue, HasLogger
         }
         LOG.debug("No queue type exists for UUID: [{}].", uuid)
         return Optional.empty()
+    }
+
+    /**
+     * [RedisTemplate] does not allow for inplace object updates, so we will need to remove the [message] then re-add the [message] to perform the update.
+     * Since we cannot "remove" the message directly, we need to find the matching message via UUID.
+     */
+    override fun persistMessage(message: QueueMessage)
+    {
+        val queue = getQueueForType(message.type)
+        val matchingMessage = queue.stream().filter{ element -> element.uuid == message.uuid }.findFirst()
+        if (matchingMessage.isPresent)
+        {
+            val wasRemoved = performRemove(matchingMessage.get())
+            val wasReAdded = performAdd(message)
+            if (wasRemoved && wasReAdded)
+            {
+                return
+            }
+        }
+        throw MessageUpdateException(message.uuid)
     }
 }

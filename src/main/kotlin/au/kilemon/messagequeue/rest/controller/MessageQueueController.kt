@@ -318,6 +318,7 @@ open class MessageQueueController : HasLogger
                 }
 
                 messageToRelease.assignedTo = assignedTo
+                messageQueue.persistMessage(messageToRelease)
                 LOG.debug("Assigned message with UUID [{}] to identifier [{}].", messageToRelease.uuid, assignedTo)
                 return ResponseEntity.ok(MessageResponse(messageToRelease))
             }
@@ -351,6 +352,7 @@ open class MessageQueueController : HasLogger
             val nextUnassignedMessage = nextMessage.get()
             LOG.debug("Retrieving and assigning next message for queue type [{}] with UUID [{}] to identifier [{}].", queueType, nextUnassignedMessage.uuid, assignedTo)
             nextUnassignedMessage.assignedTo = assignedTo
+            messageQueue.persistMessage(nextUnassignedMessage)
             ResponseEntity.ok(MessageResponse(nextUnassignedMessage))
         }
         else
@@ -404,6 +406,7 @@ open class MessageQueueController : HasLogger
                     throw ResponseStatusException(HttpStatus.CONFLICT, errorMessage)
                 }
                 messageToRelease.assignedTo = null
+                messageQueue.persistMessage(messageToRelease)
                 LOG.debug("Released message with UUID [{}] on request from identifier [{}].", messageToRelease.uuid, assignedTo)
                 return ResponseEntity.ok(MessageResponse(messageToRelease))
             }

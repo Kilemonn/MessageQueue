@@ -2,8 +2,10 @@ package au.kilemon.messagequeue.queue
 
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
+import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
+import org.junit.Assert
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -343,6 +345,47 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
 
         Assertions.assertFalse(multiQueue.contains(list[2]))
         Assertions.assertFalse(multiQueue.contains(list[3]))
+    }
+
+    /**
+     * Test [MultiQueue.persistMessage] to ensure that the changes are actually persisted to the stored message.
+     *
+     * There is a special case for the [InMemoryMultiQueue] where the change is persisted immediately since its all using referenced objects, otherwise
+     * the other mechanisms should work the same way and require this method to be called before the changes are persisted.
+     */
+    @Test
+    fun testPersistMessage()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val type = "test-persist"
+        val data = Payload("some payload", 1, true, PayloadEnum.A)
+        val data2 = Payload("some more data", 2, false, PayloadEnum.B)
+
+        val message = QueueMessage(data, type)
+        Assertions.assertTrue(multiQueue.add(message))
+
+        val persistedMessage = multiQueue.peekForType(message.type)
+        Assertions.assertTrue(persistedMessage.isPresent)
+        Assertions.assertEquals(message, persistedMessage.get())
+
+        persistedMessage.get().payload = data2
+
+        // Since the InMemoryMultiQueue works off object references, the data will actually be updated in place, other mechanisms
+        // that are backed by other mechanisms will need to explicitly persist the change before it is reflected
+        if (multiQueue is InMemoryMultiQueue)
+        {
+            Assertions.assertEquals(message, persistedMessage.get())
+        }
+        else
+        {
+            Assertions.assertNotEquals(message.payload, persistedMessage.get().payload)
+        }
+
+        multiQueue.persistMessage(persistedMessage.get())
+
+        val reRetrievedMessage = multiQueue.peekForType(message.type)
+        Assertions.assertTrue(reRetrievedMessage.isPresent)
+        Assertions.assertEquals(persistedMessage.get(), reRetrievedMessage.get())
     }
 
     /**
