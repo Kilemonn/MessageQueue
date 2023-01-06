@@ -1,5 +1,5 @@
 # MessageQueue
-[![Java CI with Gradle](https://github.com/KyleGonzalez/MessageQueue/actions/workflows/gradle.yml/badge.svg)](https://github.com/KyleGonzalez/MessageQueue/actions/workflows/gradle.yml)
+[![CI Build](https://github.com/KyleGonzalez/MessageQueue/actions/workflows/gradle.yml/badge.svg)](https://github.com/KyleGonzalez/MessageQueue/actions/workflows/gradle.yml) [![Coverage](.github/badges/jacoco.svg)](https://github.com/KyleGonzalez/MessageQueue/actions/workflows/gradle.yml)
 
 ## Overview
 
