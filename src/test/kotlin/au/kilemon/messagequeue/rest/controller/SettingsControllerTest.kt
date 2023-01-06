@@ -56,10 +56,10 @@ class SettingsControllerTest
     private val gson: Gson = Gson()
 
     /**
-     * Test [SettingsController.getSettings] and verify the response payload.
+     * Test [SettingsController.getSettings] and verify the response payload and default values.
      */
     @Test
-    fun testGetSettings()
+    fun testGetSettings_defaultValues()
     {
         val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(SettingsController.SETTINGS_PATH)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
@@ -67,5 +67,11 @@ class SettingsControllerTest
             .andReturn()
         val settings = gson.fromJson(mvcResult.response.contentAsString, MessageQueueSettings::class.java)
         Assertions.assertEquals(MultiQueueType.IN_MEMORY.toString(), settings.multiQueueType)
+        Assertions.assertTrue(settings.redisPrefix.isEmpty())
+        Assertions.assertEquals(MessageQueueSettings.REDIS_ENDPOINT_DEFAULT, settings.redisEndpoint)
+        Assertions.assertEquals("false", settings.redisUseSentinels)
+        Assertions.assertEquals(MessageQueueSettings.REDIS_MASTER_NAME_DEFAULT, settings.redisMasterName)
+        Assertions.assertTrue(settings.sqlEndpoint.isEmpty())
+        Assertions.assertTrue(settings.sqlUsername.isEmpty())
     }
 }
