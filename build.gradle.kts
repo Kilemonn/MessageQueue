@@ -5,6 +5,7 @@ plugins {
     id("io.spring.dependency-management") version "1.0.14.RELEASE"
     kotlin("jvm") version "1.7.20"
     kotlin("plugin.spring") version "1.7.20"
+    jacoco
 }
 
 group = "au.kilemon"
@@ -50,8 +51,18 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport)
 }
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "17"
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test) // Generate the report after the tests
+    reports {
+        xml.required.set(false)
+        csv.required.set(true)
+//        html.outputLocation.set(layout.buildDirectory.dir("jacocoHtml"))
+    }
 }
