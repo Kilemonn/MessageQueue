@@ -5,7 +5,7 @@
 # This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
 
-name: Java CI with Gradle
+name: CI Build
 
 on:
   push:
@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+
     - name: Set up JDK 17
       uses: actions/setup-java@v3
       with:
@@ -42,3 +43,10 @@ jobs:
       run: |
         echo "Coverage: ${{ steps.jacoco.outputs.coverage }}%"
         echo "Current Hash: $(git rev-parse HEAD)"
+
+    - name: Update badge if changed
+      uses: EndBug/add-and-commit@v7
+      with:
+        default_author: github_actions
+        message: 'commit badge'
+        add: '*.svg'
