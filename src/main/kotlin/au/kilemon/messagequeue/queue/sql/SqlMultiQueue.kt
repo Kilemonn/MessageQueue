@@ -99,24 +99,13 @@ class SqlMultiQueue : MultiQueue, HasLogger
     override fun persistMessage(message: QueueMessage)
     {
         // We are working with an object from JPA if there is an existing ID
-        if (message.id != null)
+        // If there is no id in the provided message then we will check that the message with the same UUID does exist
+        if (message.id != null || queueMessageRepository.findByUuid(message.uuid).isPresent)
         {
             val saved = queueMessageRepository.save(message)
             if (saved == message)
             {
                 return
-            }
-        }
-        else
-        {
-            val exists = queueMessageRepository.findByUuid(message.uuid)
-            if (exists.isPresent)
-            {
-                val saved = queueMessageRepository.save(message)
-                if (saved == message)
-                {
-                    return
-                }
             }
         }
         throw MessageUpdateException(message.uuid)
