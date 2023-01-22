@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import lombok.Generated
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -91,6 +92,8 @@ open class MessageQueueController : HasLogger
     }
 
     @Autowired
+    @get:Generated
+    @set:Generated
     lateinit var messageQueue: MultiQueue
 
     /**

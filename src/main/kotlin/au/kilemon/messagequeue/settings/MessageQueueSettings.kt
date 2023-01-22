@@ -2,6 +2,7 @@ package au.kilemon.messagequeue.settings
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
+import lombok.Generated
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.beans.factory.config.ConfigurableBeanFactory
 import org.springframework.context.annotation.Scope
@@ -76,6 +77,8 @@ class MessageQueueSettings
     @SerializedName(MULTI_QUEUE_TYPE)
     @JsonProperty(MULTI_QUEUE_TYPE)
     @Value("\${$MULTI_QUEUE_TYPE:$MULTI_QUEUE_TYPE_DEFAULT}")
+    @get:Generated
+    @set:Generated
     lateinit var multiQueueType: String
 
     /**
@@ -88,6 +91,8 @@ class MessageQueueSettings
     @SerializedName(REDIS_PREFIX)
     @JsonProperty(REDIS_PREFIX)
     @Value("\${$REDIS_PREFIX:}")
+    @get:Generated
+    @set:Generated
     lateinit var redisPrefix: String
 
     /**
@@ -101,6 +106,8 @@ class MessageQueueSettings
     @SerializedName(REDIS_ENDPOINT)
     @JsonProperty(REDIS_ENDPOINT)
     @Value("\${$REDIS_ENDPOINT:$REDIS_ENDPOINT_DEFAULT}")
+    @get:Generated
+    @set:Generated
     lateinit var redisEndpoint: String
 
     /**
@@ -112,6 +119,8 @@ class MessageQueueSettings
     @SerializedName(REDIS_USE_SENTINELS)
     @JsonProperty(REDIS_USE_SENTINELS)
     @Value("\${$REDIS_USE_SENTINELS:false}")
+    @get:Generated
+    @set:Generated
     lateinit var redisUseSentinels: String
 
     /**
@@ -122,6 +131,8 @@ class MessageQueueSettings
     @SerializedName(REDIS_MASTER_NAME)
     @JsonProperty(REDIS_MASTER_NAME)
     @Value("\${$REDIS_MASTER_NAME:$REDIS_MASTER_NAME_DEFAULT}")
+    @get:Generated
+    @set:Generated
     lateinit var redisMasterName: String
 
     /**
@@ -132,6 +143,8 @@ class MessageQueueSettings
     @SerializedName(SQL_ENDPOINT)
     @JsonProperty(SQL_ENDPOINT)
     @Value("\${$SQL_ENDPOINT:}")
+    @get:Generated
+    @set:Generated
     lateinit var sqlEndpoint: String
 
     /**
@@ -141,6 +154,8 @@ class MessageQueueSettings
     @SerializedName(SQL_USERNAME)
     @JsonProperty(SQL_USERNAME)
     @Value("\${$SQL_USERNAME:}")
+    @get:Generated
+    @set:Generated
     lateinit var sqlUsername: String
 
     /**
