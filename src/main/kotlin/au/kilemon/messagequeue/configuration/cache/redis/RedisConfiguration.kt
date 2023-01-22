@@ -3,6 +3,7 @@ package au.kilemon.messagequeue.configuration.cache.redis
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.settings.MessageQueueSettings
+import lombok.Generated
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -78,6 +79,8 @@ class RedisConfiguration: HasLogger
     }
 
     @Autowired
+    @get:Generated
+    @set:Generated
     lateinit var messageQueueSettings: MessageQueueSettings
 
     /**

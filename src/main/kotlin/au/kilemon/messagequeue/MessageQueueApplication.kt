@@ -8,6 +8,7 @@ import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
 import au.kilemon.messagequeue.queue.sql.SqlMultiQueue
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import au.kilemon.messagequeue.settings.MultiQueueType
+import lombok.Generated
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -36,9 +37,13 @@ open class MessageQueueApplication : HasLogger
     }
 
     @Autowired
+    @get:Generated
+    @set:Generated
     lateinit var messageQueueSettings: MessageQueueSettings
 
     @Autowired
+    @get:Generated
+    @set:Generated
     lateinit var messageSource: ReloadableResourceBundleMessageSource
 
     /**

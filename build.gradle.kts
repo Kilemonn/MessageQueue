@@ -3,8 +3,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     id("org.springframework.boot") version "2.7.5"
     id("io.spring.dependency-management") version "1.0.14.RELEASE"
-    kotlin("jvm") version "1.7.20"
-    kotlin("plugin.spring") version "1.7.20"
+    kotlin("jvm") version "1.8.0"
+    kotlin("plugin.spring") version "1.8.0"
     jacoco
 }
 
@@ -34,7 +34,7 @@ dependencies {
     compileOnly("org.projectlombok:lombok:1.18.24")
 
     // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-reflect
-    runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.7.20")
+    runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.8.0")
 
     // Database drivers
     // https://mvnrepository.com/artifact/com.mysql/mysql-connector-j
@@ -63,6 +63,5 @@ tasks.jacocoTestReport {
     reports {
         xml.required.set(false)
         csv.required.set(true)
-//        html.outputLocation.set(layout.buildDirectory.dir("jacocoHtml"))
     }
 }
