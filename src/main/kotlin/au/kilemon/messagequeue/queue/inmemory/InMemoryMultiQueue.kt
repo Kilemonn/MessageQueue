@@ -63,6 +63,17 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         return queue
     }
 
+    override fun getMessageByUUID(uuid: String): Optional<QueueMessage>
+    {
+        val queueType = containsUUID(uuid)
+        if (queueType.isPresent)
+        {
+            val queueForType: Queue<QueueMessage> = getQueueForType(queueType.get())
+            return queueForType.stream().filter { message -> message.uuid == uuid }.findFirst()
+        }
+        return Optional.empty()
+    }
+
     override fun clearForType(queueType: String): Int
     {
         var amountRemoved = 0

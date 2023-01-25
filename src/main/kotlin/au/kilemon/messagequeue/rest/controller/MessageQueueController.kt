@@ -147,18 +147,12 @@ open class MessageQueueController : HasLogger
     )
     fun getEntry(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The UUID of the queue message to retrieve.") @PathVariable uuid: String): ResponseEntity<MessageResponse>
     {
-        val queueType = messageQueue.containsUUID(uuid)
-        if (queueType.isPresent)
+        val entry = messageQueue.getMessageByUUID(uuid)
+        if (entry.isPresent)
         {
-            val queueTypeString = queueType.get()
-            val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueTypeString)
-            val entry = queueForType.stream().filter{ message -> message.uuid == uuid }.findFirst()
-            if (entry.isPresent)
-            {
-                val foundEntry = entry.get()
-                LOG.debug("Found message with UUID [{}] in queue with type [{}].", foundEntry.uuid, queueTypeString)
-                return ResponseEntity.ok(MessageResponse(foundEntry))
-            }
+            val foundEntry = entry.get()
+            LOG.debug("Found message with UUID [{}] in queue with type [{}].", foundEntry.uuid, foundEntry.type)
+            return ResponseEntity.ok(MessageResponse(foundEntry))
         }
 
         LOG.debug("Failed to find entry with UUID [{}].", uuid)
@@ -303,38 +297,33 @@ open class MessageQueueController : HasLogger
     fun assignMessage(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The queue message UUID to assign.") @PathVariable(required = true) uuid: String,
                       @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The identifier to assign the queue message to.") @RequestParam(required = true) assignedTo: String): ResponseEntity<MessageResponse>
     {
-        val queueType = messageQueue.containsUUID(uuid)
-        if (queueType.isPresent)
+        val message = messageQueue.getMessageByUUID(uuid)
+        if (message.isPresent)
         {
-            val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType.get())
-            val message = queueForType.stream().filter { message -> message.uuid == uuid }.findFirst()
-            if (message.isPresent)
+            val messageToAssign = message.get()
+            if (!messageToAssign.assignedTo.isNullOrBlank())
             {
-                val messageToAssign = message.get()
-                if (!messageToAssign.assignedTo.isNullOrBlank())
+                if (messageToAssign.assignedTo == assignedTo)
                 {
-                    if (messageToAssign.assignedTo == assignedTo)
-                    {
-                        // The message is already in this state, returning 202 to tell the client that it is accepted but no action was done
-                        LOG.debug("Message with uuid [{}] in queue with type [{}] is already assigned to the identifier [{}].", messageToAssign.uuid, queueType.get(), assignedTo)
-                        return ResponseEntity.accepted().body(MessageResponse(messageToAssign))
-                    }
-                    else
-                    {
-                        LOG.error("Message with uuid [{}] in queue with type [{}] is already assigned to the identifier [{}]. Attempting to assign to identifier [{}].", messageToAssign.uuid, queueType.get(), messageToAssign.assignedTo, assignedTo)
-                        throw ResponseStatusException(HttpStatus.CONFLICT, "The message with UUID: $uuid and $queueType is already assigned to the identifier ${messageToAssign.assignedTo}.")
-                    }
+                    // The message is already in this state, returning 202 to tell the client that it is accepted but no action was done
+                    LOG.debug("Message with uuid [{}] in queue with type [{}] is already assigned to the identifier [{}].", messageToAssign.uuid, messageToAssign.type, assignedTo)
+                    return ResponseEntity.accepted().body(MessageResponse(messageToAssign))
                 }
-
-                messageToAssign.assignedTo = assignedTo
-                messageQueue.persistMessage(messageToAssign)
-                LOG.debug("Assigned message with UUID [{}] to identifier [{}].", messageToAssign.uuid, assignedTo)
-                return ResponseEntity.ok(MessageResponse(messageToAssign))
+                else
+                {
+                    LOG.error("Message with uuid [{}] in queue with type [{}] is already assigned to the identifier [{}]. Attempting to assign to identifier [{}].", messageToAssign.uuid, messageToAssign.type, messageToAssign.assignedTo, assignedTo)
+                    throw ResponseStatusException(HttpStatus.CONFLICT, "The message with UUID: $uuid and ${messageToAssign.type} is already assigned to the identifier ${messageToAssign.assignedTo}.")
+                }
             }
+
+            messageToAssign.assignedTo = assignedTo
+            messageQueue.persistMessage(messageToAssign)
+            LOG.debug("Assigned message with UUID [{}] to identifier [{}].", messageToAssign.uuid, assignedTo)
+            return ResponseEntity.ok(MessageResponse(messageToAssign))
         }
 
-        // No entries match the provided UUID (and queue type)
-        LOG.debug("Could not find message to assign with UUID [{}]. (Queue-type: [{}]).", uuid, queueType)
+        // No entries match the provided UUID
+        LOG.debug("Could not find message to assign with UUID [{}].", uuid)
         return ResponseEntity.noContent().build()
     }
 
@@ -392,36 +381,31 @@ open class MessageQueueController : HasLogger
     fun releaseMessage(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The UUID of the message to release.") @PathVariable(required = true) uuid: String,
                        @Parameter(`in` = ParameterIn.QUERY, required = false, description = "If provided, the message will only be released if the current assigned identifier matches this value.") @RequestParam(required = false) assignedTo: String?): ResponseEntity<MessageResponse>
     {
-        val queueType = messageQueue.containsUUID(uuid)
-        if (queueType.isPresent)
+        val message = messageQueue.getMessageByUUID(uuid)
+        if (message.isPresent)
         {
-            val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType.get())
-            val message = queueForType.stream().filter { message -> message.uuid == uuid }.findFirst()
-            if (message.isPresent)
+            val messageToRelease = message.get()
+            if (messageToRelease.assignedTo == null)
             {
-                val messageToRelease = message.get()
-                if (messageToRelease.assignedTo == null)
-                {
-                    // The message is already in this state, returning 202 to tell the client that it is accepted but no action was done
-                    LOG.debug("Message with UUID [{}] is already released.", uuid)
-                    return ResponseEntity.accepted().body(MessageResponse(messageToRelease))
-                }
-
-                if (!assignedTo.isNullOrBlank() && messageToRelease.assignedTo != assignedTo)
-                {
-                    val errorMessage = "The message with UUID: $uuid and $queueType cannot be released because it is already assigned to identifier ${messageToRelease.assignedTo} and the provided identifier was $assignedTo."
-                    LOG.error(errorMessage)
-                    throw ResponseStatusException(HttpStatus.CONFLICT, errorMessage)
-                }
-                messageToRelease.assignedTo = null
-                messageQueue.persistMessage(messageToRelease)
-                LOG.debug("Released message with UUID [{}] on request from identifier [{}].", messageToRelease.uuid, assignedTo)
-                return ResponseEntity.ok(MessageResponse(messageToRelease))
+                // The message is already in this state, returning 202 to tell the client that it is accepted but no action was done
+                LOG.debug("Message with UUID [{}] is already released.", uuid)
+                return ResponseEntity.accepted().body(MessageResponse(messageToRelease))
             }
+
+            if (!assignedTo.isNullOrBlank() && messageToRelease.assignedTo != assignedTo)
+            {
+                val errorMessage = "The message with UUID: $uuid and ${messageToRelease.type} cannot be released because it is already assigned to identifier ${messageToRelease.assignedTo} and the provided identifier was $assignedTo."
+                LOG.error(errorMessage)
+                throw ResponseStatusException(HttpStatus.CONFLICT, errorMessage)
+            }
+            messageToRelease.assignedTo = null
+            messageQueue.persistMessage(messageToRelease)
+            LOG.debug("Released message with UUID [{}] on request from identifier [{}].", messageToRelease.uuid, assignedTo)
+            return ResponseEntity.ok(MessageResponse(messageToRelease))
         }
 
         // No entries match the provided UUID (and queue type)
-        LOG.debug("Could not find message to release with UUID [{}]. (Queue-type: [{}])", uuid, queueType)
+        LOG.debug("Could not find message to release with UUID [{}].", uuid)
         return ResponseEntity.noContent().build()
     }
 
@@ -447,27 +431,22 @@ open class MessageQueueController : HasLogger
     fun removeMessage(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The UUID of the message to remove.") @PathVariable(required = true) uuid: String,
                       @Parameter(`in` = ParameterIn.QUERY, required = false, description = "If provided, the message will only be removed if it is assigned to an identifier that matches this value.") @RequestParam(required = false) assignedTo: String?): ResponseEntity<Void>
     {
-        val queueType = messageQueue.containsUUID(uuid)
-        if (queueType.isPresent)
+        val message = messageQueue.getMessageByUUID(uuid)
+        if (message.isPresent)
         {
-            val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType.get())
-            val message = queueForType.stream().filter { message -> message.uuid == uuid }.findFirst()
-            if (message.isPresent)
+            val messageToRemove = message.get()
+            if ( !assignedTo.isNullOrBlank() && messageToRemove.assignedTo != assignedTo)
             {
-                val messageToRemove = message.get()
-                if ( !assignedTo.isNullOrBlank() && messageToRemove.assignedTo != assignedTo)
-                {
-                    val errorMessage = "Unable to remove message with UUID $uuid in Queue $queueType because the provided assignee identifier: [$assignedTo] does not match the message's assignee identifier`: ${messageToRemove.assignedTo}"
-                    LOG.error(errorMessage)
-                    throw ResponseStatusException(HttpStatus.FORBIDDEN, errorMessage)
-                }
-                messageQueue.remove(messageToRemove)
-                LOG.debug("Removed message with UUID [{}] on request from assignee [{}].", messageToRemove.uuid, assignedTo)
-                return ResponseEntity.noContent().build()
+                val errorMessage = "Unable to remove message with UUID $uuid in Queue ${messageToRemove.type} because the provided assignee identifier: [$assignedTo] does not match the message's assignee identifier`: ${messageToRemove.assignedTo}"
+                LOG.error(errorMessage)
+                throw ResponseStatusException(HttpStatus.FORBIDDEN, errorMessage)
             }
+            messageQueue.remove(messageToRemove)
+            LOG.debug("Removed message with UUID [{}] on request from assignee [{}].", messageToRemove.uuid, assignedTo)
+            return ResponseEntity.noContent().build()
         }
 
-        LOG.debug("Could not find message to remove with UUID [{}]. (Queue-type: [{}]).", uuid, queueType)
+        LOG.debug("Could not find message to remove with UUID [{}].", uuid)
         return ResponseEntity.noContent().build()
     }
 

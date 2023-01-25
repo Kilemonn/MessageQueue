@@ -12,7 +12,11 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import java.io.Serializable
+import java.util.*
 import java.util.stream.Stream
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
+import kotlin.collections.HashSet
 
 /**
  * An abstract test class for the [MultiQueue] class.
@@ -615,6 +619,30 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertEquals(2, typesForAssignedTo3.size)
         Assertions.assertTrue(typesForAssignedTo3.contains(type2))
         Assertions.assertTrue(typesForAssignedTo3.contains(type3))
+    }
+
+    /**
+     * Test [MultiQueue.getMessageByUUID] to ensure that the corresponding message is returned.
+     */
+    @Test
+    fun testGetMessageByUUID_matchingMessage()
+    {
+        val type = "testGetMessageByUUID_matchingMessage"
+        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), type)
+        Assertions.assertTrue(multiQueue.add(message))
+
+        Assertions.assertEquals(message, multiQueue.getMessageByUUID(message.uuid).get())
+    }
+
+    /**
+     * Test [MultiQueue.getMessageByUUID] to ensure that [Optional.EMPTY] is returned when the corresponding message does not exist.
+     */
+    @Test
+    fun testGetMessageByUUID_messageDoesNotExist()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val uuid = UUID.randomUUID().toString()
+        Assertions.assertEquals(Optional.empty<QueueMessage>(), multiQueue.getMessageByUUID(uuid))
     }
 
     /**
