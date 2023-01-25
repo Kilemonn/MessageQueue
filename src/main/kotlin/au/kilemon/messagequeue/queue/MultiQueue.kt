@@ -142,6 +142,14 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     }
 
     /**
+     * Get a [QueueMessage] directly from the [MultiQueue] that matches the provided [uuid].
+     *
+     * @param uuid of the [QueueMessage] to find within the [MultiQueue]
+     * @return the matching [QueueMessage] or [Optional.EMPTY]
+     */
+    fun getMessageByUUID(uuid: String): Optional<QueueMessage>
+
+    /**
      * Clears the underlying [Queue] for the provided [String]. By calling [Queue.clear].
      *
      * This method should update the [size] property as part of the clearing of the sub-queue.

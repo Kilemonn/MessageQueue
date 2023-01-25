@@ -43,6 +43,11 @@ class SqlMultiQueue : MultiQueue, HasLogger
         return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
     }
 
+    override fun getMessageByUUID(uuid: String): Optional<QueueMessage>
+    {
+        return queueMessageRepository.findByUuid(uuid)
+    }
+
     override fun clearForType(queueType: String): Int
     {
         val amountCleared = queueMessageRepository.deleteByType(queueType)
