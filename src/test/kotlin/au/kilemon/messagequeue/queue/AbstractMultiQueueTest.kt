@@ -5,7 +5,6 @@ import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
-import org.junit.Assert
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -386,6 +385,236 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         val reRetrievedMessage = multiQueue.peekForType(message.type)
         Assertions.assertTrue(reRetrievedMessage.isPresent)
         Assertions.assertEquals(persistedMessage.get(), reRetrievedMessage.get())
+    }
+
+    /**
+     * Test [MultiQueue.getAssignedMessagesForType] returns only messages with a non-null [QueueMessage.assignedTo] property.
+     */
+    @Test
+    fun testGetAssignedMessagesForType()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val type = "test-assigned-messages-for-type"
+        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), type)
+        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), type)
+        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), type)
+
+        // Assign message 1 and 2
+        val assignedTo = "me"
+        message.assignedTo = assignedTo
+        message2.assignedTo = assignedTo
+        Assertions.assertNull(message3.assignedTo)
+
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertTrue(multiQueue.add(message2))
+        Assertions.assertTrue(multiQueue.add(message3))
+
+        // Ensure all messages are in the queue
+        val messagesInSubQueue = multiQueue.getQueueForType(type)
+        Assertions.assertEquals(3, messagesInSubQueue.size)
+
+        // Check only messages 1 and 2 are returned in the assigned queue
+        val assignedMessages = multiQueue.getAssignedMessagesForType(type)
+        Assertions.assertEquals(2, assignedMessages.size)
+
+        val list = ArrayList<QueueMessage>()
+        list.addAll(assignedMessages)
+        Assertions.assertTrue(list.contains(message))
+        Assertions.assertTrue(list.contains(message2))
+        Assertions.assertFalse(list.contains(message3))
+    }
+
+    /**
+     * Test [MultiQueue.getUnassignedMessagesForType] returns only messages with a `null` [QueueMessage.assignedTo] property.
+     */
+    @Test
+    fun testGetUnassignedMessagesForType()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val type = "test-unassigned-messages-for-type"
+        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), type)
+        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), type)
+        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), type)
+        val message4 = QueueMessage(Payload("some more data data data", 4, true, PayloadEnum.A), type)
+
+        val assignedTo = "you"
+        message.assignedTo = assignedTo
+        message2.assignedTo = assignedTo
+        Assertions.assertNull(message3.assignedTo)
+        Assertions.assertNull(message4.assignedTo)
+
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertTrue(multiQueue.add(message2))
+        Assertions.assertTrue(multiQueue.add(message3))
+        Assertions.assertTrue(multiQueue.add(message4))
+
+        // Ensure all messages are in the queue
+        val messagesInSubQueue = multiQueue.getQueueForType(type)
+        Assertions.assertEquals(4, messagesInSubQueue.size)
+
+        // Check only messages 3 and 4 are returned in the unassigned queue
+        val assignedMessages = multiQueue.getUnassignedMessagesForType(type)
+        Assertions.assertEquals(2, assignedMessages.size)
+
+        val list = ArrayList<QueueMessage>()
+        list.addAll(assignedMessages)
+        Assertions.assertTrue(list.contains(message3))
+        Assertions.assertTrue(list.contains(message4))
+        Assertions.assertFalse(list.contains(message))
+        Assertions.assertFalse(list.contains(message2))
+    }
+
+    /**
+     * Test [MultiQueue.getOwnersAndKeysMapForType] to ensure that the provided map is populated properly with the correct entries
+     * for the current [MultiQueue] state.
+     */
+    @Test
+    fun testGetOwnersAndKeysMapForType()
+    {
+        val responseMap = HashMap<String, HashSet<String>>()
+
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val type = "test-get-owners-and-keys-map-for-type"
+        val type2 = "test-get-owners-and-keys-map-for-type2"
+        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), type)
+        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), type)
+        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), type2)
+        val message4 = QueueMessage(Payload("some more data data data", 4, true, PayloadEnum.A), type)
+
+        val assignedTo = "assigned1"
+        val assignedTo2 = "assigned2"
+        message.assignedTo = assignedTo
+        message2.assignedTo = assignedTo2
+        message3.assignedTo = assignedTo
+        message4.assignedTo = assignedTo
+
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertTrue(multiQueue.add(message2))
+        Assertions.assertTrue(multiQueue.add(message3))
+        Assertions.assertTrue(multiQueue.add(message4))
+
+        multiQueue.getOwnersAndKeysMapForType(type, responseMap)
+
+        Assertions.assertEquals(2, responseMap.keys.size)
+        val listOfKeys = ArrayList<String>()
+        listOfKeys.addAll(responseMap.keys)
+
+        Assertions.assertTrue(listOfKeys.contains(assignedTo))
+        Assertions.assertTrue(listOfKeys.contains(assignedTo2))
+
+        val typesForAssignedTo = responseMap[assignedTo]
+        Assertions.assertEquals(1, typesForAssignedTo!!.size)
+        Assertions.assertEquals(type, typesForAssignedTo.iterator().next())
+
+        val typesForAssignedTo2 = responseMap[assignedTo2]
+        Assertions.assertEquals(1, typesForAssignedTo2!!.size)
+        Assertions.assertEquals(type, typesForAssignedTo2.iterator().next())
+    }
+
+    /**
+     * Test [MultiQueue.getOwnersAndKeysMap] with a specified sub-queue to ensure that the provided map is populated properly with the correct entries
+     * for the current [MultiQueue] state.
+     */
+    @Test
+    fun testGetOwnersAndKeysMap_withQueueType()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val type = "test-get-owners-and-keys-map"
+        val type2 = "test-get-owners-and-keys-map2"
+        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), type)
+        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), type)
+        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), type2)
+        val message4 = QueueMessage(Payload("some more data data data", 4, true, PayloadEnum.A), type)
+
+        val assignedTo = "assigned1"
+        val assignedTo2 = "assigned2"
+        message.assignedTo = assignedTo
+        message2.assignedTo = assignedTo2
+        message3.assignedTo = assignedTo
+        message4.assignedTo = assignedTo
+
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertTrue(multiQueue.add(message2))
+        Assertions.assertTrue(multiQueue.add(message3))
+        Assertions.assertTrue(multiQueue.add(message4))
+
+        val responseMap = multiQueue.getOwnersAndKeysMap(type)
+
+        Assertions.assertEquals(2, responseMap.keys.size)
+        val listOfKeys = responseMap.keys.toList()
+
+        Assertions.assertTrue(listOfKeys.contains(assignedTo))
+        Assertions.assertTrue(listOfKeys.contains(assignedTo2))
+
+        val typesForAssignedTo = responseMap[assignedTo]
+        Assertions.assertEquals(1, typesForAssignedTo!!.size)
+        Assertions.assertEquals(type, typesForAssignedTo.iterator().next())
+
+        val typesForAssignedTo2 = responseMap[assignedTo2]
+        Assertions.assertEquals(1, typesForAssignedTo2!!.size)
+        Assertions.assertEquals(type, typesForAssignedTo2.iterator().next())
+    }
+
+    /**
+     * Test [MultiQueue.getOwnersAndKeysMap] without a specified sub-queue to ensure that the provided map is populated properly with the correct entries
+     * for the current [MultiQueue] state.
+     */
+    @Test
+    fun testGetOwnersAndKeysMap_withoutQueueType()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val type = "test-get-owners-and-keys-map"
+        val type2 = "test-get-owners-and-keys-map2"
+        val type3 = "test-get-owners-and-keys-map3"
+        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), type)
+        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), type)
+        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), type2)
+        val message4 = QueueMessage(Payload("some more data data data", 4, true, PayloadEnum.A), type)
+        val message5 = QueueMessage(Payload("just data", 5, true, PayloadEnum.C), type3)
+        val message6 = QueueMessage(Payload("just more data", 6, false, PayloadEnum.B), type2)
+        val message7 = QueueMessage(Payload("just more and more data", 7, false, PayloadEnum.A), type)
+
+        val assignedTo = "assigned1"
+        val assignedTo2 = "assigned2"
+        val assignedTo3 = "assigned3"
+        message.assignedTo = assignedTo
+        message2.assignedTo = assignedTo
+        message3.assignedTo = assignedTo2
+        message4.assignedTo = assignedTo2
+        message5.assignedTo = assignedTo3
+        message6.assignedTo = assignedTo3
+
+        Assertions.assertNull(message7.assignedTo)
+
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertTrue(multiQueue.add(message2))
+        Assertions.assertTrue(multiQueue.add(message3))
+        Assertions.assertTrue(multiQueue.add(message4))
+        Assertions.assertTrue(multiQueue.add(message5))
+        Assertions.assertTrue(multiQueue.add(message6))
+
+        val responseMap = multiQueue.getOwnersAndKeysMap(null)
+
+        Assertions.assertEquals(3, responseMap.keys.size)
+        val listOfKeys = responseMap.keys.toList()
+
+        Assertions.assertTrue(listOfKeys.contains(assignedTo))
+        Assertions.assertTrue(listOfKeys.contains(assignedTo2))
+        Assertions.assertTrue(listOfKeys.contains(assignedTo3))
+
+        val typesForAssignedTo = responseMap[assignedTo]!!.toList()
+        Assertions.assertEquals(1, typesForAssignedTo.size)
+        Assertions.assertTrue(typesForAssignedTo.contains(type))
+
+        val typesForAssignedTo2 = responseMap[assignedTo2]!!.toList()
+        Assertions.assertEquals(2, typesForAssignedTo2.size)
+        Assertions.assertTrue(typesForAssignedTo2.contains(type))
+        Assertions.assertTrue(typesForAssignedTo2.contains(type2))
+
+        val typesForAssignedTo3 = responseMap[assignedTo3]!!.toList()
+        Assertions.assertEquals(2, typesForAssignedTo3.size)
+        Assertions.assertTrue(typesForAssignedTo3.contains(type2))
+        Assertions.assertTrue(typesForAssignedTo3.contains(type3))
     }
 
     /**

@@ -12,6 +12,8 @@ import java.util.*
  * A [JpaRepository] specific for [QueueMessage] and queries made against them.
  * Defines additional specific queries required for interacting with [QueueMessage]s.
  *
+ * Reference: https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#jpa.query-methods.query-creation
+ *
  * @author github.com/KyleGonzalez
  */
 @Repository
@@ -45,6 +47,24 @@ interface QueueMessageRepository: JpaRepository<QueueMessage, Int>
      */
     @Transactional
     fun findByTypeOrderByIdAsc(type: String): List<QueueMessage>
+
+    /**
+     * Find the entity with the matching [QueueMessage.type] and that has a non-null [QueueMessage.assignedTo]. Sorted by ID ascending.
+     *
+     * @param type the type to match [QueueMessage.type] with
+     * @return a [List] of [QueueMessage] who have a matching [QueueMessage.type] with the provided [type] and non-null [QueueMessage.assignedTo]
+     */
+    @Transactional
+    fun findByTypeAndAssignedToIsNotNullOrderByIdAsc(type: String): List<QueueMessage>
+
+    /**
+     * Find the entity with the matching [QueueMessage.type] and that has [QueueMessage.assignedTo] set to `null`. Sorted by ID ascending.
+     *
+     * @param type the type to match [QueueMessage.type] with
+     * @return a [List] of [QueueMessage] who have a matching [QueueMessage.type] with the provided [type] and `null` [QueueMessage.assignedTo]
+     */
+    @Transactional
+    fun findByTypeAndAssignedToIsNullOrderByIdAsc(type: String): List<QueueMessage>
 
     /**
      * Find the entity which has a [QueueMessage.uuid] matching the provided [uuid].

@@ -63,10 +63,83 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * If the underlying [Queue] does not exist for the provided [String] then a new [Queue] will
      * be created and stored in the [ConcurrentHashMap] under the provided [String].
      *
-     * @param queueType the provider used to get the correct underlying [Queue]
+     * @param queueType the identifier of the sub-queue [Queue]
      * @return the [Queue] matching the provided [String]
      */
     fun getQueueForType(queueType: String): Queue<QueueMessage>
+
+    /**
+     * Retrieves only assigned messages in the sub-queue for the provided [queueType].
+     *
+     * @param queueType the identifier of the sub-queue [Queue]
+     * @return a limited version of the [Queue] containing only assigned messages
+     */
+    fun getAssignedMessagesForType(queueType: String): Queue<QueueMessage>
+
+    /**
+     * Retrieves only unassigned messages in the sub-queue for the provided [queueType].
+     *
+     * @param queueType the identifier of the sub-queue [Queue]
+     * @return a limited version of the [Queue] containing only unassigned messages
+     */
+    fun getUnassignedMessagesForType(queueType:String): Queue<QueueMessage>
+
+    /**
+     * Get a map of assignee identifiers and the sub-queue identifier that they own messages in.
+     * If the [queueType] is provided this will iterate over all sub-queues and call [getOwnersAndKeysMapForType] for each of them.
+     * Otherwise, it will only call [getOwnersAndKeysMapForType] on the provided [queueType] if it is not null.
+     *
+     * @param queueType the queue type retrieve the [Map] from
+     * @return the [Map] of assignee identifiers mapped to a list of the sub-queue identifiers that they own any messages in
+     */
+    fun getOwnersAndKeysMap(queueType: String?): Map<String, HashSet<String>>
+    {
+        val responseMap = HashMap<String, HashSet<String>>()
+        if (queueType != null)
+        {
+            LOG.debug("Getting owners map for sub-queue with identifier [{}].", queueType)
+            getOwnersAndKeysMapForType(queueType, responseMap)
+        }
+        else
+        {
+            LOG.debug("Getting owners map for all sub-queues.")
+            val keys = keys(false)
+            keys.forEach { key ->
+                getOwnersAndKeysMapForType(key, responseMap)
+            }
+        }
+        return responseMap
+    }
+
+    /**
+     * Add an entry to the provided [Map] if any of the messages in the sub-queue are assigned.
+     * The [QueueMessage.type] is appended to the [Set] under it's [QueueMessage.assignedTo] identifier.
+     *
+     * @param queueType the sub-queue to iterate and update the map from
+     * @param responseMap the map to update
+     */
+    fun getOwnersAndKeysMapForType(queueType: String, responseMap: HashMap<String, HashSet<String>>)
+    {
+        val queueForType: Queue<QueueMessage> = getAssignedMessagesForType(queueType)
+        queueForType.forEach { message ->
+            val type = message.type
+            val assigned = message.assignedTo
+            if (assigned != null)
+            {
+                LOG.trace("Appending sub-queue identifier [{}] to map for assignee ID [{}].", type, assigned)
+                if (!responseMap.contains(assigned))
+                {
+                    val set = hashSetOf(type)
+                    responseMap[assigned] = set
+                }
+                else
+                {
+                    // Set should not be null since we initialise and set it if the key is contained
+                    responseMap[assigned]!!.add(type)
+                }
+            }
+        }
+    }
 
     /**
      * Clears the underlying [Queue] for the provided [String]. By calling [Queue.clear].

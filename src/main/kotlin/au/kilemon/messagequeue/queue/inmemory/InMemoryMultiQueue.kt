@@ -8,6 +8,7 @@ import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.stream.Collectors
 import kotlin.jvm.Throws
 
 /**
@@ -35,9 +36,9 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         var queueForType: Queue<QueueMessage>? = messageQueue[queueType]
         if (queueForType == null)
         {
-            LOG.debug("No existing queue found for type [{}].", queueType)
             queueForType = ConcurrentLinkedQueue()
-            this.initialiseQueueForType(queueType, queueForType)
+            LOG.debug("Initialising new queue for type [{}].", queueType)
+            messageQueue[queueType] = queueForType
         }
         else
         {
@@ -46,16 +47,20 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         return queueForType
     }
 
-    /**
-     * Initialise and register the provided [Queue] against the [String].
-     *
-     * @param queueType the [String] to register the [Queue] against
-     * @param queue the queue to register
-     */
-    private fun initialiseQueueForType(queueType: String, queue: Queue<QueueMessage>)
+    override fun getAssignedMessagesForType(queueType: String): Queue<QueueMessage>
     {
-        LOG.debug("Initialising new queue for type [{}].", queueType)
-        messageQueue[queueType] = queue
+        val queue = ConcurrentLinkedQueue<QueueMessage>()
+        val queueForType = getQueueForType(queueType)
+        queue.addAll(queueForType.stream().filter { message -> message.assignedTo != null }.collect(Collectors.toList()))
+        return queue
+    }
+
+    override fun getUnassignedMessagesForType(queueType: String): Queue<QueueMessage>
+    {
+        val queue = ConcurrentLinkedQueue<QueueMessage>()
+        val queueForType = getQueueForType(queueType)
+        queue.addAll(queueForType.stream().filter { message -> message.assignedTo == null }.collect(Collectors.toList()))
+        return queue
     }
 
     override fun clearForType(queueType: String): Int

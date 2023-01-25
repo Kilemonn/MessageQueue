@@ -13,6 +13,7 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ScanOptions
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.stream.Collectors
 
 /**
  * A `Redis` specific implementation of the [MultiQueue].
@@ -62,6 +63,28 @@ class RedisMultiQueue : MultiQueue, HasLogger
         if (!set.isNullOrEmpty())
         {
             queue.addAll(set)
+        }
+        return queue
+    }
+
+    override fun getAssignedMessagesForType(queueType: String): Queue<QueueMessage>
+    {
+        val queue = ConcurrentLinkedQueue<QueueMessage>()
+        val set = redisTemplate.opsForSet().members(appendPrefix(queueType))
+        if (!set.isNullOrEmpty())
+        {
+            queue.addAll(set.stream().filter { message -> message.assignedTo != null }.collect(Collectors.toList()))
+        }
+        return queue
+    }
+
+    override fun getUnassignedMessagesForType(queueType: String): Queue<QueueMessage>
+    {
+        val queue = ConcurrentLinkedQueue<QueueMessage>()
+        val set = redisTemplate.opsForSet().members(appendPrefix(queueType))
+        if (!set.isNullOrEmpty())
+        {
+            queue.addAll(set.stream().filter { message -> message.assignedTo == null }.collect(Collectors.toList()))
         }
         return queue
     }
