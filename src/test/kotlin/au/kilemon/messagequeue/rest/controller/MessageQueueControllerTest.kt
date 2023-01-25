@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import java.util.*
+import kotlin.collections.ArrayList
 
 /**
  * A test class for the [MessageQueueController].
@@ -427,7 +428,7 @@ class MessageQueueControllerTest
         Assertions.assertNull(message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + message.uuid.toString())
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param("assignedTo", assignedTo))
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -454,7 +455,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + message.uuid.toString())
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param("assignedTo", assignedTo))
             .andExpect(MockMvcResultMatchers.status().isAccepted)
@@ -487,7 +488,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(message.uuid, assignedMessage.uuid)
 
         val wrongAssignee = "wrong-assignee"
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + message.uuid.toString())
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param("assignedTo", wrongAssignee))
             .andExpect(MockMvcResultMatchers.status().isConflict)
@@ -596,7 +597,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid.toString())
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param("assignedTo", assignedTo))
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -623,7 +624,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid.toString())
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
@@ -647,7 +648,7 @@ class MessageQueueControllerTest
         Assertions.assertNull(message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid.toString())
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isAccepted)
             .andReturn()
@@ -675,7 +676,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.add(message))
 
         val wrongAssignedTo = "wrong-assigned"
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid.toString())
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param("assignedTo", wrongAssignedTo))
             .andExpect(MockMvcResultMatchers.status().isConflict)
@@ -706,11 +707,11 @@ class MessageQueueControllerTest
         val message = createQueueMessage(type = "testRemoveMessage_removed")
         Assertions.assertTrue(multiQueue.add(message))
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid.toString())
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
 
-        Assertions.assertFalse(multiQueue.containsUUID(message.uuid.toString()).isPresent)
+        Assertions.assertFalse(multiQueue.containsUUID(message.uuid).isPresent)
         Assertions.assertTrue(multiQueue.getQueueForType(message.type).isEmpty())
     }
 
@@ -725,13 +726,94 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.add(message))
 
         val wrongAssignedTo = "wrong-assignee"
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid.toString())
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param("assignedTo", wrongAssignedTo))
             .andExpect(MockMvcResultMatchers.status().isForbidden)
 
         val assignedEntry = multiQueue.peekForType(message.type).get()
         Assertions.assertEquals(assignedTo, assignedEntry.assignedTo)
+    }
+
+    /**
+     * Test [MessageQueueController.getOwners] with a provided `queueType` parameter to ensure the appropriate map is provided in the response and [HttpStatus.OK] is returned.
+     */
+    @Test
+    fun testGetOwners_withQueueType()
+    {
+        val assignedTo = "assignedTo"
+        val assignedTo2 = "assignedTo2"
+
+        val type = "testGetOwners"
+
+        val message = createQueueMessage(type = type, assignedTo = assignedTo)
+        val message2 = createQueueMessage(type = type, assignedTo = assignedTo2)
+        val message3 = createQueueMessage(type = type, assignedTo = assignedTo2)
+
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertTrue(multiQueue.add(message2))
+        Assertions.assertTrue(multiQueue.add(message3))
+
+        val mvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNERS)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param("queueType", type))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val owners = gson.fromJson(mvcResult.response.contentAsString, Map::class.java)
+        Assertions.assertNotNull(owners)
+        Assertions.assertEquals(2, owners.size)
+        Assertions.assertTrue(owners.keys.toList().contains(assignedTo))
+        Assertions.assertTrue(owners.keys.toList().contains(assignedTo2))
+
+        val valuesInAssignedTo = owners[assignedTo]
+        Assertions.assertTrue(valuesInAssignedTo is ArrayList<*>)
+        Assertions.assertTrue((valuesInAssignedTo as ArrayList<*>).contains(type))
+
+        val valuesInAssignedTo2 = owners[assignedTo2]
+        Assertions.assertTrue(valuesInAssignedTo2 is ArrayList<*>)
+        Assertions.assertTrue((valuesInAssignedTo2 as ArrayList<*>).contains(type))
+    }
+
+    /**
+     * Test [MessageQueueController.getOwners] without a provided `queueType` parameter to ensure the appropriate map is provided in the response and [HttpStatus.OK] is returned.
+     */
+    @Test
+    fun testGetOwners_withoutQueueType()
+    {
+        val assignedTo = "assignedTo"
+        val assignedTo2 = "assignedTo2"
+
+        val type = "testGetOwners"
+        val type2 = "testGetOwners2"
+
+        val message = createQueueMessage(type = type, assignedTo = assignedTo)
+        val message2 = createQueueMessage(type = type2, assignedTo = assignedTo)
+        val message3 = createQueueMessage(type = type2, assignedTo = assignedTo2)
+
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertTrue(multiQueue.add(message2))
+        Assertions.assertTrue(multiQueue.add(message3))
+
+        val mvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNERS)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val owners = gson.fromJson(mvcResult.response.contentAsString, Map::class.java)
+        Assertions.assertNotNull(owners)
+        Assertions.assertEquals(2, owners.size)
+        Assertions.assertTrue(owners.keys.toList().contains(assignedTo))
+        Assertions.assertTrue(owners.keys.toList().contains(assignedTo2))
+
+        val valuesInAssignedTo = owners[assignedTo]
+        Assertions.assertTrue(valuesInAssignedTo is ArrayList<*>)
+        Assertions.assertTrue((valuesInAssignedTo as ArrayList<*>).contains(type))
+        Assertions.assertTrue(valuesInAssignedTo.contains(type2))
+
+        val valuesInAssignedTo2 = owners[assignedTo2]
+        Assertions.assertTrue(valuesInAssignedTo2 is ArrayList<*>)
+        Assertions.assertTrue((valuesInAssignedTo2 as ArrayList<*>).contains(type2))
     }
 
     /**

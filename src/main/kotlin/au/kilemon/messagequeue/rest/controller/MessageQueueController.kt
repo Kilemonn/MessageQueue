@@ -24,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException
 import java.util.*
 import java.util.stream.Collectors
 import javax.validation.Valid
+import kotlin.collections.HashMap
 
 /**
  * The REST controller for the [MultiQueue]. It exposes endpoints to access and manipulate the queue and the messages inside it.
@@ -89,6 +90,11 @@ open class MessageQueueController : HasLogger
          * The resource path used to retrieve the next `available` message in the queue for consumption.
          */
         const val ENDPOINT_NEXT: String = "/next"
+
+        /**
+         * The resource path used to retrieve the different owners within the multi-queue or subqueue.
+         */
+        const val ENDPOINT_OWNERS: String = "/owners"
     }
 
     @Autowired
@@ -269,7 +275,7 @@ open class MessageQueueController : HasLogger
     fun getOwned(@Parameter(`in` = ParameterIn.QUERY, required = true, description = "The identifier that must match the message's `assigned` property in order to be returned.") @RequestParam(required = true) assignedTo: String,
                  @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The sub queue to search for the assigned messages.") @RequestParam(required = true) queueType: String): ResponseEntity<List<MessageResponse>>
     {
-        val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
+        val queueForType: Queue<QueueMessage> = messageQueue.getAssignedMessagesForType(queueType)
         val ownedMessages =  queueForType.stream().filter { message -> message.assignedTo == assignedTo }.map { message -> MessageResponse(message) }.collect(Collectors.toList())
         LOG.debug("Found [{}] owned entries within queue with type [{}] for user with identifier [{}].", ownedMessages.size, queueType, assignedTo)
         return ResponseEntity.ok(ownedMessages)
@@ -304,26 +310,26 @@ open class MessageQueueController : HasLogger
             val message = queueForType.stream().filter { message -> message.uuid == uuid }.findFirst()
             if (message.isPresent)
             {
-                val messageToRelease = message.get()
-                if (!messageToRelease.assignedTo.isNullOrBlank())
+                val messageToAssign = message.get()
+                if (!messageToAssign.assignedTo.isNullOrBlank())
                 {
-                    if (messageToRelease.assignedTo == assignedTo)
+                    if (messageToAssign.assignedTo == assignedTo)
                     {
                         // The message is already in this state, returning 202 to tell the client that it is accepted but no action was done
-                        LOG.debug("Message with uuid [{}] in queue with type [{}] is already assigned to the identifier [{}].", messageToRelease.uuid, queueType.get(), assignedTo)
-                        return ResponseEntity.accepted().body(MessageResponse(messageToRelease))
+                        LOG.debug("Message with uuid [{}] in queue with type [{}] is already assigned to the identifier [{}].", messageToAssign.uuid, queueType.get(), assignedTo)
+                        return ResponseEntity.accepted().body(MessageResponse(messageToAssign))
                     }
                     else
                     {
-                        LOG.error("Message with uuid [{}] in queue with type [{}] is already assigned to the identifier [{}]. Attempting to assign to identifier [{}].", messageToRelease.uuid, queueType.get(), messageToRelease.assignedTo, assignedTo)
-                        throw ResponseStatusException(HttpStatus.CONFLICT, "The message with UUID: $uuid and $queueType is already assigned to the identifier ${messageToRelease.assignedTo}.")
+                        LOG.error("Message with uuid [{}] in queue with type [{}] is already assigned to the identifier [{}]. Attempting to assign to identifier [{}].", messageToAssign.uuid, queueType.get(), messageToAssign.assignedTo, assignedTo)
+                        throw ResponseStatusException(HttpStatus.CONFLICT, "The message with UUID: $uuid and $queueType is already assigned to the identifier ${messageToAssign.assignedTo}.")
                     }
                 }
 
-                messageToRelease.assignedTo = assignedTo
-                messageQueue.persistMessage(messageToRelease)
-                LOG.debug("Assigned message with UUID [{}] to identifier [{}].", messageToRelease.uuid, assignedTo)
-                return ResponseEntity.ok(MessageResponse(messageToRelease))
+                messageToAssign.assignedTo = assignedTo
+                messageQueue.persistMessage(messageToAssign)
+                LOG.debug("Assigned message with UUID [{}] to identifier [{}].", messageToAssign.uuid, assignedTo)
+                return ResponseEntity.ok(MessageResponse(messageToAssign))
             }
         }
 
@@ -348,11 +354,10 @@ open class MessageQueueController : HasLogger
     fun getNext(@Parameter(`in` = ParameterIn.QUERY, required = true, description = "The sub queue identifier to query the next available message from.") @RequestParam(required = true) queueType: String,
                 @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The identifier to assign the next available message to if one exists.") @RequestParam(required = true) assignedTo: String): ResponseEntity<MessageResponse>
     {
-        val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
-        val nextMessage = queueForType.stream().filter { message -> message.assignedTo == null }.findFirst()
-        return if (nextMessage.isPresent)
+        val queueForType: Queue<QueueMessage> = messageQueue.getUnassignedMessagesForType(queueType)
+        return if (queueForType.iterator().hasNext())
         {
-            val nextUnassignedMessage = nextMessage.get()
+            val nextUnassignedMessage = queueForType.iterator().next()
             LOG.debug("Retrieving and assigning next message for queue type [{}] with UUID [{}] to identifier [{}].", queueType, nextUnassignedMessage.uuid, assignedTo)
             nextUnassignedMessage.assignedTo = assignedTo
             messageQueue.persistMessage(nextUnassignedMessage)
@@ -464,5 +469,25 @@ open class MessageQueueController : HasLogger
 
         LOG.debug("Could not find message to remove with UUID [{}]. (Queue-type: [{}]).", uuid, queueType)
         return ResponseEntity.noContent().build()
+    }
+
+    /**
+     * Retrieve a map containing assignee identifiers mapped to a list of the sub-queues that they own messages in.
+     * E.g.
+     * ```
+     * {
+     *      "identifier1": ["queue-A", "queue-D", "queue-N"],
+     *      "identifier2": ["queue-A", "queue-B", "queue-Z"]
+     * }
+     * ```
+     * @param queueType the sub-queue identifier that you are interested in. If not provided, all sub-queues will be iterated through.
+     * @return a [Map] of assignee identifiers mapped to a [Set] of the sub-queue identifiers that they have any assigned messages in.
+     */
+    @Operation(summary = "Retrieve all unique owner identifiers for either a specified sub-queue or all sub-queues.", description = "Retrieve all owner identifier mapped to a list of the sub-queue identifiers that they are assigned any messages in.")
+    @GetMapping(ENDPOINT_OWNERS, produces = [MediaType.APPLICATION_JSON_VALUE])
+    @ApiResponse(responseCode = "200", description = "Successfully returns the map of owner identifiers mapped to all the sub-queues that they have one or more assigned messages in.")
+    fun getOwners(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "The sub queue to search for the owner identifiers.") @RequestParam(required = false) queueType: String?): ResponseEntity<Map<String, HashSet<String>>>
+    {
+        return ResponseEntity.ok(messageQueue.getOwnersAndKeysMap(queueType))
     }
 }
