@@ -58,6 +58,10 @@ tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "17"
 }
 
+jacoco {
+    toolVersion = "0.8.8"
+}
+
 tasks.jacocoTestReport {
     dependsOn(tasks.test) // Generate the report after the tests
     reports {
