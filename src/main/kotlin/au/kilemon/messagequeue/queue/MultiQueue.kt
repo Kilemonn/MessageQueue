@@ -72,9 +72,10 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * Retrieves only assigned messages in the sub-queue for the provided [queueType].
      *
      * @param queueType the identifier of the sub-queue [Queue]
+     * @param assignedTo to further filter the messages returned this can be provided
      * @return a limited version of the [Queue] containing only assigned messages
      */
-    fun getAssignedMessagesForType(queueType: String): Queue<QueueMessage>
+    fun getAssignedMessagesForType(queueType: String, assignedTo: String?): Queue<QueueMessage>
 
     /**
      * Retrieves only unassigned messages in the sub-queue for the provided [queueType].
@@ -120,7 +121,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      */
     fun getOwnersAndKeysMapForType(queueType: String, responseMap: HashMap<String, HashSet<String>>)
     {
-        val queueForType: Queue<QueueMessage> = getAssignedMessagesForType(queueType)
+        val queueForType: Queue<QueueMessage> = getAssignedMessagesForType(queueType, null)
         queueForType.forEach { message ->
             val type = message.type
             val assigned = message.assignedTo

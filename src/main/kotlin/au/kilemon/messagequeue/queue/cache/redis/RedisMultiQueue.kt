@@ -67,13 +67,20 @@ class RedisMultiQueue : MultiQueue, HasLogger
         return queue
     }
 
-    override fun getAssignedMessagesForType(queueType: String): Queue<QueueMessage>
+    override fun getAssignedMessagesForType(queueType: String, assignedTo: String?): Queue<QueueMessage>
     {
         val queue = ConcurrentLinkedQueue<QueueMessage>()
         val set = redisTemplate.opsForSet().members(appendPrefix(queueType))
         if (!set.isNullOrEmpty())
         {
-            queue.addAll(set.stream().filter { message -> message.assignedTo != null }.collect(Collectors.toList()))
+            if (assignedTo == null)
+            {
+                queue.addAll(set.stream().filter { message -> message.assignedTo != null }.collect(Collectors.toList()))
+            }
+            else
+            {
+                queue.addAll(set.stream().filter { message -> message.assignedTo == assignedTo }.collect(Collectors.toList()))
+            }
         }
         return queue
     }

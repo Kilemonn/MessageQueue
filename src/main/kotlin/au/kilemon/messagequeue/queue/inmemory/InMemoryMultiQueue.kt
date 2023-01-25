@@ -47,11 +47,18 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         return queueForType
     }
 
-    override fun getAssignedMessagesForType(queueType: String): Queue<QueueMessage>
+    override fun getAssignedMessagesForType(queueType: String, assignedTo: String?): Queue<QueueMessage>
     {
         val queue = ConcurrentLinkedQueue<QueueMessage>()
         val queueForType = getQueueForType(queueType)
-        queue.addAll(queueForType.stream().filter { message -> message.assignedTo != null }.collect(Collectors.toList()))
+        if (assignedTo == null)
+        {
+            queue.addAll(queueForType.stream().filter { message -> message.assignedTo != null }.collect(Collectors.toList()))
+        }
+        else
+        {
+            queue.addAll(queueForType.stream().filter { message -> message.assignedTo == assignedTo }.collect(Collectors.toList()))
+        }
         return queue
     }
 

@@ -269,8 +269,8 @@ open class MessageQueueController : HasLogger
     fun getOwned(@Parameter(`in` = ParameterIn.QUERY, required = true, description = "The identifier that must match the message's `assigned` property in order to be returned.") @RequestParam(required = true) assignedTo: String,
                  @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The sub queue to search for the assigned messages.") @RequestParam(required = true) queueType: String): ResponseEntity<List<MessageResponse>>
     {
-        val queueForType: Queue<QueueMessage> = messageQueue.getAssignedMessagesForType(queueType)
-        val ownedMessages =  queueForType.stream().filter { message -> message.assignedTo == assignedTo }.map { message -> MessageResponse(message) }.collect(Collectors.toList())
+        val assignedMessages: Queue<QueueMessage> = messageQueue.getAssignedMessagesForType(queueType, assignedTo)
+        val ownedMessages = assignedMessages.stream().map { message -> MessageResponse(message) }.collect(Collectors.toList())
         LOG.debug("Found [{}] owned entries within queue with type [{}] for user with identifier [{}].", ownedMessages.size, queueType, assignedTo)
         return ResponseEntity.ok(ownedMessages)
     }

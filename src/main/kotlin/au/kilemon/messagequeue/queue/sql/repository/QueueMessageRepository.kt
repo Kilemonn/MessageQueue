@@ -67,6 +67,16 @@ interface QueueMessageRepository: JpaRepository<QueueMessage, Int>
     fun findByTypeAndAssignedToIsNullOrderByIdAsc(type: String): List<QueueMessage>
 
     /**
+     * Find the entity with the matching [QueueMessage.type] and [QueueMessage.assignedTo]. Sorted by ID ascending.
+     *
+     * @param type the type to match [QueueMessage.type] with
+     * @param assignedTo the identifier to match [QueueMessage.assignedTo] with
+     * @return a [List] of [QueueMessage] who have a matching [QueueMessage.type] and [QueueMessage.assignedTo]
+     */
+    @Transactional
+    fun findByTypeAndAssignedToOrderByIdAsc(type: String, assignedTo: String): List<QueueMessage>
+
+    /**
      * Find the entity which has a [QueueMessage.uuid] matching the provided [uuid].
      *
      * @param uuid the [QueueMessage.uuid] of the message to find

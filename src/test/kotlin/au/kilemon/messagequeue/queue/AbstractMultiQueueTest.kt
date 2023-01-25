@@ -395,7 +395,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
      * Test [MultiQueue.getAssignedMessagesForType] returns only messages with a non-null [QueueMessage.assignedTo] property.
      */
     @Test
-    fun testGetAssignedMessagesForType()
+    fun testGetAssignedMessagesForType_noAssignedTo()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
         val type = "test-assigned-messages-for-type"
@@ -418,7 +418,7 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertEquals(3, messagesInSubQueue.size)
 
         // Check only messages 1 and 2 are returned in the assigned queue
-        val assignedMessages = multiQueue.getAssignedMessagesForType(type)
+        val assignedMessages = multiQueue.getAssignedMessagesForType(type, null)
         Assertions.assertEquals(2, assignedMessages.size)
 
         val list = ArrayList<QueueMessage>()
@@ -426,6 +426,48 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertTrue(list.contains(message))
         Assertions.assertTrue(list.contains(message2))
         Assertions.assertFalse(list.contains(message3))
+    }
+
+    /**
+     * Test [MultiQueue.getAssignedMessagesForType] returns only messages with the matching [QueueMessage.assignedTo] property.
+     */
+    @Test
+    fun testGetAssignedMessagesForType_withAssignedTo()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val type = "test-assigned-messages-for-type"
+        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), type)
+        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), type)
+        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), type)
+        val message4 = QueueMessage(Payload("some more data data data", 4, false, PayloadEnum.A), type)
+
+        // Assign message 1, 2 and 3
+        val assignedTo = "me"
+        val assignedTo2 = "me2"
+        message.assignedTo = assignedTo
+        message2.assignedTo = assignedTo
+        message3.assignedTo = assignedTo2
+        Assertions.assertNull(message4.assignedTo)
+
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertTrue(multiQueue.add(message2))
+        Assertions.assertTrue(multiQueue.add(message3))
+        Assertions.assertTrue(multiQueue.add(message4))
+
+        // Ensure all messages are in the queue
+        val messagesInSubQueue = multiQueue.getQueueForType(type)
+        Assertions.assertEquals(4, messagesInSubQueue.size)
+
+        // Check only messages 1 and 2 are assigned to 'assignedTo'
+        val assignedMessages = multiQueue.getAssignedMessagesForType(type, assignedTo)
+        Assertions.assertEquals(2, assignedMessages.size)
+
+        val list = ArrayList<QueueMessage>()
+        list.addAll(assignedMessages)
+        Assertions.assertTrue(list.contains(message))
+        Assertions.assertTrue(list.contains(message2))
+        Assertions.assertFalse(list.contains(message3))
+        Assertions.assertFalse(list.contains(message4))
     }
 
     /**

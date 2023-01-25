@@ -31,9 +31,17 @@ class SqlMultiQueue : MultiQueue, HasLogger
         return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
     }
 
-    override fun getAssignedMessagesForType(queueType: String): Queue<QueueMessage>
+    override fun getAssignedMessagesForType(queueType: String, assignedTo: String?): Queue<QueueMessage>
     {
-        val entries = queueMessageRepository.findByTypeAndAssignedToIsNotNullOrderByIdAsc(queueType)
+        val entries = if (assignedTo == null)
+        {
+            queueMessageRepository.findByTypeAndAssignedToIsNotNullOrderByIdAsc(queueType)
+        }
+        else
+        {
+            queueMessageRepository.findByTypeAndAssignedToOrderByIdAsc(queueType, assignedTo)
+        }
+
         return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
     }
 
