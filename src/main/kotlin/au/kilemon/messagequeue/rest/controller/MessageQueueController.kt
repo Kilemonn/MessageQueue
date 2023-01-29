@@ -143,7 +143,7 @@ open class MessageQueueController : HasLogger
     @GetMapping("$ENDPOINT_ENTRY/{uuid}", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "Successfully returns the queue message matching the provided UUID."),
-        ApiResponse(responseCode = "404", description = "No queue messages match the provided UUID.", content = [Content()]) // Add empty Content() to remove duplicate responses in swagger docs
+        ApiResponse(responseCode = "204", description = "No queue messages match the provided UUID.", content = [Content()]) // Add empty Content() to remove duplicate responses in swagger docs
     )
     fun getEntry(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The UUID of the queue message to retrieve.") @PathVariable uuid: String): ResponseEntity<MessageResponse>
     {
@@ -173,7 +173,6 @@ open class MessageQueueController : HasLogger
     @PostMapping(ENDPOINT_ENTRY, consumes = [MediaType.APPLICATION_JSON_VALUE], produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponses(
         ApiResponse(responseCode = "201", description = "Successfully created the provided queue message."),
-        ApiResponse(responseCode = "400", description = "The message is marked as assigned but no identifier is provided.", content = [Content()]),
         ApiResponse(responseCode = "409", description = "A queue message already exists with the same UUID.", content = [Content()]), // Add empty Content() to remove duplicate responses in swagger docs
         ApiResponse(responseCode = "500", description = "An internal system error occurred when adding the new queue message.", content = [Content()])
     )
@@ -291,7 +290,7 @@ open class MessageQueueController : HasLogger
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "Successfully assigned the message to the provided identifier. The message was not previously assigned."),
         ApiResponse(responseCode = "202", description = "The message was already assigned to the provided identifier."),
-        ApiResponse(responseCode = "404", description = "No queue messages match the provided UUID.", content = [Content()]),
+        ApiResponse(responseCode = "204", description = "No queue messages match the provided UUID.", content = [Content()]),
         ApiResponse(responseCode = "409", description = "The message is already assigned to another identifier.", content = [Content()])
     )
     fun assignMessage(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The queue message UUID to assign.") @PathVariable(required = true) uuid: String,
@@ -375,7 +374,7 @@ open class MessageQueueController : HasLogger
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "Successfully released the message. The message was previously assigned."),
         ApiResponse(responseCode = "202", description = "The message is not currently assigned."),
-        ApiResponse(responseCode = "404", description = "No queue messages match the provided UUID.", content = [Content()]),
+        ApiResponse(responseCode = "204", description = "No queue messages match the provided UUID.", content = [Content()]),
         ApiResponse(responseCode = "409", description = "The identifier was provided and the message is assigned to another identifier so it cannot be released.", content = [Content()])
     )
     fun releaseMessage(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The UUID of the message to release.") @PathVariable(required = true) uuid: String,
@@ -424,8 +423,8 @@ open class MessageQueueController : HasLogger
     @Operation(summary = "Remove a queue message by UUID.", description = "Remove a queue message by UUID. If `assignedTo` is provided, the message must be currently assigned to that identifier for it to be removed.")
     @DeleteMapping("$ENDPOINT_ENTRY/{uuid}")
     @ApiResponses(
-        ApiResponse(responseCode = "204", description = "Successfully removed the message."),
-        ApiResponse(responseCode = "404", description = "No queue messages match the provided UUID.", content = [Content()]),
+        ApiResponse(responseCode = "200", description = "Successfully removed the message."),
+        ApiResponse(responseCode = "204", description = "No queue messages match the provided UUID.", content = [Content()]),
         ApiResponse(responseCode = "403", description = "The provided identifier does not match the message's current assignee so it cannot be removed.", content = [Content()])
     )
     fun removeMessage(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The UUID of the message to remove.") @PathVariable(required = true) uuid: String,
@@ -443,7 +442,7 @@ open class MessageQueueController : HasLogger
             }
             messageQueue.remove(messageToRemove)
             LOG.debug("Removed message with UUID [{}] on request from assignee [{}].", messageToRemove.uuid, assignedTo)
-            return ResponseEntity.noContent().build()
+            return ResponseEntity.ok().build()
         }
 
         LOG.debug("Could not find message to remove with UUID [{}].", uuid)
