@@ -699,20 +699,37 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.removeMessage] to ensure that the message is correctly removed.
+     * Test [MessageQueueController.removeMessage] to ensure that a [HttpStatus.OK] is returned when the message is correctly removed.
      */
     @Test
-    fun testRemoveMessage_removed()
+    fun testRemoveMessage_removeExistingEntry()
     {
         val message = createQueueMessage(type = "testRemoveMessage_removed")
         Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertTrue(multiQueue.containsUUID(message.uuid).isPresent)
 
         mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().isNoContent)
+            .andExpect(MockMvcResultMatchers.status().isOk)
 
         Assertions.assertFalse(multiQueue.containsUUID(message.uuid).isPresent)
         Assertions.assertTrue(multiQueue.getQueueForType(message.type).isEmpty())
+    }
+
+    /**
+     * Test [MessageQueueController.removeMessage] to ensure that a [HttpStatus.NO_CONTENT] is returned when the matching message does not exist.
+     */
+    @Test
+    fun testRemoveMessage_doesNotExist()
+    {
+        val uuid = UUID.randomUUID().toString()
+        Assertions.assertFalse(multiQueue.containsUUID(uuid).isPresent)
+
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
+
+        Assertions.assertFalse(multiQueue.containsUUID(uuid).isPresent)
     }
 
     /**
