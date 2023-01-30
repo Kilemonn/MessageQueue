@@ -64,23 +64,25 @@ class QueueMessage(@Transient var payload: Any?, @Column(nullable = false) var t
     }
 
     /**
-     * Retrieve a detailed [String] of the underlying object properties. If the provided [Boolean] is `true` then the payload will also be provided in the response.
+     * If the provided [Boolean] is `true` then the payload will also be provided in the response.
+     * Otherwise, the payload should be removed in the response object.
      *
-     * @param detailed when `true` the [payload] object will be logged as well, otherwise the [payload] will not be contained in the response
-     * @return a detail [String] about this object with varying detail
+     * @param detailed when `true` the [payload] object will be logged as well, otherwise the [payload] will not be contained in the response or `null`.
+     * @return [QueueMessage] that is either a copy of `this` without the payload, or `this` with a resolved payload
      */
-    fun toDetailedString(detailed: Boolean?): String
+    fun removePayload(detailed: Boolean?): QueueMessage
     {
+        if (detailed == false)
+        {
+            // Create a temporary object since the object is edited in place if we are using the in-memory queue
+            val newMessage = QueueMessage()
+            newMessage.type = type
+            newMessage.assignedTo = assignedTo
+            newMessage.uuid = uuid
+            return newMessage
+        }
         resolvePayloadObject()
-        val minimalDetails = "UUID: {$uuid}, QueueType: {$type}, Assigned to: {$assignedTo}"
-        return if (detailed == true)
-        {
-             "$minimalDetails, Payload: ${payload.toString()}"
-        }
-        else
-        {
-            minimalDetails
-        }
+        return this
     }
 
     /**

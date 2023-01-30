@@ -307,28 +307,39 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getAll] to ensure that all entries are returned from all `queueTypes` when an explicit `queueType` is not provided.
+     * Test [MessageQueueController.getAll] to ensure that all entries are returned from all `queueTypes` when no explicit `queueType` is provided.
+     * This also checks the returned object has a `non-null` value in the payload since the `detailed` flag is set to `true`.
      */
     @Test
     fun testGetAll()
     {
         val entries = initialiseMapWithEntries()
+        val type = entries.first[0].type
+        val detailed = true
 
-        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL)
+        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL + "?detailed=" + detailed)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
-        val mapType = object : TypeToken<Map<String, List<String>>>() {}.type
-        val keys = gson.fromJson<Map<String, List<String>>>(mvcResult.response.contentAsString, mapType)
+        val mapType = object : TypeToken<Map<String, List<QueueMessage>>>() {}.type
+        val keys = gson.fromJson<Map<String, List<QueueMessage>>>(mvcResult.response.contentAsString, mapType)
         Assertions.assertNotNull(keys)
         Assertions.assertEquals(entries.second.size, keys.keys.size)
-        entries.second.forEach { type -> Assertions.assertTrue(keys.keys.contains(type)) }
+        entries.second.forEach { typeString -> Assertions.assertTrue(keys.keys.contains(typeString)) }
         keys.values.forEach { detailList -> Assertions.assertEquals(1, detailList.size) }
+
+        Assertions.assertEquals(entries.first[0].removePayload(detailed).uuid, keys[type]!![0].uuid)
+        // Since we passed in true for the detailed flag, ensure the payload is equal
+        val payloadObject = gson.fromJson(keys[type]!![0].payload.toString(), Payload::class.java)
+        Assertions.assertEquals(entries.first[0].payload, payloadObject)
+        Assertions.assertEquals(entries.first[0].removePayload(detailed).assignedTo, keys[type]!![0].assignedTo)
+        Assertions.assertEquals(entries.first[0].removePayload(detailed).type, keys[type]!![0].type)
     }
 
     /**
      * Test [MessageQueueController.getAll] to ensure that all entries are returned from the `queueType` when an explicit `queueType` is provided.
+     * This also checks the returned object has `null` in the payload since the `detailed` flag is not provided.
      */
     @Test
     fun testGetAll_SpecificQueueType()
@@ -341,13 +352,17 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
-        val mapType = object : TypeToken<Map<String, List<String>>>() {}.type
-        val keys = gson.fromJson<Map<String, List<String>>>(mvcResult.response.contentAsString, mapType)
+        val mapType = object : TypeToken<Map<String, List<QueueMessage>>>() {}.type
+        val keys = gson.fromJson<Map<String, List<QueueMessage>>>(mvcResult.response.contentAsString, mapType)
         Assertions.assertNotNull(keys)
         Assertions.assertEquals(1, keys.keys.size)
         Assertions.assertTrue(keys.keys.contains(type))
         keys.values.forEach { detailList -> Assertions.assertEquals(1, detailList.size) }
-        Assertions.assertEquals(entries.first[0].toDetailedString(false), keys[type]!![0])
+        Assertions.assertEquals(entries.first[0].removePayload(false).uuid, keys[type]!![0].uuid)
+        // Since we did not pass a detailed flag value, ensure the payload is null
+        Assertions.assertNull(entries.first[0].removePayload(false).payload)
+        Assertions.assertEquals(entries.first[0].removePayload(false).assignedTo, keys[type]!![0].assignedTo)
+        Assertions.assertEquals(entries.first[0].removePayload(false).type, keys[type]!![0].type)
     }
 
     /**
