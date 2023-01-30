@@ -68,7 +68,7 @@ class QueueMessage(@Transient var payload: Any?, @Column(nullable = false) var t
      * Otherwise, the payload should be removed in the response object.
      *
      * @param detailed when `true` the [payload] object will be logged as well, otherwise the [payload] will not be contained in the response or `null`.
-     * @return [QueueMessage]
+     * @return [QueueMessage] that is either a copy of `this` without the payload, or `this` with a resolved payload
      */
     fun removePayload(detailed: Boolean?): QueueMessage
     {
