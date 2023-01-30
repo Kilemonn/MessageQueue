@@ -118,4 +118,26 @@ class QueueMessageTest
         Assertions.assertTrue(message1.payloadBytes.contentEquals(message2.payloadBytes))
         Assertions.assertEquals(message1, message2)
     }
+
+    /**
+     * Ensure that `false` is returned when [QueueMessage] is equated against `null`.
+     */
+    @Test
+    fun testEquals_withNull()
+    {
+        val message = QueueMessage(payload = "data", type = "testEquals_withNull")
+        Assertions.assertNotEquals(message, null)
+    }
+
+    /**
+     * Ensure that `false` is returned when [QueueMessage] is equated against an object that is not a [QueueMessage].
+     */
+    @Test
+    fun testEquals_withNonQueueMessageObject()
+    {
+        val message = QueueMessage(payload = "data", type = "testEquals_withNonQueueMessageObject")
+        val obj = Any()
+        Assertions.assertTrue(obj !is QueueMessage)
+        Assertions.assertNotEquals(message, obj)
+    }
 }

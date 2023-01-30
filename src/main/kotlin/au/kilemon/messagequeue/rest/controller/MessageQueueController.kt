@@ -225,20 +225,20 @@ open class MessageQueueController : HasLogger
      *
      * @param detailed *true* if you require detailed information about each message and their payload/owner, otherwise **false** which displayed only limited information about each message
      * @param queueType the `type` to include, if provided only messages in this `queueType` will be retrieved.
-     * @return a [Map] where the `key` is the `queueType` and the `value` is a comma separated list of all the [QueueMessage.toDetailedString]
+     * @return a [Map] where the `key` is the `queueType` and the `value` is a comma separated list of all the [QueueMessage.removePayload]
      */
-    @Operation(summary = "Retrieve a summary or full version of the held messages.", description = "Retrieve queue message summaries for the held messages. This can be limited to a specific sub queue type and complete message detail to be included in the response if requested.")
+    @Operation(summary = "Retrieve a limited or full version of the held messages.", description = "Retrieve queue message summaries for the held messages. This can be limited to a specific sub queue type and complete message detail to be included in the response if requested.")
     @GetMapping(ENDPOINT_ALL, produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponse(responseCode = "200", description = "Successfully returns the list of summary entries for either the whole multi-queue or the sub queue.")
-    fun getAll(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "Indicates whether the response messages should contain all message details including the underlying payload.") @RequestParam(required = false) detailed: Boolean?,
-               @Parameter(`in` = ParameterIn.QUERY, required = false, description = "The sub queue type to search, if not provide all messages in the whole multi-queue will be returned.") @RequestParam(required = false) queueType: String?): ResponseEntity<Map<String, List<String>>>
+    fun getAll(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "Indicates whether the response messages should contain all message details including the underlying payload. By default details are hidden.") @RequestParam(required = false) detailed: Boolean = false,
+               @Parameter(`in` = ParameterIn.QUERY, required = false, description = "The sub queue type to search, if not provide all messages in the whole multi-queue will be returned.") @RequestParam(required = false) queueType: String?): ResponseEntity<Map<String, List<QueueMessage>>>
     {
-        val responseMap = HashMap<String, List<String>>()
+        val responseMap = HashMap<String, List<QueueMessage>>()
         if ( !queueType.isNullOrBlank())
         {
             LOG.debug("Retrieving all entry details from queue with type [{}].", queueType)
             val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
-            val queueDetails = queueForType.stream().map { message -> message.toDetailedString(detailed) }.collect(Collectors.toList())
+            val queueDetails = queueForType.stream().map { message -> message.removePayload(detailed) }.collect(Collectors.toList())
             responseMap[queueType] = queueDetails
         }
         else
@@ -248,7 +248,7 @@ open class MessageQueueController : HasLogger
             {
                 // No need to empty check since we passed `false` to `keys()` above
                 val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(key)
-                val queueDetails = queueForType.stream().map { message -> message.toDetailedString(detailed) }.collect(Collectors.toList())
+                val queueDetails = queueForType.stream().map { message -> message.removePayload(detailed) }.collect(Collectors.toList())
                 responseMap[key] = queueDetails
             }
         }
