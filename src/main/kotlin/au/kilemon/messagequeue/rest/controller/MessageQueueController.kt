@@ -138,7 +138,8 @@ open class MessageQueueController : HasLogger
     }
 
     /**
-     *
+     * An endpoint to perform health checks on the underlying storage medium.
+     * This call is delegated to the [MultiQueue.performHealthCheck] and returns [HttpStatus.OK] if the check is successful, otherwise [HttpStatus.INTERNAL_SERVER_ERROR] is returned.
      */
     @Operation(summary = "Perform health check to verify application status.", description = "Request the application to perform a health check to verify operational status.")
     @GetMapping(ENDPOINT_HEALTH_CHECK)
