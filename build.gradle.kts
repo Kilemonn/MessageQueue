@@ -43,6 +43,8 @@ dependencies {
     implementation("org.postgresql:postgresql:42.5.0")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test:2.7.5")
+    // Required to mock MultiQueue objects since they apparently override a final 'remove(Object)' method.
+    testImplementation("org.mockito:mockito-inline:5.1.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
     testImplementation("org.testcontainers:testcontainers:1.17.5")
     testImplementation("org.testcontainers:junit-jupiter:1.17.5")
