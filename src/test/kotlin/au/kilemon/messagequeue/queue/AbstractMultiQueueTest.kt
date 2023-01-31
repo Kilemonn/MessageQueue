@@ -229,6 +229,18 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     }
 
     /**
+     * Test the [MultiQueue.addAll] to ensure that if a duplicate element is added that `false` is returned to indicate that not all of the provided elements were added to the queue.
+     */
+    @Test
+    fun testAddAll_throwsDuplicateException()
+    {
+        val list = listOf(QueueMessage(81273648, "type"), QueueMessage("test test test", "type"))
+        Assertions.assertTrue(multiQueue.add(list[1]))
+        Assertions.assertFalse(multiQueue.addAll(list))
+        Assertions.assertEquals(list.size, multiQueue.size)
+    }
+
+    /**
      * Ensure that `null` is returned when there are no elements in the [MultiQueue] for the specific queue.
      * Otherwise, if it does exist make sure that the correct entry is returned and that it is removed.
      */
@@ -685,6 +697,15 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
         Assertions.assertTrue(multiQueue.isEmpty())
         val uuid = UUID.randomUUID().toString()
         Assertions.assertEquals(Optional.empty<QueueMessage>(), multiQueue.getMessageByUUID(uuid))
+    }
+
+    /**
+     * Test [MultiQueue.performHealthCheck] to ensure no `HealthCheckFailureException`s are thrown when this is called while the storage mechanism is running correctly.
+     */
+    @Test
+    fun testPerformHealthCheck_successfulCheck()
+    {
+        multiQueue.performHealthCheck()
     }
 
     /**

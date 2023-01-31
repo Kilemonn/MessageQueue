@@ -3,6 +3,7 @@ package au.kilemon.messagequeue.queue
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
+import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import org.slf4j.Logger
 import java.util.*
@@ -141,6 +142,31 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
             }
         }
     }
+
+    /**
+     * Performs a health check on the underlying storage mechanism.
+     * If there are any errors a [HealthCheckFailureException] should be thrown, otherwise no exception should be thrown.
+     */
+    @Throws(HealthCheckFailureException::class)
+    fun performHealthCheck()
+    {
+        try
+        {
+            performHealthCheckInternal()
+        }
+        catch (ex: Exception)
+        {
+            val errorMessage = "Health check failed on multi-queue."
+            LOG.error(errorMessage, ex)
+            throw HealthCheckFailureException(errorMessage, ex)
+        }
+    }
+
+    /**
+     * Performs a health check on the underlying storage mechanism.
+     * If there are any errors an [Exception] should be thrown, otherwise no exception should be thrown to indicate a sucessful health check.
+     */
+    fun performHealthCheckInternal()
 
     /**
      * Get a [QueueMessage] directly from the [MultiQueue] that matches the provided [uuid].
