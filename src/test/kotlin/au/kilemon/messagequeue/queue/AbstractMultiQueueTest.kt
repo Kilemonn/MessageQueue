@@ -688,6 +688,15 @@ abstract class AbstractMultiQueueTest<T: MultiQueue>
     }
 
     /**
+     * Test [MultiQueue.performHealthCheck] to ensure no `HealthCheckFailureException`s are thrown when this is called while the storage mechanism is running correctly.
+     */
+    @Test
+    fun testPerformHealthCheck_successfulCheck()
+    {
+        multiQueue.performHealthCheck()
+    }
+
+    /**
      * Ensure that all applicable methods throw an [UnsupportedOperationException].
      */
     @Test

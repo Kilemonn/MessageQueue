@@ -849,6 +849,18 @@ class MessageQueueControllerTest
     }
 
     /**
+     * Perform a health check call on the [MessageQueueController] to ensure a [HttpStatus.OK] is returned when the application is running ok.
+     */
+    @Test
+    fun testGetPerformHealthCheck()
+    {
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_HEALTH_CHECK)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+    }
+
+    /**
      * A helper method which creates `4` [QueueMessage] objects and inserts them into the [MultiQueue].
      *
      * @return a [Pair] containing the [List] of [QueueMessage] and their related matching [List] of [String] `queueTypes` in order.

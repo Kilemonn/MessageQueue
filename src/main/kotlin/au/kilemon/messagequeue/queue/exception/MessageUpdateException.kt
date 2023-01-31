@@ -5,4 +5,4 @@ package au.kilemon.messagequeue.queue.exception
  *
  * @author github.com/KyleGonzalez
  */
-class MessageUpdateException(uuid: String) : Exception("Unable to update message with UUID [$uuid] as it either does not exist (and cannot be udpated) or there was an underlying error in the storage mechanism.")
+class MessageUpdateException(uuid: String) : Exception("Unable to update message with UUID [$uuid] as it either does not exist (and cannot be updated) or there was an underlying error in the storage mechanism.")

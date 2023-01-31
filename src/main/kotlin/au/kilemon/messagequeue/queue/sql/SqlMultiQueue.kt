@@ -3,8 +3,11 @@ package au.kilemon.messagequeue.queue.sql
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
+import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.queue.sql.repository.QueueMessageRepository
+import au.kilemon.messagequeue.settings.MessageQueueSettings
+import lombok.Generated
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
@@ -20,6 +23,12 @@ import java.util.concurrent.ConcurrentLinkedQueue
 class SqlMultiQueue : MultiQueue, HasLogger
 {
     override val LOG: Logger = initialiseLogger()
+
+    @Autowired
+    @Lazy
+    @get:Generated
+    @set:Generated
+    lateinit var messageQueueSettings: MessageQueueSettings
 
     @Lazy
     @Autowired
@@ -49,6 +58,11 @@ class SqlMultiQueue : MultiQueue, HasLogger
     {
         val entries = queueMessageRepository.findByTypeAndAssignedToIsNullOrderByIdAsc(queueType)
         return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
+    }
+
+    override fun performHealthCheckInternal()
+    {
+        queueMessageRepository.existsById(1)
     }
 
     override fun getMessageByUUID(uuid: String): Optional<QueueMessage>

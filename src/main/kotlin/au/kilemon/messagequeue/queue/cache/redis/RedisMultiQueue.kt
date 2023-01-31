@@ -3,6 +3,7 @@ package au.kilemon.messagequeue.queue.cache.redis
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
+import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import lombok.Generated
@@ -94,6 +95,11 @@ class RedisMultiQueue : MultiQueue, HasLogger
             queue.addAll(set.stream().filter { message -> message.assignedTo == null }.collect(Collectors.toList()))
         }
         return queue
+    }
+
+    override fun performHealthCheckInternal()
+    {
+        redisTemplate.opsForSet().members("")
     }
 
     override fun getMessageByUUID(uuid: String): Optional<QueueMessage>

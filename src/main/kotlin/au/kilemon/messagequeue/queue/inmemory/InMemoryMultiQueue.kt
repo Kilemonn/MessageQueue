@@ -70,6 +70,11 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         return queue
     }
 
+    override fun performHealthCheckInternal()
+    {
+        // Nothing to check for the in-memory storage since there is no external storage that needs to be checked
+    }
+
     override fun getMessageByUUID(uuid: String): Optional<QueueMessage>
     {
         val queueType = containsUUID(uuid)

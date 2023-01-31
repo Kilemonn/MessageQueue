@@ -4,6 +4,7 @@ import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
+import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
 import au.kilemon.messagequeue.rest.response.MessageResponse
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
@@ -92,9 +93,14 @@ open class MessageQueueController : HasLogger
         const val ENDPOINT_NEXT: String = "/next"
 
         /**
-         * The resource path used to retrieve the different owners within the multi-queue or subqueue.
+         * The resource path used to retrieve the different owners within the multi-queue or sub-queue.
          */
         const val ENDPOINT_OWNERS: String = "/owners"
+
+        /**
+         * A resource used to check system health.
+         */
+        const val ENDPOINT_HEALTH_CHECK: String = "/healthcheck"
     }
 
     @Autowired
@@ -129,6 +135,28 @@ open class MessageQueueController : HasLogger
         val queueForType = messageQueue.getQueueForType(queueType)
         LOG.debug("Returning size [{}] for queue with type [{}].", queueForType.size, queueType)
         return ResponseEntity.ok(queueForType.size.toString())
+    }
+
+    /**
+     *
+     */
+    @Operation(summary = "Perform health check to verify application status.", description = "Request the application to perform a health check to verify operational status.")
+    @GetMapping(ENDPOINT_HEALTH_CHECK)
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Application health check has passed"),
+        ApiResponse(responseCode = "500", description = "There was an error performing the health check, the application is not in an operational state.")
+    )
+    fun getHealthCheck(): ResponseEntity<Void>
+    {
+        return try
+        {
+            messageQueue.performHealthCheck()
+            ResponseEntity.ok().build()
+        }
+        catch(ex: HealthCheckFailureException)
+        {
+            ResponseEntity.internalServerError().build()
+        }
     }
 
     /**
