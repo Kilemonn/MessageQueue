@@ -3,14 +3,20 @@ package au.kilemon.messagequeue.queue
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
+import au.kilemon.messagequeue.queue.sql.SqlMultiQueue
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
+import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Lazy
 import java.io.Serializable
 import java.util.*
 import java.util.stream.Stream
@@ -26,10 +32,30 @@ import kotlin.collections.HashSet
  * @author github.com/KyleGonzalez
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-abstract class AbstractMultiQueueTest<T: MultiQueue>
+abstract class AbstractMultiQueueTest
 {
+    /**
+     * A Spring configuration that is used for this test class.
+     *
+     * @author github.com/KyleGonzalez
+     */
+    @TestConfiguration
+    class AbstractMultiQueueTestConfiguration
+    {
+        /**
+         * The bean initialise here will have all its properties overridden by environment variables.
+         * Don't set them here, set them in the [WebMvcTest.properties].
+         */
+        @Bean
+        @Lazy
+        open fun getMessageQueueSettingsBean(): MessageQueueSettings
+        {
+            return MessageQueueSettings()
+        }
+    }
+
     @Autowired
-    protected lateinit var multiQueue: T
+    protected lateinit var multiQueue: MultiQueue
 
     /**
      * Ensure that when a new entry is added, that the [MultiQueue] is no longer empty and reports the correct size.

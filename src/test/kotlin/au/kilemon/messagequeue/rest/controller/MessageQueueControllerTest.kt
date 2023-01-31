@@ -1,10 +1,11 @@
 package au.kilemon.messagequeue.rest.controller
 
+import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
-import au.kilemon.messagequeue.rest.model.Payload
-import au.kilemon.messagequeue.rest.model.PayloadEnum
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
+import au.kilemon.messagequeue.rest.model.Payload
+import au.kilemon.messagequeue.rest.model.PayloadEnum
 import au.kilemon.messagequeue.rest.response.MessageResponse
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import com.google.gson.Gson
@@ -26,7 +27,6 @@ import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import java.util.*
-import kotlin.collections.ArrayList
 
 /**
  * A test class for the [MessageQueueController].
@@ -36,7 +36,7 @@ import kotlin.collections.ArrayList
  */
 @ExtendWith(SpringExtension::class)
 @WebMvcTest(controllers = [MessageQueueController::class], properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=IN_MEMORY"])
-@Import(LoggingConfiguration::class)
+@Import(*[QueueConfiguration::class, LoggingConfiguration::class])
 class MessageQueueControllerTest
 {
     /**

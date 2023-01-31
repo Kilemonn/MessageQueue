@@ -24,12 +24,6 @@ class SqlMultiQueue : MultiQueue, HasLogger
 {
     override val LOG: Logger = initialiseLogger()
 
-    @Autowired
-    @Lazy
-    @get:Generated
-    @set:Generated
-    lateinit var messageQueueSettings: MessageQueueSettings
-
     @Lazy
     @Autowired
     private lateinit var queueMessageRepository: QueueMessageRepository
