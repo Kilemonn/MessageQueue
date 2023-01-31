@@ -1,5 +1,7 @@
 package au.kilemon.messagequeue.queue.sql
 
+import au.kilemon.messagequeue.configuration.QueueConfiguration
+import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
@@ -33,44 +35,4 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @Testcontainers
 @DataJpaTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=SQL", "spring.jpa.hibernate.ddl-auto=create", "spring.autoconfigure.exclude="])
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(LoggingConfiguration::class)
-abstract class AbstractSqlMultiQueueTest: AbstractMultiQueueTest<SqlMultiQueue>()
-{
-    /**
-     * A Spring configuration that is used for this test class.
-     *
-     * This is specifically creating the [SqlMultiQueue] to be autowired in the parent
-     * class and used in all the tests.
-     *
-     * @author github.com/KyleGonzalez
-     */
-    @TestConfiguration
-    class SqlMultiQueueTestConfiguration
-    {
-        @Autowired
-        @Lazy
-        lateinit var messageQueueSettings: MessageQueueSettings
-
-        /**
-         * The bean initialise here will have all its properties overridden by environment variables.
-         * Don't set them here, set them in the [WebMvcTest.properties].
-         */
-        @Bean
-        @Lazy
-        open fun getMessageQueueSettingsBean(): MessageQueueSettings
-        {
-            return MessageQueueSettings()
-        }
-
-        /**
-         * The bean initialise here will have all its properties overridden by environment variables.
-         * Don't set them here, set them in the [WebMvcTest.properties].
-         */
-        @Bean
-        @Lazy
-        open fun getSqlMultiQueue(): SqlMultiQueue
-        {
-            return SqlMultiQueue()
-        }
-    }
-}
+abstract class AbstractSqlMultiQueueTest: AbstractMultiQueueTest()

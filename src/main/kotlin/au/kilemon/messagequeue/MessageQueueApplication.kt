@@ -35,47 +35,6 @@ open class MessageQueueApplication : HasLogger
          */
         const val VERSION: String = "0.1.6"
     }
-
-    @Autowired
-    @get:Generated
-    @set:Generated
-    lateinit var messageQueueSettings: MessageQueueSettings
-
-    @Autowired
-    @get:Generated
-    @set:Generated
-    lateinit var messageSource: ReloadableResourceBundleMessageSource
-
-    /**
-     * Initialise the [MultiQueue] [Bean] based on the [MessageQueueSettings.multiQueueType].
-     */
-    @Bean
-    open fun getMultiQueue(): MultiQueue
-    {
-        LOG.info(messageSource.getMessage(Messages.VERSION_START_UP, null, Locale.getDefault()), VERSION)
-        val queue: MultiQueue = when (messageQueueSettings.multiQueueType)
-        {
-            MultiQueueType.IN_MEMORY.toString() ->
-            {
-                InMemoryMultiQueue()
-            }
-            MultiQueueType.REDIS.toString() ->
-            {
-                RedisMultiQueue()
-            }
-            MultiQueueType.SQL.toString() ->
-            {
-                SqlMultiQueue()
-            }
-            else ->
-            {
-                InMemoryMultiQueue()
-            }
-        }
-        LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType)
-
-        return queue
-    }
 }
 
 /**

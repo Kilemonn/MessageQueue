@@ -1,6 +1,8 @@
 package au.kilemon.messagequeue.queue.cache.redis
 
+import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
+import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
@@ -46,8 +48,8 @@ import java.util.*
 @TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=REDIS", "${MessageQueueSettings.REDIS_PREFIX}=test"])
 @Testcontainers
 @ContextConfiguration(initializers = [RedisStandAloneMultiQueueTest.Initializer::class])
-@Import(RedisConfiguration::class)
-class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
+@Import(*[QueueConfiguration::class, LoggingConfiguration::class, RedisConfiguration::class, AbstractMultiQueueTest.AbstractMultiQueueTestConfiguration::class])
+class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest()
 {
     companion object
     {
@@ -88,49 +90,6 @@ class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest<RedisMultiQueue>()
             TestPropertyValues.of(
                 "${MessageQueueSettings.REDIS_ENDPOINT}=${redis.host}:${redis.getMappedPort(REDIS_PORT)}"
             ).applyTo(configurableApplicationContext.environment)
-        }
-    }
-
-    /**
-     * A Spring configuration that is used for this test class.
-     * Creates a [RedisStandaloneConfiguration] as the [RedisConnectionFactory] [Bean].
-     *
-     * This is specifically creating the [RedisMultiQueue] to be autowired in the parent
-     * class and used in all the tests.
-     *
-     * @author github.com/KyleGonzalez
-     */
-    @TestConfiguration
-    internal class RedisStandAloneTestConfiguration
-    {
-        @Autowired
-        @Lazy
-        lateinit var connectionFactory: RedisConnectionFactory
-
-        @Autowired
-        @Lazy
-        lateinit var messageQueueSettings: MessageQueueSettings
-
-        /**
-         * The bean initialise here will have all its properties overridden by environment variables.
-         * Don't set them here, set them in the [WebMvcTest.properties].
-         */
-        @Bean
-        @Lazy
-        open fun getMessageQueueSettingsBean(): MessageQueueSettings
-        {
-            return MessageQueueSettings()
-        }
-
-        /**
-         * The bean initialise here will have all its properties overridden by environment variables.
-         * Don't set them here, set them in the [WebMvcTest.properties].
-         */
-        @Bean
-        @Lazy
-        open fun getRedisMultiQueue(): RedisMultiQueue
-        {
-            return RedisMultiQueue()
         }
     }
 
