@@ -45,24 +45,16 @@ class QueueConfiguration : HasLogger
     open fun getMultiQueue(): MultiQueue
     {
         LOG.info(messageSource.getMessage(Messages.VERSION_START_UP, null, Locale.getDefault()), MessageQueueApplication.VERSION)
-        val queue: MultiQueue = when (messageQueueSettings.multiQueueType)
+
+        // Default to in-memory
+        var queue: MultiQueue = InMemoryMultiQueue()
+        if (MultiQueueType.REDIS.toString() == messageQueueSettings.multiQueueType)
         {
-            MultiQueueType.IN_MEMORY.toString() ->
-            {
-                InMemoryMultiQueue()
-            }
-            MultiQueueType.REDIS.toString() ->
-            {
-                RedisMultiQueue()
-            }
-            MultiQueueType.SQL.toString() ->
-            {
-                SqlMultiQueue()
-            }
-            else ->
-            {
-                InMemoryMultiQueue()
-            }
+            queue = RedisMultiQueue()
+        }
+        else if (MultiQueueType.SQL.toString() == messageQueueSettings.multiQueueType)
+        {
+            queue = SqlMultiQueue()
         }
         LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType)
 

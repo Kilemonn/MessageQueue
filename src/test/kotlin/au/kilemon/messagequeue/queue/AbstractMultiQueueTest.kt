@@ -2,13 +2,12 @@ package au.kilemon.messagequeue.queue
 
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
+import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
-import au.kilemon.messagequeue.queue.sql.SqlMultiQueue
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.*
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -20,9 +19,6 @@ import org.springframework.context.annotation.Lazy
 import java.io.Serializable
 import java.util.*
 import java.util.stream.Stream
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
-import kotlin.collections.HashSet
 
 /**
  * An abstract test class for the [MultiQueue] class.
@@ -121,7 +117,7 @@ abstract class AbstractMultiQueueTest
         Assertions.assertEquals(message.uuid, differentTypeMessage.uuid)
         Assertions.assertNotEquals(message.type, differentTypeMessage.type)
 
-        assertThrows(DuplicateMessageException::class.java)
+        Assertions.assertThrows(DuplicateMessageException::class.java)
         {
             multiQueue.add(differentTypeMessage)
         }
@@ -137,7 +133,7 @@ abstract class AbstractMultiQueueTest
         val message = QueueMessage("test", "type")
         Assertions.assertTrue(multiQueue.add(message))
 
-        assertThrows(DuplicateMessageException::class.java)
+        Assertions.assertThrows(DuplicateMessageException::class.java)
         {
             multiQueue.add(message)
         }
@@ -427,6 +423,21 @@ abstract class AbstractMultiQueueTest
         val reRetrievedMessage = multiQueue.peekForType(message.type)
         Assertions.assertTrue(reRetrievedMessage.isPresent)
         Assertions.assertEquals(persistedMessage.get(), reRetrievedMessage.get())
+    }
+
+    @Test
+    fun testPersistMessage_messageHasNullID()
+    {
+        val message = QueueMessage("payload", "type")
+        Assertions.assertNull(message.id)
+
+        if (multiQueue !is InMemoryMultiQueue)
+        {
+            // If its an in-memory queue there will be no exception thrown
+            Assertions.assertThrows(MessageUpdateException::class.java) {
+                multiQueue.persistMessage(message)
+            }
+        }
     }
 
     /**
@@ -742,37 +753,37 @@ abstract class AbstractMultiQueueTest
     {
         assertAll( "Unsupported methods",
             {
-                assertThrows(UnsupportedOperationException::class.java)
+                Assertions.assertThrows(UnsupportedOperationException::class.java)
                 {
                     multiQueue.peek()
                 }
             },
             {
-                assertThrows(UnsupportedOperationException::class.java)
+                Assertions.assertThrows(UnsupportedOperationException::class.java)
                 {
                     multiQueue.offer(QueueMessage(Payload("test data", 13, false, PayloadEnum.C), "test type"))
                 }
             },
             {
-                assertThrows(UnsupportedOperationException::class.java)
+                Assertions.assertThrows(UnsupportedOperationException::class.java)
                 {
                     multiQueue.element()
                 }
             },
             {
-                assertThrows(UnsupportedOperationException::class.java)
+                Assertions.assertThrows(UnsupportedOperationException::class.java)
                 {
                     multiQueue.poll()
                 }
             },
             {
-                assertThrows(UnsupportedOperationException::class.java)
+                Assertions.assertThrows(UnsupportedOperationException::class.java)
                 {
                     multiQueue.remove()
                 }
             },
             {
-                assertThrows(UnsupportedOperationException::class.java)
+                Assertions.assertThrows(UnsupportedOperationException::class.java)
                 {
                     multiQueue.iterator()
                 }

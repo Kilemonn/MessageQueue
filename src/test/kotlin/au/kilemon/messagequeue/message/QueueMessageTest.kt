@@ -2,6 +2,7 @@ package au.kilemon.messagequeue.message
 
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.springframework.util.SerializationUtils
 import java.util.*
 
 /**
@@ -69,7 +70,7 @@ class QueueMessageTest
         message2.payload = null
         message2.uuid = uuid
 
-        Assertions.assertTrue(message1.payloadBytes.contentEquals(message2.payloadBytes))
+        Assertions.assertArrayEquals(message1.payloadBytes, message2.payloadBytes)
         Assertions.assertEquals(message1, message2)
     }
 
@@ -115,8 +116,25 @@ class QueueMessageTest
         message2.uuid = uuid
 
         Assertions.assertEquals(message1.payload, message2.payload)
-        Assertions.assertTrue(message1.payloadBytes.contentEquals(message2.payloadBytes))
+        Assertions.assertArrayEquals(message1.payloadBytes, message2.payloadBytes)
         Assertions.assertEquals(message1, message2)
+    }
+
+    /**
+     * Ensure that [QueueMessage.equals] returns `false` when all properties are equal except [QueueMessage.type].
+     */
+    @Test
+    fun testEquals_nonEqualType()
+    {
+        val uuid = UUID.randomUUID().toString()
+        val message1 = QueueMessage(payload = "stuff", type = "type1")
+        message1.uuid = uuid
+        val message2 = QueueMessage(payload = "stuff", type = "type2")
+        message2.uuid = uuid
+
+        Assertions.assertEquals(message1.payload, message2.payload)
+        Assertions.assertArrayEquals(message1.payloadBytes, message2.payloadBytes)
+        Assertions.assertNotEquals(message1, message2)
     }
 
     /**
@@ -139,5 +157,74 @@ class QueueMessageTest
         val obj = Any()
         Assertions.assertTrue(obj !is QueueMessage)
         Assertions.assertNotEquals(message, obj)
+    }
+
+    /**
+     * Ensure that the payload object is not changed if the underlying [QueueMessage.payloadBytes] is null, and [QueueMessage.payload] is not null when the [QueueMessage.resolvePayloadObject] is called.
+     * Since [QueueMessage.payload] is `not-null` it should not be changed.
+     */
+    @Test
+    fun testResolvePayload_payloadNotNullBytesNull()
+    {
+        val payload = "testResolvePayload_payloadNotNullBytesNull"
+        val message = QueueMessage(null, type = "test")
+        Assertions.assertNull(message.payloadBytes)
+        message.payload = payload
+        message.resolvePayloadObject()
+        Assertions.assertEquals(payload, message.payload)
+    }
+
+    /**
+     * Ensure that the payload object is not changed if the underlying [QueueMessage.payloadBytes] is non-null, and [QueueMessage.payload] is not null when the [QueueMessage.resolvePayloadObject] is called.
+     * Since [QueueMessage.payload] is `not-null` it should not be changed.
+     */
+    @Test
+    fun testResolvePayload_payloadNotNullBytesNotNull()
+    {
+        val payload = "testResolvePayload_payloadNotNullBytesNotNull"
+        val payloadBytes = "payload-bytes"
+        val message = QueueMessage(payloadBytes, type = "test")
+        message.payload = payload
+        Assertions.assertEquals(payload, message.payload)
+        Assertions.assertArrayEquals(SerializationUtils.serialize(payloadBytes), message.payloadBytes)
+        message.resolvePayloadObject()
+        Assertions.assertEquals(payload, message.payload)
+        Assertions.assertArrayEquals(SerializationUtils.serialize(payloadBytes), message.payloadBytes)
+    }
+
+    /**
+     * Ensure that the payload object is not changed if the underlying [QueueMessage.payloadBytes] is null, and [QueueMessage.payload] is null when the [QueueMessage.resolvePayloadObject] is called.
+     * Since [QueueMessage.payloadBytes] is `null` it should not try to update the [QueueMessage.payload].
+     */
+    @Test
+    fun testResolvePayload_payloadNullBytesNull()
+    {
+        val message = QueueMessage(null, type = "test")
+
+        Assertions.assertNull(message.payload)
+        Assertions.assertNull(message.payloadBytes)
+        message.resolvePayloadObject()
+        Assertions.assertNull(message.payload)
+        Assertions.assertNull(message.payloadBytes)
+    }
+
+    /**
+     * Ensure that the payload object is not changed if the underlying [QueueMessage.payloadBytes] is non-null, and [QueueMessage.payload] is null when the [QueueMessage.resolvePayloadObject] is called.
+     * Since [QueueMessage.payloadBytes] is `non-null` it should deserialise and resolve the [QueueMessage.payload] to an object.
+     * This is the most common scenario that this method is resolving.
+     */
+    @Test
+    fun testResolvePayload_payloadNullBytesNotNull()
+    {
+        val payload = "testResolvePayload_payloadNullBytesNotNull"
+        val message = QueueMessage(payload, type = "test")
+
+        // At this point the payload property will quest payloadBytes, we need to overwrite
+        message.payload = null
+        Assertions.assertArrayEquals(SerializationUtils.serialize(payload), message.payloadBytes)
+        Assertions.assertNull(message.payload)
+        message.resolvePayloadObject()
+        Assertions.assertArrayEquals(SerializationUtils.serialize(payload), message.payloadBytes)
+        Assertions.assertEquals(payload, message.payload)
     }
 }

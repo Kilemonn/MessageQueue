@@ -96,47 +96,63 @@ class RedisConfiguration: HasLogger
     @ConditionalOnProperty(name=[MessageQueueSettings.MULTI_QUEUE_TYPE], havingValue="REDIS")
     fun getConnectionFactory(): RedisConnectionFactory
     {
-        if (messageQueueSettings.redisUseSentinels.toBoolean())
+        return if (messageQueueSettings.redisUseSentinels.toBoolean())
         {
-            LOG.info("Initialising redis sentinel configuration with the following configuration: Endpoints {}, master {}. With prefix {}.",
-                messageQueueSettings.redisEndpoint, messageQueueSettings.redisMasterName, messageQueueSettings.redisPrefix)
-            val redisSentinelConfiguration = RedisSentinelConfiguration()
-            redisSentinelConfiguration.master(messageQueueSettings.redisMasterName)
-            val sentinelEndpoints = stringToInetSocketAddresses(messageQueueSettings.redisEndpoint, REDIS_SENTINEL_DEFAULT_PORT)
-
-            if (sentinelEndpoints.isEmpty())
-            {
-                LOG.error("No redis endpoints defined for sentinel configuration. Unable to initialise redis configuration.")
-                throw RedisInitialisationException("No redis endpoint(s) provided.")
-            }
-
-            for (sentinelEndpoint in sentinelEndpoints)
-            {
-                LOG.debug("Initialising redis sentinel configuration with host {} and port {}.", sentinelEndpoint.hostName, sentinelEndpoint.port)
-                redisSentinelConfiguration.sentinel(sentinelEndpoint.hostName, sentinelEndpoint.port)
-            }
-            return LettuceConnectionFactory(redisSentinelConfiguration)
+            LettuceConnectionFactory(getSentinelConfiguration())
         }
         else
         {
-            LOG.info("Initialising redis configuration with the following configuration: Endpoint [{}], prefix [{}].",
-                messageQueueSettings.redisEndpoint, messageQueueSettings.redisPrefix)
-            val redisConfiguration = RedisStandaloneConfiguration()
-            val redisEndpoints = stringToInetSocketAddresses(messageQueueSettings.redisEndpoint, REDIS_DEFAULT_PORT)
-            if (redisEndpoints.isEmpty())
-            {
-                LOG.error("No redis endpoints defined for standalone configuration. Unable to initialise redis configuration.")
-                throw RedisInitialisationException("No redis endpoint(s) provided.")
-            }
-            else if (redisEndpoints.size > 1)
-            {
-                LOG.warn("Multiple redis endpoints defined for standalone configuration. Using first provided endpoint: [{}:{}].", redisEndpoints[0].hostName, redisEndpoints[0].port)
-            }
-
-            redisConfiguration.hostName = redisEndpoints[0].hostName
-            redisConfiguration.port = redisEndpoints[0].port
-            return LettuceConnectionFactory(redisConfiguration)
+            LettuceConnectionFactory(getStandAloneConfiguration())
         }
+    }
+
+    /**
+     * Create an instance of [RedisSentinelConfiguration] based on the configuration in the [MessageQueueSettings].
+     */
+    fun getSentinelConfiguration(): RedisSentinelConfiguration
+    {
+        LOG.info("Initialising redis sentinel configuration with the following configuration: Endpoints {}, master {}. With prefix {}.",
+            messageQueueSettings.redisEndpoint, messageQueueSettings.redisMasterName, messageQueueSettings.redisPrefix)
+        val redisSentinelConfiguration = RedisSentinelConfiguration()
+        redisSentinelConfiguration.master(messageQueueSettings.redisMasterName)
+        val sentinelEndpoints = stringToInetSocketAddresses(messageQueueSettings.redisEndpoint, REDIS_SENTINEL_DEFAULT_PORT)
+
+        if (sentinelEndpoints.isEmpty())
+        {
+            LOG.error("No redis endpoints defined for sentinel configuration. Unable to initialise redis configuration.")
+            throw RedisInitialisationException("No redis endpoint(s) provided.")
+        }
+
+        for (sentinelEndpoint in sentinelEndpoints)
+        {
+            LOG.debug("Initialising redis sentinel configuration with host {} and port {}.", sentinelEndpoint.hostName, sentinelEndpoint.port)
+            redisSentinelConfiguration.sentinel(sentinelEndpoint.hostName, sentinelEndpoint.port)
+        }
+        return redisSentinelConfiguration
+    }
+
+    /**
+     * Create an instance of [RedisStandaloneConfiguration] based on the configuration in the [MessageQueueSettings].
+     */
+    fun getStandAloneConfiguration(): RedisStandaloneConfiguration
+    {
+        LOG.info("Initialising redis configuration with the following configuration: Endpoint [{}], prefix [{}].",
+            messageQueueSettings.redisEndpoint, messageQueueSettings.redisPrefix)
+        val redisConfiguration = RedisStandaloneConfiguration()
+        val redisEndpoints = stringToInetSocketAddresses(messageQueueSettings.redisEndpoint, REDIS_DEFAULT_PORT)
+        if (redisEndpoints.isEmpty())
+        {
+            LOG.error("No redis endpoints defined for standalone configuration. Unable to initialise redis configuration.")
+            throw RedisInitialisationException("No redis endpoint(s) provided.")
+        }
+        else if (redisEndpoints.size > 1)
+        {
+            LOG.warn("Multiple redis endpoints defined for standalone configuration. Using first provided endpoint: [{}:{}].", redisEndpoints[0].hostName, redisEndpoints[0].port)
+        }
+
+        redisConfiguration.hostName = redisEndpoints[0].hostName
+        redisConfiguration.port = redisEndpoints[0].port
+        return redisConfiguration
     }
 
     /**
