@@ -1,8 +1,14 @@
 package au.kilemon.messagequeue.configuration.cache.redis
 
+import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Lazy
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.util.stream.IntStream
 
@@ -14,6 +20,28 @@ import java.util.stream.IntStream
 @ExtendWith(SpringExtension::class)
 class RedisConfigurationTest
 {
+    /**
+     * A Spring configuration that is used for this test class.
+     *
+     * @author github.com/KyleGonzalez
+     */
+    @TestConfiguration
+    open class RedisConfigurationTestConfiguration
+    {
+        /**
+         * The bean initialise here will have all its properties overridden by environment variables.
+         * Don't set them here, set them in the [WebMvcTest.properties].
+         */
+        @Bean
+        open fun getMessageQueueSettingsBean(): MessageQueueSettings
+        {
+            return MessageQueueSettings()
+        }
+    }
+
+    @Autowired
+    lateinit var messageQueueSettings: MessageQueueSettings
+
     /**
      * The default port to be used when no port is supplied with the hostname endpoint string.
      */
@@ -92,5 +120,61 @@ class RedisConfigurationTest
 
         address = RedisConfiguration.stringToInetSocketAddresses("  ", defaultPort.toString())
         Assertions.assertEquals(0, address.size)
+    }
+
+    /**
+     * Ensure that a [RedisInitialisationException] is thrown if there is no endpoint provided when sentinels are enabled.
+     */
+    @Test
+    fun testGetConnectionFactory_sentinelWithNoEndpoints()
+    {
+        messageQueueSettings.redisUseSentinels = "true"
+        messageQueueSettings.redisEndpoint = ""
+        Assertions.assertTrue(messageQueueSettings.redisUseSentinels.toBoolean())
+        Assertions.assertEquals("", messageQueueSettings.redisEndpoint)
+        Assertions.assertThrows(RedisInitialisationException::class.java) {
+            val config = RedisConfiguration()
+            config.messageQueueSettings = messageQueueSettings
+            config.getSentinelConfiguration()
+        }
+    }
+
+    /**
+     * Ensure that a [RedisInitialisationException] is thrown if there is no endpoint provided when standalone mode is enabled.
+     */
+    @Test
+    fun testGetConnectionFactory_standAloneWithNoEndpoints()
+    {
+        messageQueueSettings.redisUseSentinels = "false"
+        messageQueueSettings.redisEndpoint = ""
+        Assertions.assertFalse(messageQueueSettings.redisUseSentinels.toBoolean())
+        Assertions.assertEquals("", messageQueueSettings.redisEndpoint)
+        Assertions.assertThrows(RedisInitialisationException::class.java) {
+            val config = RedisConfiguration()
+            config.messageQueueSettings = messageQueueSettings
+            config.getStandAloneConfiguration()
+        }
+    }
+
+    /**
+     * Ensure that the first endpoint is used to connect to the redis application when multiple endpoints are provided in standalone mode.
+     */
+    @Test
+    fun testGetConnectionFactory_standAloneWithMultipleEndpoints()
+    {
+        messageQueueSettings.redisUseSentinels = "false"
+        val endpoint1Host = "localhost"
+        val endpoint1Port = "1234"
+        val endpoint1 = "$endpoint1Host:$endpoint1Port"
+        val endpoint2 = "redis:6789"
+        val endpoints = "$endpoint1,$endpoint2"
+        messageQueueSettings.redisEndpoint = endpoints
+        Assertions.assertFalse(messageQueueSettings.redisUseSentinels.toBoolean())
+        Assertions.assertEquals(endpoints, messageQueueSettings.redisEndpoint)
+        val config = RedisConfiguration()
+        config.messageQueueSettings = messageQueueSettings
+        val standAloneConfiguration = config.getStandAloneConfiguration()
+        Assertions.assertEquals(endpoint1Host, standAloneConfiguration.hostName)
+        Assertions.assertEquals(endpoint1Port.toInt(), standAloneConfiguration.port)
     }
 }
