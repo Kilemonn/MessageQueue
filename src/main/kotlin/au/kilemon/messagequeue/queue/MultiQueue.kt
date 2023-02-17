@@ -72,7 +72,15 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      *
      * @return the current value of the index before it was incremented
      */
-    fun getAndIncrementQueueIndex(queueType: String): Long
+    fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
+    {
+        var index = maxQueueIndex[queueType]
+        if (index == null)
+        {
+            index = AtomicLong(0)
+        }
+        return Optional.of(index.getAndIncrement())
+    }
 
     /**
      * Used to persist the updated [QueueMessage] to the storage mechanism.

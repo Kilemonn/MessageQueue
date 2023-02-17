@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicLong
+import kotlin.collections.HashMap
 
 /**
  * A database backed [MultiQueue]. All operations are performed directly on the database it is the complete source of truth.
@@ -27,6 +29,25 @@ class SqlMultiQueue : MultiQueue, HasLogger
     @Lazy
     @Autowired
     private lateinit var queueMessageRepository: QueueMessageRepository
+
+    override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
+
+    /**
+     * Just initialise map, so it's not null, but the SQL [QueueMessage] ID is maintained by the database.
+     */
+    override fun initialiseQueueIndex()
+    {
+        maxQueueIndex = HashMap()
+    }
+
+    /**
+     * This increment queue is not used for this [SqlMultiQueue] so return empty here.
+     */
+    override fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
+    {
+        // Nothing to do here this queue is not used
+        return Optional.empty<Long>()
+    }
 
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {

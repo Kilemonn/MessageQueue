@@ -19,7 +19,7 @@ import kotlin.jvm.Throws
  *
  * @author github.com/KyleGonzalez
  */
-open class InMemoryMultiQueue() : MultiQueue, HasLogger
+open class InMemoryMultiQueue : MultiQueue, HasLogger
 {
     override val LOG: Logger = initialiseLogger()
 
@@ -35,15 +35,6 @@ open class InMemoryMultiQueue() : MultiQueue, HasLogger
 
     override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
 
-    override fun getAndIncrementQueueIndex(queueType: String): Long
-    {
-        var index = maxQueueIndex[queueType]
-        if (index == null)
-        {
-            index = AtomicLong(0)
-        }
-        return index.getAndIncrement()
-    }
 
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {

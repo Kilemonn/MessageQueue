@@ -14,6 +14,7 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ScanOptions
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicLong
 import java.util.stream.Collectors
 
 /**
@@ -26,6 +27,8 @@ import java.util.stream.Collectors
 class RedisMultiQueue : MultiQueue, HasLogger
 {
     override val LOG: Logger = initialiseLogger()
+
+    override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
 
     @Autowired
     @Lazy
@@ -63,7 +66,7 @@ class RedisMultiQueue : MultiQueue, HasLogger
         val set = redisTemplate.opsForSet().members(appendPrefix(queueType))
         if (!set.isNullOrEmpty())
         {
-            queue.addAll(set)
+            queue.addAll(set.toSortedSet { message1, message2 -> (message1.id ?: 0).minus(message2.id ?: 0).toInt() })
         }
         return queue
     }
