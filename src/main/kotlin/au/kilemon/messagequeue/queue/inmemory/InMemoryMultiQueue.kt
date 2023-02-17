@@ -8,7 +8,9 @@ import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicLong
 import java.util.stream.Collectors
+import kotlin.collections.HashMap
 import kotlin.jvm.Throws
 
 /**
@@ -17,7 +19,7 @@ import kotlin.jvm.Throws
  *
  * @author github.com/KyleGonzalez
  */
-open class InMemoryMultiQueue : MultiQueue, HasLogger
+open class InMemoryMultiQueue() : MultiQueue, HasLogger
 {
     override val LOG: Logger = initialiseLogger()
 
@@ -30,6 +32,18 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
      * The underlying [Map] holding [Queue] entities mapped against the provided [String].
      */
     private val messageQueue: ConcurrentHashMap<String, Queue<QueueMessage>> = ConcurrentHashMap()
+
+    override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
+
+    override fun getAndIncrementQueueIndex(queueType: String): Long
+    {
+        var index = maxQueueIndex[queueType]
+        if (index == null)
+        {
+            index = AtomicLong(0)
+        }
+        return index.getAndIncrement()
+    }
 
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {

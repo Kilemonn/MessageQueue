@@ -8,6 +8,7 @@ import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.jvm.Throws
 
 /**
@@ -45,6 +46,33 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     /**
      * New methods for the [MultiQueue] that are required by implementing classes.
      */
+
+    /**
+     * A holder for the current max [QueueMessage] index per sub-queue type.
+     * This is used to track the next ID of the queue index that should be set and gives order to the
+     * received messages as they are created in storage mechanisms that don't guarantee order.
+     */
+    var maxQueueIndex: HashMap<String, AtomicLong>
+
+    /**
+     * Initialise the [maxQueueIndex] based on any existing [QueueMessage]s in the storage mechanism.
+     */
+    fun initialiseQueueIndex()
+    {
+        maxQueueIndex = HashMap()
+        keys(false).forEach{ queueType ->
+            val queueForType = getQueueForType(queueType)
+            val maxIndex = queueForType.last().id
+            maxQueueIndex[queueType] = AtomicLong(maxIndex ?: 0)
+        }
+    }
+
+    /**
+     * Get the [maxQueueIndex] then increment it.
+     *
+     * @return the current value of the index before it was incremented
+     */
+    fun getAndIncrementQueueIndex(queueType: String): Long
 
     /**
      * Used to persist the updated [QueueMessage] to the storage mechanism.
