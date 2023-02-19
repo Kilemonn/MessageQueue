@@ -3,7 +3,6 @@ package au.kilemon.messagequeue.queue.cache.redis
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
-import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import lombok.Generated
@@ -116,19 +115,21 @@ class RedisMultiQueue : MultiQueue, HasLogger
         return Optional.empty()
     }
 
-    override fun performAdd(element: QueueMessage): Boolean
+    override fun addInternal(element: QueueMessage): Boolean
     {
+        val index = getAndIncrementQueueIndex(appendPrefix(element.type))
+        element.id = index
         val result = redisTemplate.opsForSet().add(appendPrefix(element.type), element)
         return result != null && result > 0
     }
 
-    override fun performRemove(element: QueueMessage): Boolean
+    override fun removeInternal(element: QueueMessage): Boolean
     {
         val result = redisTemplate.opsForSet().remove(appendPrefix(element.type), element)
         return result != null && result > 0
     }
 
-    override fun clearForType(queueType: String): Int
+    override fun clearForTypeInternal(queueType: String): Int
     {
         var amountRemoved = 0
         val queueForType = getQueueForType(queueType)
@@ -150,7 +151,7 @@ class RedisMultiQueue : MultiQueue, HasLogger
         return getQueueForType(queueType).isEmpty()
     }
 
-    override fun performPoll(queueType: String): Optional<QueueMessage>
+    override fun pollInternal(queueType: String): Optional<QueueMessage>
     {
         val set = redisTemplate.opsForSet().members(appendPrefix(queueType))
         if (!set.isNullOrEmpty())
@@ -214,8 +215,8 @@ class RedisMultiQueue : MultiQueue, HasLogger
         val matchingMessage = queue.stream().filter{ element -> element.uuid == message.uuid }.findFirst()
         if (matchingMessage.isPresent)
         {
-            val wasRemoved = performRemove(matchingMessage.get())
-            val wasReAdded = performAdd(message)
+            val wasRemoved = removeInternal(matchingMessage.get())
+            val wasReAdded = addInternal(message)
             if (wasRemoved && wasReAdded)
             {
                 return

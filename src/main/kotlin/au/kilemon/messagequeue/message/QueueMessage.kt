@@ -29,7 +29,7 @@ class QueueMessage(@Transient var payload: Any?, @Column(nullable = false) var t
     @JsonIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null
+    var id: Long? = null
 
     @JsonIgnore
     @Lob

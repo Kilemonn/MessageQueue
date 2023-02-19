@@ -91,7 +91,7 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         return Optional.empty()
     }
 
-    override fun clearForType(queueType: String): Int
+    override fun clearForTypeInternal(queueType: String): Int
     {
         var amountRemoved = 0
         val queueForType: Queue<QueueMessage>? = messageQueue[queueType]
@@ -124,8 +124,10 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
     /**
      * Delegate to the [Queue.add] method.
      */
-    override fun performAdd(element: QueueMessage): Boolean
+    override fun addInternal(element: QueueMessage): Boolean
     {
+        val index = getAndIncrementQueueIndex(element.type)
+        element.id = index
         val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
         return queueForType.add(element)
     }
@@ -143,7 +145,7 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
     /**
      * Delegate to the [Queue.remove] method.
      */
-    override fun performRemove(element: QueueMessage): Boolean
+    override fun removeInternal(element: QueueMessage): Boolean
     {
         val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
         return queueForType.remove(element)
@@ -207,7 +209,7 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         return message
     }
 
-    override fun performPoll(queueType: String): Optional<QueueMessage>
+    override fun pollInternal(queueType: String): Optional<QueueMessage>
     {
         val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
         return if (queueForType.isNotEmpty())

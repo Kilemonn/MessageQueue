@@ -4,6 +4,7 @@ import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
+import au.kilemon.messagequeue.queue.sql.SqlMultiQueue
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
 import au.kilemon.messagequeue.settings.MessageQueueSettings
@@ -230,6 +231,74 @@ abstract class AbstractMultiQueueTest
     }
 
     /**
+     * Ensure that when the [MultiQueue] is empty, that the underlying [MultiQueue.maxQueueIndex] is empty too.
+     */
+    @Test
+    fun testInitialiseQueueIndex_allEmpty()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        Assertions.assertNotNull(multiQueue.maxQueueIndex)
+        Assertions.assertTrue(multiQueue.maxQueueIndex.isEmpty())
+    }
+
+    /**
+     * This is to cover a scenario where a new [MultiQueue] is created or existing messages exist.
+     */
+    @Test
+    fun testInitialiseQueueIndex_reInitialise()
+    {
+        if (multiQueue is SqlMultiQueue)
+        {
+            return
+        }
+
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val queueType1 = "testInitialiseQueueIndex_reInitialise1"
+        val queueType2 = "testInitialiseQueueIndex_reInitialise2"
+
+        val list = listOf(QueueMessage(81273648, queueType1), QueueMessage("test test test", queueType1), QueueMessage(false, queueType1))
+        Assertions.assertTrue(multiQueue.addAll(list))
+        Assertions.assertEquals(list.size + 1, multiQueue.maxQueueIndex[queueType1]!!.toInt())
+
+        multiQueue.initialiseQueueIndex()
+        Assertions.assertEquals(list.size, multiQueue.maxQueueIndex[queueType1]!!.toInt())
+    }
+
+    /**
+     * Ensure that [MultiQueue.getAndIncrementQueueIndex] starts at `1` and increments properly as called.
+     *
+     * Ensure that [MultiQueue.clearForType] also clears the [MultiQueue.maxQueueIndex] for the provided `queueType`.
+     */
+    @Test
+    fun testGetAndIncrementQueueIndex()
+    {
+        val queueType = "testGetAndIncrementQueueIndex"
+        Assertions.assertTrue(multiQueue.isEmpty())
+        Assertions.assertNotNull(multiQueue.maxQueueIndex)
+        Assertions.assertTrue(multiQueue.maxQueueIndex.isEmpty())
+        Assertions.assertNull(multiQueue.maxQueueIndex[queueType])
+
+        Assertions.assertEquals(1, multiQueue.getAndIncrementQueueIndex(queueType))
+        Assertions.assertEquals(2, multiQueue.getAndIncrementQueueIndex(queueType))
+        Assertions.assertEquals(3, multiQueue.getAndIncrementQueueIndex(queueType))
+        Assertions.assertEquals(4, multiQueue.getAndIncrementQueueIndex(queueType))
+        Assertions.assertEquals(5, multiQueue.getAndIncrementQueueIndex(queueType))
+
+        multiQueue.clearForType(queueType)
+        Assertions.assertTrue(multiQueue.maxQueueIndex.isEmpty())
+        Assertions.assertNull(multiQueue.maxQueueIndex[queueType])
+    }
+
+    @Test
+    fun testGetQueueForType()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val queueType = "testGetQueueForType"
+
+        val message1 = QueueMessage()
+    }
+
+    /**
      * Ensure that all elements are added, and contained and removed via the provided [Collection].
      */
     @Test
@@ -317,7 +386,7 @@ abstract class AbstractMultiQueueTest
     }
 
     /**
-     * Ensure that only the specific entries are removed when [MultiQueue.clearForType] is called.
+     * Ensure that only the specific entries are removed when [MultiQueue.clearForTypeInternal] is called.
      */
     @Test
     fun testClearForType()
@@ -332,9 +401,9 @@ abstract class AbstractMultiQueueTest
         Assertions.assertTrue(multiQueue.add(message))
 
         Assertions.assertEquals(3, multiQueue.size)
-        multiQueue.clearForType(type)
+        multiQueue.clearForTypeInternal(type)
         Assertions.assertEquals(1, multiQueue.size)
-        multiQueue.clearForType(singleEntryType)
+        multiQueue.clearForTypeInternal(singleEntryType)
         Assertions.assertTrue(multiQueue.isEmpty())
     }
 
@@ -346,7 +415,7 @@ abstract class AbstractMultiQueueTest
     {
         Assertions.assertTrue(multiQueue.isEmpty())
         val type = "clear-for-type-does-not-exist"
-        multiQueue.clearForType(type)
+        multiQueue.clearForTypeInternal(type)
         Assertions.assertTrue(multiQueue.isEmpty())
     }
 

@@ -56,6 +56,7 @@ class QueueConfiguration : HasLogger
         {
             queue = SqlMultiQueue()
         }
+        queue.initialiseQueueIndex()
         LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType)
 
         return queue

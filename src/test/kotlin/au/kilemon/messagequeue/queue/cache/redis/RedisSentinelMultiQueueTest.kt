@@ -39,7 +39,7 @@ import java.util.*
 @TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=REDIS"])
 @Testcontainers
 @ContextConfiguration(initializers = [RedisSentinelMultiQueueTest.Initializer::class])
-@Import(*[QueueConfiguration::class, LoggingConfiguration::class, RedisConfiguration::class, AbstractMultiQueueTest.AbstractMultiQueueTestConfiguration::class])
+@Import(*[LoggingConfiguration::class, RedisConfiguration::class, QueueConfiguration::class, AbstractMultiQueueTest.AbstractMultiQueueTestConfiguration::class])
 class RedisSentinelMultiQueueTest: AbstractMultiQueueTest()
 {
     companion object
@@ -94,7 +94,7 @@ class RedisSentinelMultiQueueTest: AbstractMultiQueueTest()
 
             TestPropertyValues.of(
                 "${MessageQueueSettings.REDIS_ENDPOINT}=${sentinel.host}:${sentinel.getMappedPort(RedisConfiguration.REDIS_SENTINEL_DEFAULT_PORT.toInt())}",
-                "${MessageQueueSettings.REDIS_USE_SENTINELS}=${true}"
+                "${MessageQueueSettings.REDIS_USE_SENTINELS}=true"
             ).applyTo(configurableApplicationContext.environment)
         }
     }

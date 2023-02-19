@@ -69,17 +69,19 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
 
     /**
      * Get the [maxQueueIndex] then increment it.
+     * If it does not exist yet, a default value of 1 will be set and returned.
      *
      * @return the current value of the index before it was incremented
      */
-    fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
+    fun getAndIncrementQueueIndex(queueType: String): Long
     {
         var index = maxQueueIndex[queueType]
         if (index == null)
         {
-            index = AtomicLong(0)
+            index = AtomicLong(1)
+            maxQueueIndex[queueType] = index
         }
-        return Optional.of(index.getAndIncrement())
+        return index.getAndIncrement()
     }
 
     /**
@@ -220,7 +222,19 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param queueType the [String] of the [Queue] to clear
      * @return the number of entries removed
      */
+    fun clearForTypeInternal(queueType: String): Int
+
+    /**
+     * Clear the [MultiQueue.maxQueueIndex] then call to [MultiQueue.clearForTypeInternal].
+     *
+     * @param queueType the [String] of the [Queue] to clear
+     * @return the number of entries removed
+     */
     fun clearForType(queueType: String): Int
+    {
+        maxQueueIndex.remove(queueType)
+        return clearForTypeInternal(queueType)
+    }
 
     /**
      * Indicates whether the underlying [Queue] for the provided [String] is empty. By calling [Queue.isEmpty].
@@ -239,10 +253,10 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      */
     fun pollForType(queueType: String): Optional<QueueMessage>
     {
-        val head = performPoll(queueType)
+        val head = pollInternal(queueType)
         if (head.isPresent)
         {
-            performRemove(head.get())
+            removeInternal(head.get())
             LOG.debug("Found and removed head element with UUID [{}] from queue with type [{}].", head.get().uuid, queueType)
         }
         else
@@ -262,7 +276,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param queueType the sub-queue to poll
      * @return the first message wrapped as an [Optional] otherwise [Optional.empty]
      */
-    fun performPoll(queueType: String): Optional<QueueMessage>
+    fun pollInternal(queueType: String): Optional<QueueMessage>
 
     /**
      * Calls [Queue.peek] on the underlying [Queue] for the provided [String].
@@ -316,7 +330,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
         val elementIsMappedToType = containsUUID(element.uuid)
         if ( !elementIsMappedToType.isPresent)
         {
-            val wasAdded = performAdd(element)
+            val wasAdded = addInternal(element)
             return if (wasAdded)
             {
                 LOG.debug("Added new message with uuid [{}] to queue with type [{}].", element.uuid, element.type)
@@ -343,11 +357,11 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param element the element to add
      * @return `true` if the element was added successfully, otherwise `false`.
      */
-    fun performAdd(element: QueueMessage): Boolean
+    fun addInternal(element: QueueMessage): Boolean
 
     override fun remove(element: QueueMessage): Boolean
     {
-        val wasRemoved = performRemove(element)
+        val wasRemoved = removeInternal(element)
         if (wasRemoved)
         {
             LOG.debug("Removed element with UUID [{}] from queue with type [{}].", element.uuid, element.type)
@@ -366,7 +380,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param element the element to remove
      * @return `true` if the element was removed successfully, otherwise `false`.
      */
-    fun performRemove(element: QueueMessage): Boolean
+    fun removeInternal(element: QueueMessage): Boolean
 
     override fun contains(element: QueueMessage?): Boolean
     {
@@ -460,6 +474,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
             val amountRemovedForQueue = clearForType(key)
             removedEntryCount += amountRemovedForQueue
         }
+        maxQueueIndex.clear()
         LOG.debug("Cleared multi-queue, removed [{}] message entries over [{}] queue types.", removedEntryCount, keys)
     }
 

@@ -33,7 +33,6 @@ import org.springframework.stereotype.Component
  * @author github.com/KyleGonzalez
  */
 @Component
-@Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
 class MessageQueueSettings
 {
     companion object

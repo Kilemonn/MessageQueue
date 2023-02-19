@@ -3,6 +3,7 @@ package au.kilemon.messagequeue.queue.inmemory
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
@@ -17,14 +18,20 @@ class InMemoryMockMultiQueueTest
 {
     private val multiQueue: InMemoryMultiQueue = Mockito.spy(InMemoryMultiQueue::class.java)
 
+    @BeforeEach
+    fun setUp()
+    {
+        multiQueue.initialiseQueueIndex()
+    }
+
     /**
-     * Test [InMemoryMultiQueue.add] to ensure that `false` is returned when [InMemoryMultiQueue.performAdd] returns `false`.
+     * Test [InMemoryMultiQueue.add] to ensure that `false` is returned when [InMemoryMultiQueue.addInternal] returns `false`.
      */
     @Test
     fun testPerformAdd_returnsFalse()
     {
         val message = QueueMessage(null, "type")
-        Mockito.`when`(multiQueue.performAdd(message)).thenReturn(false)
+        Mockito.`when`(multiQueue.addInternal(message)).thenReturn(false)
         Mockito.`when`(multiQueue.containsUUID(message.uuid)).thenReturn(Optional.empty())
         Assertions.assertFalse(multiQueue.add(message))
     }

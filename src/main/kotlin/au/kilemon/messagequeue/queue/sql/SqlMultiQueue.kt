@@ -40,15 +40,6 @@ class SqlMultiQueue : MultiQueue, HasLogger
         maxQueueIndex = HashMap()
     }
 
-    /**
-     * This increment queue is not used for this [SqlMultiQueue] so return empty here.
-     */
-    override fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
-    {
-        // Nothing to do here this queue is not used
-        return Optional.empty<Long>()
-    }
-
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {
         val entries = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
@@ -85,7 +76,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
         return queueMessageRepository.findByUuid(uuid)
     }
 
-    override fun clearForType(queueType: String): Int
+    override fun clearForTypeInternal(queueType: String): Int
     {
         val amountCleared = queueMessageRepository.deleteByType(queueType)
         LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, amountCleared)
@@ -97,7 +88,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
         return queueMessageRepository.findByTypeOrderByIdAsc(queueType).isEmpty()
     }
 
-    override fun performPoll(queueType: String): Optional<QueueMessage>
+    override fun pollInternal(queueType: String): Optional<QueueMessage>
     {
         val messages = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
         return if (messages.isNotEmpty())
@@ -136,15 +127,15 @@ class SqlMultiQueue : MultiQueue, HasLogger
         }
     }
 
-    override fun performAdd(element: QueueMessage): Boolean
+    override fun addInternal(element: QueueMessage): Boolean
     {
-        // I would check that the saved is the same as the incoming element
-        // But we ensure the same message does not already exist (with the same UUID)
+        // UUID Unique constraint ensures we don't save duplicate entries
+        // Not need to set [QueueMessage.id] since it's managed by the DB
         val saved = queueMessageRepository.save(element)
         return saved.id != null
     }
 
-    override fun performRemove(element: QueueMessage): Boolean
+    override fun removeInternal(element: QueueMessage): Boolean
     {
         val removedCount = queueMessageRepository.deleteByUuid(element.uuid)
         return removedCount > 0
