@@ -23,23 +23,11 @@ import java.util.stream.Collectors
  *
  * @author github.com/KyleGonzalez
  */
-class RedisMultiQueue : MultiQueue, HasLogger
+class RedisMultiQueue(private val prefix: String = "", private val redisTemplate: RedisTemplate<String, QueueMessage>) : MultiQueue, HasLogger
 {
     override val LOG: Logger = initialiseLogger()
 
     override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
-
-    @Autowired
-    @Lazy
-    @get:Generated
-    @set:Generated
-    lateinit var messageQueueSettings: MessageQueueSettings
-
-    @Autowired
-    @Lazy
-    @get:Generated
-    @set:Generated
-    lateinit var redisTemplate: RedisTemplate<String, QueueMessage>
 
     /**
      * Append the [MessageQueueSettings.redisPrefix] to the provided [queueType] [String].
@@ -49,9 +37,9 @@ class RedisMultiQueue : MultiQueue, HasLogger
      */
     private fun appendPrefix(queueType: String): String
     {
-        if (messageQueueSettings.redisPrefix.isNotBlank() && !queueType.startsWith(messageQueueSettings.redisPrefix))
+        if (prefix.isNotBlank() && !queueType.startsWith(prefix))
         {
-            return "${messageQueueSettings.redisPrefix}$queueType"
+            return "${prefix}$queueType"
         }
         return queueType
     }
