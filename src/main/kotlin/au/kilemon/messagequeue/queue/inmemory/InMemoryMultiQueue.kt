@@ -98,7 +98,7 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         if (queueForType != null)
         {
             amountRemoved = queueForType.size
-            queueForType.forEach { message -> uuidMap.remove(message.uuid.toString()) }
+            queueForType.forEach { message -> uuidMap.remove(message.uuid) }
             queueForType.clear()
             messageQueue.remove(queueType)
             LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, amountRemoved)
@@ -116,7 +116,7 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         val wasAdded = super.add(element)
         if (wasAdded)
         {
-            uuidMap[element.uuid.toString()] = element.type
+            uuidMap[element.uuid] = element.type
         }
         return wasAdded
     }
@@ -126,8 +126,6 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
      */
     override fun addInternal(element: QueueMessage): Boolean
     {
-        val index = getAndIncrementQueueIndex(element.type)
-        element.id = index
         val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
         return queueForType.add(element)
     }
@@ -137,7 +135,7 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         val wasRemoved  = super.remove(element)
         if (wasRemoved)
         {
-            uuidMap.remove(element.uuid.toString())
+            uuidMap.remove(element.uuid)
         }
         return wasRemoved
     }
@@ -203,7 +201,7 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         val message = super.pollForType(queueType)
         if (message.isPresent)
         {
-            uuidMap.remove(message.get().uuid.toString())
+            uuidMap.remove(message.get().uuid)
         }
 
         return message

@@ -155,4 +155,13 @@ class SqlMultiQueue : MultiQueue, HasLogger
         }
         throw MessageUpdateException(message.uuid)
     }
+
+    /**
+     * Overriding to return [Optional.EMPTY] so that the [MultiQueue.add] does set an `id` into the [QueueMessage]
+     * even if the id is `null`.
+     */
+    override fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
+    {
+        return Optional.empty()
+    }
 }

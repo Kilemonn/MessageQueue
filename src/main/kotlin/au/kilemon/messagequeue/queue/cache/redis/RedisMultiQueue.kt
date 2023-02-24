@@ -105,10 +105,16 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
 
     override fun addInternal(element: QueueMessage): Boolean
     {
-        val index = getAndIncrementQueueIndex(appendPrefix(element.type))
-        element.id = index
         val result = redisTemplate.opsForSet().add(appendPrefix(element.type), element)
         return result != null && result > 0
+    }
+
+    /**
+     * Overriding to pass in the [queueType] into [appendPrefix].
+     */
+    override fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
+    {
+        return super.getAndIncrementQueueIndex(appendPrefix(queueType))
     }
 
     override fun removeInternal(element: QueueMessage): Boolean
@@ -203,6 +209,7 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
         val matchingMessage = queue.stream().filter{ element -> element.uuid == message.uuid }.findFirst()
         if (matchingMessage.isPresent)
         {
+            message.id = matchingMessage.get().id
             val wasRemoved = removeInternal(matchingMessage.get())
             val wasReAdded = addInternal(message)
             if (wasRemoved && wasReAdded)

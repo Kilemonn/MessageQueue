@@ -63,7 +63,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
         keys(false).forEach{ queueType ->
             val queueForType = getQueueForType(queueType)
             val maxIndex = queueForType.last().id
-            maxQueueIndex[queueType] = AtomicLong(maxIndex ?: 0)
+            maxQueueIndex[queueType] = AtomicLong(maxIndex?.plus(1) ?: 1)
         }
     }
 
@@ -71,9 +71,13 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * Get the [maxQueueIndex] then increment it.
      * If it does not exist yet, a default value of 1 will be set and returned.
      *
+     * This can be overridden to return [Optional.EMPTY] to not override the ID of the
+     * incoming messages even if it is empty as it is maintained by the underlying mechanism
+     * (in most cases a database).
+     *
      * @return the current value of the index before it was incremented
      */
-    fun getAndIncrementQueueIndex(queueType: String): Long
+    fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
     {
         var index = maxQueueIndex[queueType]
         if (index == null)
@@ -81,7 +85,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
             index = AtomicLong(1)
             maxQueueIndex[queueType] = index
         }
-        return index.getAndIncrement()
+        return Optional.of(index.getAndIncrement())
     }
 
     /**
@@ -330,6 +334,14 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
         val elementIsMappedToType = containsUUID(element.uuid)
         if ( !elementIsMappedToType.isPresent)
         {
+            if (element.id == null)
+            {
+                val index = getAndIncrementQueueIndex(element.type)
+                if (index.isPresent)
+                {
+                    element.id = index.get()
+                }
+            }
             val wasAdded = addInternal(element)
             return if (wasAdded)
             {
@@ -346,7 +358,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
         {
             val existingQueueType = elementIsMappedToType.get()
             LOG.warn("Did not add new message with uuid [{}] to queue with type [{}] as it already exists in queue with type [{}].", element.uuid, element.type, existingQueueType)
-            throw DuplicateMessageException(element.uuid.toString(), existingQueueType)
+            throw DuplicateMessageException(element.uuid, existingQueueType)
         }
     }
 
