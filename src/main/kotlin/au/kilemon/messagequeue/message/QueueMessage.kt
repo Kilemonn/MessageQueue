@@ -16,12 +16,20 @@ import javax.persistence.*
  */
 @Entity
 @Table(name = QueueMessage.TABLE_NAME) // TODO: Schema configuration schema = "\${${MessageQueueSettings.SQL_SCHEMA}:${MessageQueueSettings.SQL_SCHEMA_DEFAULT}}")
-class QueueMessage(@Transient var payload: Any?, @Column(nullable = false) var type: String, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
+class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
 {
     companion object
     {
         const val TABLE_NAME: String = "multiqueuemessages"
     }
+
+    @Transient
+    var payload = payload
+        set(value)
+        {
+            field = value
+            payloadBytes = SerializationUtils.serialize(payload)
+        }
 
     @Column(nullable = false, unique = true)
     var uuid: String = UUID.randomUUID().toString()
@@ -29,12 +37,12 @@ class QueueMessage(@Transient var payload: Any?, @Column(nullable = false) var t
     @JsonIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Int? = null
+    var id: Long? = null
 
     @JsonIgnore
     @Lob
     @Column
-    val payloadBytes: ByteArray? = SerializationUtils.serialize(payload)
+    var payloadBytes: ByteArray? = SerializationUtils.serialize(payload)
 
     /**
      * Required for JSON deserialisation.

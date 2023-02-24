@@ -3,6 +3,7 @@ package au.kilemon.messagequeue.configuration
 import au.kilemon.messagequeue.MessageQueueApplication
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.logging.Messages
+import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.cache.redis.RedisMultiQueue
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
@@ -14,7 +15,9 @@ import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Lazy
 import org.springframework.context.support.ReloadableResourceBundleMessageSource
+import org.springframework.data.redis.core.RedisTemplate
 import java.util.*
 
 /**
@@ -38,6 +41,12 @@ class QueueConfiguration : HasLogger
     @set:Generated
     lateinit var messageSource: ReloadableResourceBundleMessageSource
 
+    @Autowired
+    @Lazy
+    @get:Generated
+    @set:Generated
+    lateinit var redisTemplate: RedisTemplate<String, QueueMessage>
+
     /**
      * Initialise the [MultiQueue] [Bean] based on the [MessageQueueSettings.multiQueueType].
      */
@@ -50,12 +59,13 @@ class QueueConfiguration : HasLogger
         var queue: MultiQueue = InMemoryMultiQueue()
         if (MultiQueueType.REDIS.toString() == messageQueueSettings.multiQueueType)
         {
-            queue = RedisMultiQueue()
+            queue = RedisMultiQueue(messageQueueSettings.redisPrefix, redisTemplate)
         }
         else if (MultiQueueType.SQL.toString() == messageQueueSettings.multiQueueType)
         {
             queue = SqlMultiQueue()
         }
+        queue.initialiseQueueIndex()
         LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType)
 
         return queue

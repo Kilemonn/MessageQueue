@@ -8,7 +8,9 @@ import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicLong
 import java.util.stream.Collectors
+import kotlin.collections.HashMap
 import kotlin.jvm.Throws
 
 /**
@@ -30,6 +32,9 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
      * The underlying [Map] holding [Queue] entities mapped against the provided [String].
      */
     private val messageQueue: ConcurrentHashMap<String, Queue<QueueMessage>> = ConcurrentHashMap()
+
+    override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
+
 
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {
@@ -86,14 +91,14 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         return Optional.empty()
     }
 
-    override fun clearForType(queueType: String): Int
+    override fun clearForTypeInternal(queueType: String): Int
     {
         var amountRemoved = 0
         val queueForType: Queue<QueueMessage>? = messageQueue[queueType]
         if (queueForType != null)
         {
             amountRemoved = queueForType.size
-            queueForType.forEach { message -> uuidMap.remove(message.uuid.toString()) }
+            queueForType.forEach { message -> uuidMap.remove(message.uuid) }
             queueForType.clear()
             messageQueue.remove(queueType)
             LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, amountRemoved)
@@ -111,7 +116,7 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         val wasAdded = super.add(element)
         if (wasAdded)
         {
-            uuidMap[element.uuid.toString()] = element.type
+            uuidMap[element.uuid] = element.type
         }
         return wasAdded
     }
@@ -119,7 +124,7 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
     /**
      * Delegate to the [Queue.add] method.
      */
-    override fun performAdd(element: QueueMessage): Boolean
+    override fun addInternal(element: QueueMessage): Boolean
     {
         val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
         return queueForType.add(element)
@@ -130,7 +135,7 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         val wasRemoved  = super.remove(element)
         if (wasRemoved)
         {
-            uuidMap.remove(element.uuid.toString())
+            uuidMap.remove(element.uuid)
         }
         return wasRemoved
     }
@@ -138,7 +143,7 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
     /**
      * Delegate to the [Queue.remove] method.
      */
-    override fun performRemove(element: QueueMessage): Boolean
+    override fun removeInternal(element: QueueMessage): Boolean
     {
         val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
         return queueForType.remove(element)
@@ -196,13 +201,13 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         val message = super.pollForType(queueType)
         if (message.isPresent)
         {
-            uuidMap.remove(message.get().uuid.toString())
+            uuidMap.remove(message.get().uuid)
         }
 
         return message
     }
 
-    override fun performPoll(queueType: String): Optional<QueueMessage>
+    override fun pollInternal(queueType: String): Optional<QueueMessage>
     {
         val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
         return if (queueForType.isNotEmpty())

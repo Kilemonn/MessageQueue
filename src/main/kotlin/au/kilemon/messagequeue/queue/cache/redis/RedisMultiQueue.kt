@@ -3,7 +3,6 @@ package au.kilemon.messagequeue.queue.cache.redis
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
-import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import lombok.Generated
@@ -14,6 +13,7 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ScanOptions
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicLong
 import java.util.stream.Collectors
 
 /**
@@ -23,21 +23,11 @@ import java.util.stream.Collectors
  *
  * @author github.com/KyleGonzalez
  */
-class RedisMultiQueue : MultiQueue, HasLogger
+class RedisMultiQueue(private val prefix: String = "", private val redisTemplate: RedisTemplate<String, QueueMessage>) : MultiQueue, HasLogger
 {
     override val LOG: Logger = initialiseLogger()
 
-    @Autowired
-    @Lazy
-    @get:Generated
-    @set:Generated
-    lateinit var messageQueueSettings: MessageQueueSettings
-
-    @Autowired
-    @Lazy
-    @get:Generated
-    @set:Generated
-    lateinit var redisTemplate: RedisTemplate<String, QueueMessage>
+    override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
 
     /**
      * Append the [MessageQueueSettings.redisPrefix] to the provided [queueType] [String].
@@ -47,9 +37,9 @@ class RedisMultiQueue : MultiQueue, HasLogger
      */
     private fun appendPrefix(queueType: String): String
     {
-        if (messageQueueSettings.redisPrefix.isNotBlank() && !queueType.startsWith(messageQueueSettings.redisPrefix))
+        if (prefix.isNotBlank() && !queueType.startsWith(prefix))
         {
-            return "${messageQueueSettings.redisPrefix}$queueType"
+            return "${prefix}$queueType"
         }
         return queueType
     }
@@ -63,7 +53,7 @@ class RedisMultiQueue : MultiQueue, HasLogger
         val set = redisTemplate.opsForSet().members(appendPrefix(queueType))
         if (!set.isNullOrEmpty())
         {
-            queue.addAll(set)
+            queue.addAll(set.toSortedSet { message1, message2 -> (message1.id ?: 0).minus(message2.id ?: 0).toInt() })
         }
         return queue
     }
@@ -113,19 +103,27 @@ class RedisMultiQueue : MultiQueue, HasLogger
         return Optional.empty()
     }
 
-    override fun performAdd(element: QueueMessage): Boolean
+    override fun addInternal(element: QueueMessage): Boolean
     {
         val result = redisTemplate.opsForSet().add(appendPrefix(element.type), element)
         return result != null && result > 0
     }
 
-    override fun performRemove(element: QueueMessage): Boolean
+    /**
+     * Overriding to pass in the [queueType] into [appendPrefix].
+     */
+    override fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
+    {
+        return super.getAndIncrementQueueIndex(appendPrefix(queueType))
+    }
+
+    override fun removeInternal(element: QueueMessage): Boolean
     {
         val result = redisTemplate.opsForSet().remove(appendPrefix(element.type), element)
         return result != null && result > 0
     }
 
-    override fun clearForType(queueType: String): Int
+    override fun clearForTypeInternal(queueType: String): Int
     {
         var amountRemoved = 0
         val queueForType = getQueueForType(queueType)
@@ -147,7 +145,7 @@ class RedisMultiQueue : MultiQueue, HasLogger
         return getQueueForType(queueType).isEmpty()
     }
 
-    override fun performPoll(queueType: String): Optional<QueueMessage>
+    override fun pollInternal(queueType: String): Optional<QueueMessage>
     {
         val set = redisTemplate.opsForSet().members(appendPrefix(queueType))
         if (!set.isNullOrEmpty())
@@ -211,8 +209,9 @@ class RedisMultiQueue : MultiQueue, HasLogger
         val matchingMessage = queue.stream().filter{ element -> element.uuid == message.uuid }.findFirst()
         if (matchingMessage.isPresent)
         {
-            val wasRemoved = performRemove(matchingMessage.get())
-            val wasReAdded = performAdd(message)
+            message.id = matchingMessage.get().id
+            val wasRemoved = removeInternal(matchingMessage.get())
+            val wasReAdded = addInternal(message)
             if (wasRemoved && wasReAdded)
             {
                 return

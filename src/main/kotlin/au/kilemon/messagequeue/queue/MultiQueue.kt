@@ -8,6 +8,7 @@ import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.jvm.Throws
 
 /**
@@ -45,6 +46,47 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     /**
      * New methods for the [MultiQueue] that are required by implementing classes.
      */
+
+    /**
+     * A holder for the current max [QueueMessage] index per sub-queue type.
+     * This is used to track the next ID of the queue index that should be set and gives order to the
+     * received messages as they are created in storage mechanisms that don't guarantee order.
+     */
+    var maxQueueIndex: HashMap<String, AtomicLong>
+
+    /**
+     * Initialise the [maxQueueIndex] based on any existing [QueueMessage]s in the storage mechanism.
+     */
+    fun initialiseQueueIndex()
+    {
+        maxQueueIndex = HashMap()
+        keys(false).forEach{ queueType ->
+            val queueForType = getQueueForType(queueType)
+            val maxIndex = queueForType.last().id
+            maxQueueIndex[queueType] = AtomicLong(maxIndex?.plus(1) ?: 1)
+        }
+    }
+
+    /**
+     * Get the [maxQueueIndex] then increment it.
+     * If it does not exist yet, a default value of 1 will be set and returned.
+     *
+     * This can be overridden to return [Optional.EMPTY] to not override the ID of the
+     * incoming messages even if it is empty as it is maintained by the underlying mechanism
+     * (in most cases a database).
+     *
+     * @return the current value of the index before it was incremented
+     */
+    fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
+    {
+        var index = maxQueueIndex[queueType]
+        if (index == null)
+        {
+            index = AtomicLong(1)
+            maxQueueIndex[queueType] = index
+        }
+        return Optional.of(index.getAndIncrement())
+    }
 
     /**
      * Used to persist the updated [QueueMessage] to the storage mechanism.
@@ -184,7 +226,19 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param queueType the [String] of the [Queue] to clear
      * @return the number of entries removed
      */
+    fun clearForTypeInternal(queueType: String): Int
+
+    /**
+     * Clear the [MultiQueue.maxQueueIndex] then call to [MultiQueue.clearForTypeInternal].
+     *
+     * @param queueType the [String] of the [Queue] to clear
+     * @return the number of entries removed
+     */
     fun clearForType(queueType: String): Int
+    {
+        maxQueueIndex.remove(queueType)
+        return clearForTypeInternal(queueType)
+    }
 
     /**
      * Indicates whether the underlying [Queue] for the provided [String] is empty. By calling [Queue.isEmpty].
@@ -203,10 +257,10 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      */
     fun pollForType(queueType: String): Optional<QueueMessage>
     {
-        val head = performPoll(queueType)
+        val head = pollInternal(queueType)
         if (head.isPresent)
         {
-            performRemove(head.get())
+            removeInternal(head.get())
             LOG.debug("Found and removed head element with UUID [{}] from queue with type [{}].", head.get().uuid, queueType)
         }
         else
@@ -226,7 +280,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param queueType the sub-queue to poll
      * @return the first message wrapped as an [Optional] otherwise [Optional.empty]
      */
-    fun performPoll(queueType: String): Optional<QueueMessage>
+    fun pollInternal(queueType: String): Optional<QueueMessage>
 
     /**
      * Calls [Queue.peek] on the underlying [Queue] for the provided [String].
@@ -280,7 +334,15 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
         val elementIsMappedToType = containsUUID(element.uuid)
         if ( !elementIsMappedToType.isPresent)
         {
-            val wasAdded = performAdd(element)
+            if (element.id == null)
+            {
+                val index = getAndIncrementQueueIndex(element.type)
+                if (index.isPresent)
+                {
+                    element.id = index.get()
+                }
+            }
+            val wasAdded = addInternal(element)
             return if (wasAdded)
             {
                 LOG.debug("Added new message with uuid [{}] to queue with type [{}].", element.uuid, element.type)
@@ -296,7 +358,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
         {
             val existingQueueType = elementIsMappedToType.get()
             LOG.warn("Did not add new message with uuid [{}] to queue with type [{}] as it already exists in queue with type [{}].", element.uuid, element.type, existingQueueType)
-            throw DuplicateMessageException(element.uuid.toString(), existingQueueType)
+            throw DuplicateMessageException(element.uuid, existingQueueType)
         }
     }
 
@@ -307,11 +369,11 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param element the element to add
      * @return `true` if the element was added successfully, otherwise `false`.
      */
-    fun performAdd(element: QueueMessage): Boolean
+    fun addInternal(element: QueueMessage): Boolean
 
     override fun remove(element: QueueMessage): Boolean
     {
-        val wasRemoved = performRemove(element)
+        val wasRemoved = removeInternal(element)
         if (wasRemoved)
         {
             LOG.debug("Removed element with UUID [{}] from queue with type [{}].", element.uuid, element.type)
@@ -330,7 +392,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param element the element to remove
      * @return `true` if the element was removed successfully, otherwise `false`.
      */
-    fun performRemove(element: QueueMessage): Boolean
+    fun removeInternal(element: QueueMessage): Boolean
 
     override fun contains(element: QueueMessage?): Boolean
     {
@@ -424,6 +486,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
             val amountRemovedForQueue = clearForType(key)
             removedEntryCount += amountRemovedForQueue
         }
+        maxQueueIndex.clear()
         LOG.debug("Cleared multi-queue, removed [{}] message entries over [{}] queue types.", removedEntryCount, keys)
     }
 

@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicLong
+import kotlin.collections.HashMap
 
 /**
  * A database backed [MultiQueue]. All operations are performed directly on the database it is the complete source of truth.
@@ -27,6 +29,16 @@ class SqlMultiQueue : MultiQueue, HasLogger
     @Lazy
     @Autowired
     private lateinit var queueMessageRepository: QueueMessageRepository
+
+    override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
+
+    /**
+     * Just initialise map, so it's not null, but the SQL [QueueMessage] ID is maintained by the database.
+     */
+    override fun initialiseQueueIndex()
+    {
+        maxQueueIndex = HashMap()
+    }
 
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {
@@ -64,7 +76,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
         return queueMessageRepository.findByUuid(uuid)
     }
 
-    override fun clearForType(queueType: String): Int
+    override fun clearForTypeInternal(queueType: String): Int
     {
         val amountCleared = queueMessageRepository.deleteByType(queueType)
         LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, amountCleared)
@@ -76,7 +88,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
         return queueMessageRepository.findByTypeOrderByIdAsc(queueType).isEmpty()
     }
 
-    override fun performPoll(queueType: String): Optional<QueueMessage>
+    override fun pollInternal(queueType: String): Optional<QueueMessage>
     {
         val messages = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
         return if (messages.isNotEmpty())
@@ -115,15 +127,15 @@ class SqlMultiQueue : MultiQueue, HasLogger
         }
     }
 
-    override fun performAdd(element: QueueMessage): Boolean
+    override fun addInternal(element: QueueMessage): Boolean
     {
-        // I would check that the saved is the same as the incoming element
-        // But we ensure the same message does not already exist (with the same UUID)
+        // UUID Unique constraint ensures we don't save duplicate entries
+        // Not need to set [QueueMessage.id] since it's managed by the DB
         val saved = queueMessageRepository.save(element)
         return saved.id != null
     }
 
-    override fun performRemove(element: QueueMessage): Boolean
+    override fun removeInternal(element: QueueMessage): Boolean
     {
         val removedCount = queueMessageRepository.deleteByUuid(element.uuid)
         return removedCount > 0
@@ -142,5 +154,14 @@ class SqlMultiQueue : MultiQueue, HasLogger
             }
         }
         throw MessageUpdateException(message.uuid)
+    }
+
+    /**
+     * Overriding to return [Optional.EMPTY] so that the [MultiQueue.add] does set an `id` into the [QueueMessage]
+     * even if the id is `null`.
+     */
+    override fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
+    {
+        return Optional.empty()
     }
 }

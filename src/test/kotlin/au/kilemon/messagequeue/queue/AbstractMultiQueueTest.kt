@@ -4,9 +4,11 @@ import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
+import au.kilemon.messagequeue.queue.sql.SqlMultiQueue
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
 import au.kilemon.messagequeue.settings.MessageQueueSettings
+import org.junit.Assert
 import org.junit.jupiter.api.*
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -230,6 +232,154 @@ abstract class AbstractMultiQueueTest
     }
 
     /**
+     * Ensure that when the [MultiQueue] is empty, that the underlying [MultiQueue.maxQueueIndex] is empty too.
+     */
+    @Test
+    fun testInitialiseQueueIndex_allEmpty()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        Assertions.assertNotNull(multiQueue.maxQueueIndex)
+        Assertions.assertTrue(multiQueue.maxQueueIndex.isEmpty())
+    }
+
+    /**
+     * This is to cover a scenario where a new [MultiQueue] is created or existing messages exist. To ensure the underlying
+     * [MultiQueue.maxQueueIndex] is cleared and initialised correctly.
+     */
+    @Test
+    fun testInitialiseQueueIndex_reInitialise()
+    {
+        if (multiQueue is SqlMultiQueue)
+        {
+            return
+        }
+
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val queueType1 = "testInitialiseQueueIndex_reInitialise1"
+        val queueType2 = "testInitialiseQueueIndex_reInitialise2"
+
+        val list1 = listOf(QueueMessage(81273648, queueType1), QueueMessage("test test test", queueType1), QueueMessage(false, queueType1))
+        val list2 = listOf(QueueMessage("test", queueType2), QueueMessage(123, queueType2))
+        Assertions.assertTrue(multiQueue.addAll(list1))
+        Assertions.assertTrue(multiQueue.addAll(list2))
+        Assertions.assertEquals(list1.size + 1, multiQueue.maxQueueIndex[queueType1]!!.toInt())
+        Assertions.assertEquals(list2.size + 1, multiQueue.maxQueueIndex[queueType2]!!.toInt())
+        Assertions.assertEquals(list1.size + 1, multiQueue.getAndIncrementQueueIndex(queueType1).get().toInt())
+        Assertions.assertEquals(list2.size + 1, multiQueue.getAndIncrementQueueIndex(queueType2).get().toInt())
+        Assertions.assertEquals(list1.size + 2, multiQueue.maxQueueIndex[queueType1]!!.toInt())
+        Assertions.assertEquals(list2.size + 2, multiQueue.maxQueueIndex[queueType2]!!.toInt())
+
+        multiQueue.initialiseQueueIndex()
+        Assertions.assertEquals(list1.size + 1, multiQueue.maxQueueIndex[queueType1]!!.toInt())
+        Assertions.assertEquals(list2.size + 1, multiQueue.maxQueueIndex[queueType2]!!.toInt())
+    }
+
+    /**
+     * Ensure that [MultiQueue.getAndIncrementQueueIndex] starts at `1` and increments properly as called.
+     *
+     * Ensure that [MultiQueue.clearForType] also clears the [MultiQueue.maxQueueIndex] for the provided `queueType`.
+     */
+    @Test
+    fun testGetAndIncrementQueueIndex()
+    {
+        val queueType = "testGetAndIncrementQueueIndex"
+        Assertions.assertTrue(multiQueue.isEmpty())
+        Assertions.assertNotNull(multiQueue.maxQueueIndex)
+
+        if (multiQueue is SqlMultiQueue)
+        {
+            Assertions.assertFalse(multiQueue.getAndIncrementQueueIndex(queueType).isPresent)
+        }
+        else
+        {
+
+            Assertions.assertTrue(multiQueue.maxQueueIndex.isEmpty())
+            Assertions.assertNull(multiQueue.maxQueueIndex[queueType])
+
+            Assertions.assertEquals(1, multiQueue.getAndIncrementQueueIndex(queueType).get())
+            Assertions.assertEquals(2, multiQueue.getAndIncrementQueueIndex(queueType).get())
+            Assertions.assertEquals(3, multiQueue.getAndIncrementQueueIndex(queueType).get())
+            Assertions.assertEquals(4, multiQueue.getAndIncrementQueueIndex(queueType).get())
+            Assertions.assertEquals(5, multiQueue.getAndIncrementQueueIndex(queueType).get())
+
+            multiQueue.clearForType(queueType)
+            Assertions.assertTrue(multiQueue.maxQueueIndex.isEmpty())
+            Assertions.assertNull(multiQueue.maxQueueIndex[queueType])
+        }
+    }
+
+    /**
+     * Ensure [MultiQueue.getQueueForType] returns the list of [QueueMessage]s always ordered by their [QueueMessage.id].
+     *
+     * This also ensures they are assigned the `id` in the order they are enqueued.
+     */
+    @Test
+    fun testGetQueueForType_ordered()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val queueType = "testGetQueueForType_ordered"
+
+        val list = listOf(QueueMessage(81248, queueType), QueueMessage("test data", queueType), QueueMessage(false, queueType))
+        Assertions.assertTrue(multiQueue.addAll(list))
+        val queue = multiQueue.getQueueForType(queueType)
+        Assertions.assertEquals(list.size, queue.size)
+        var previousIndex: Long? = null
+        list.zip(queue).forEach { pair ->
+            Assertions.assertEquals(pair.first.uuid, pair.second.uuid)
+            Assertions.assertNotNull(pair.second.id)
+            if (previousIndex == null)
+            {
+                previousIndex = pair.second.id
+            }
+            else
+            {
+                Assertions.assertTrue(previousIndex!! < pair.second.id!!)
+            }
+        }
+    }
+
+    /**
+     * Ensure [MultiQueue.getQueueForType] returns the list of [QueueMessage]s always ordered by their [QueueMessage.id].
+     * Even when messages are changed and re-enqueued we need to make sure the returned message order is retained.
+     */
+    @Test
+    fun testGetQueueForType_reordered()
+    {
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val queueType = "testGetQueueForType_reordered"
+
+        val list = listOf(QueueMessage(81248, queueType), QueueMessage("test data", queueType), QueueMessage(false, queueType))
+        Assertions.assertTrue(multiQueue.addAll(list))
+
+        // Force an object change, which for some mechanisms would re-enqueue it at the end
+        // We will re-retrieve the queue and ensure they are in order to test that the ordering is correct
+        // even after the object is changed
+        var queue = multiQueue.getQueueForType(queueType)
+        Assertions.assertEquals(list.size, queue.size)
+        val firstMessage = queue.first()
+        Assertions.assertEquals(list[0].uuid, firstMessage.uuid)
+        val newData = "some test"
+        firstMessage.payload = newData
+        multiQueue.persistMessage(firstMessage)
+
+        queue = multiQueue.getQueueForType(queueType)
+        var previousIndex: Long? = null
+        list.zip(queue).forEach { pair ->
+            Assertions.assertEquals(pair.first.uuid, pair.second.uuid)
+            Assertions.assertNotNull(pair.second.id)
+            if (previousIndex == null)
+            {
+                Assertions.assertEquals(newData, pair.second.payload)
+                previousIndex = pair.second.id
+            }
+            else
+            {
+                Assertions.assertTrue(previousIndex!! < pair.second.id!!)
+            }
+        }
+    }
+
+    /**
      * Ensure that all elements are added, and contained and removed via the provided [Collection].
      */
     @Test
@@ -317,7 +467,7 @@ abstract class AbstractMultiQueueTest
     }
 
     /**
-     * Ensure that only the specific entries are removed when [MultiQueue.clearForType] is called.
+     * Ensure that only the specific entries are removed when [MultiQueue.clearForTypeInternal] is called.
      */
     @Test
     fun testClearForType()
@@ -332,9 +482,9 @@ abstract class AbstractMultiQueueTest
         Assertions.assertTrue(multiQueue.add(message))
 
         Assertions.assertEquals(3, multiQueue.size)
-        multiQueue.clearForType(type)
+        multiQueue.clearForTypeInternal(type)
         Assertions.assertEquals(1, multiQueue.size)
-        multiQueue.clearForType(singleEntryType)
+        multiQueue.clearForTypeInternal(singleEntryType)
         Assertions.assertTrue(multiQueue.isEmpty())
     }
 
@@ -346,7 +496,7 @@ abstract class AbstractMultiQueueTest
     {
         Assertions.assertTrue(multiQueue.isEmpty())
         val type = "clear-for-type-does-not-exist"
-        multiQueue.clearForType(type)
+        multiQueue.clearForTypeInternal(type)
         Assertions.assertTrue(multiQueue.isEmpty())
     }
 
@@ -403,9 +553,10 @@ abstract class AbstractMultiQueueTest
 
         val persistedMessage = multiQueue.peekForType(message.type)
         Assertions.assertTrue(persistedMessage.isPresent)
-        Assertions.assertEquals(message, persistedMessage.get())
+        val messageToUpdate = persistedMessage.get()
+        Assertions.assertEquals(message, messageToUpdate)
 
-        persistedMessage.get().payload = data2
+        messageToUpdate.payload = data2
 
         // Since the InMemoryMultiQueue works off object references, the data will actually be updated in place, other mechanisms
         // that are backed by other mechanisms will need to explicitly persist the change before it is reflected
@@ -418,13 +569,17 @@ abstract class AbstractMultiQueueTest
             Assertions.assertNotEquals(message.payload, persistedMessage.get().payload)
         }
 
-        multiQueue.persistMessage(persistedMessage.get())
+        multiQueue.persistMessage(messageToUpdate)
 
         val reRetrievedMessage = multiQueue.peekForType(message.type)
         Assertions.assertTrue(reRetrievedMessage.isPresent)
-        Assertions.assertEquals(persistedMessage.get(), reRetrievedMessage.get())
+        Assertions.assertEquals(messageToUpdate, reRetrievedMessage.get())
     }
 
+    /**
+     * Test [MultiQueue.persistMessage] when the incoming message has a null `id`.
+     * A [MessageUpdateException] will be thrown for all [MultiQueue] except the [InMemoryMultiQueue].
+     */
     @Test
     fun testPersistMessage_messageHasNullID()
     {
@@ -433,7 +588,7 @@ abstract class AbstractMultiQueueTest
 
         if (multiQueue !is InMemoryMultiQueue)
         {
-            // If its an in-memory queue there will be no exception thrown
+            // If it's an in-memory queue there will be no exception thrown
             Assertions.assertThrows(MessageUpdateException::class.java) {
                 multiQueue.persistMessage(message)
             }

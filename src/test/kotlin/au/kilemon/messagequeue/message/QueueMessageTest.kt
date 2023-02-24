@@ -95,8 +95,8 @@ class QueueMessageTest
         message1.payload = obj
         message2.payload = obj
 
-        Assertions.assertNull(message1.payloadBytes)
-        Assertions.assertNull(message2.payloadBytes)
+        message1.payloadBytes = null
+        message2.payloadBytes = null
         Assertions.assertEquals(message1.payload, message2.payload)
         Assertions.assertEquals(message1, message2)
     }
@@ -181,15 +181,13 @@ class QueueMessageTest
     @Test
     fun testResolvePayload_payloadNotNullBytesNotNull()
     {
-        val payload = "testResolvePayload_payloadNotNullBytesNotNull"
-        val payloadBytes = "payload-bytes"
-        val message = QueueMessage(payloadBytes, type = "test")
-        message.payload = payload
-        Assertions.assertEquals(payload, message.payload)
-        Assertions.assertArrayEquals(SerializationUtils.serialize(payloadBytes), message.payloadBytes)
+        val payload1 = "testResolvePayload_payloadNotNullBytesNotNull"
+        val payload2 = "payload-bytes"
+        val message = QueueMessage(payload1, type = "test")
+        message.payloadBytes = SerializationUtils.serialize(payload2)
         message.resolvePayloadObject()
-        Assertions.assertEquals(payload, message.payload)
-        Assertions.assertArrayEquals(SerializationUtils.serialize(payloadBytes), message.payloadBytes)
+        Assertions.assertEquals(payload1, message.payload)
+        Assertions.assertArrayEquals(SerializationUtils.serialize(payload2), message.payloadBytes)
     }
 
     /**
@@ -217,11 +215,10 @@ class QueueMessageTest
     fun testResolvePayload_payloadNullBytesNotNull()
     {
         val payload = "testResolvePayload_payloadNullBytesNotNull"
-        val message = QueueMessage(payload, type = "test")
+        val message = QueueMessage(null, type = "test")
+        message.payloadBytes = SerializationUtils.serialize(payload)
 
         // At this point the payload property will quest payloadBytes, we need to overwrite
-        message.payload = null
-        Assertions.assertArrayEquals(SerializationUtils.serialize(payload), message.payloadBytes)
         Assertions.assertNull(message.payload)
         message.resolvePayloadObject()
         Assertions.assertArrayEquals(SerializationUtils.serialize(payload), message.payloadBytes)
