@@ -61,28 +61,17 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
     override fun getAssignedMessagesForType(queueType: String, assignedTo: String?): Queue<QueueMessage>
     {
         val queue = ConcurrentLinkedQueue<QueueMessage>()
-        val set = redisTemplate.opsForSet().members(appendPrefix(queueType))
-        if (!set.isNullOrEmpty())
+        val existingQueue = getQueueForType(queueType)
+        if (existingQueue.isNotEmpty())
         {
             if (assignedTo == null)
             {
-                queue.addAll(set.stream().filter { message -> message.assignedTo != null }.collect(Collectors.toList()))
+                queue.addAll(existingQueue.stream().filter { message -> message.assignedTo != null }.collect(Collectors.toList()))
             }
             else
             {
-                queue.addAll(set.stream().filter { message -> message.assignedTo == assignedTo }.collect(Collectors.toList()))
+                queue.addAll(existingQueue.stream().filter { message -> message.assignedTo == assignedTo }.collect(Collectors.toList()))
             }
-        }
-        return queue
-    }
-
-    override fun getUnassignedMessagesForType(queueType: String): Queue<QueueMessage>
-    {
-        val queue = ConcurrentLinkedQueue<QueueMessage>()
-        val set = redisTemplate.opsForSet().members(appendPrefix(queueType))
-        if (!set.isNullOrEmpty())
-        {
-            queue.addAll(set.stream().filter { message -> message.assignedTo == null }.collect(Collectors.toList()))
         }
         return queue
     }
@@ -147,10 +136,10 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
 
     override fun pollInternal(queueType: String): Optional<QueueMessage>
     {
-        val set = redisTemplate.opsForSet().members(appendPrefix(queueType))
-        if (!set.isNullOrEmpty())
+        val queue = getQueueForType(queueType)
+        if (queue.isNotEmpty())
         {
-            return Optional.of(set.iterator().next())
+            return Optional.of(queue.iterator().next())
         }
         return Optional.empty()
     }

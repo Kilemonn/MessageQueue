@@ -8,7 +8,9 @@ import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicLong
+import java.util.stream.Collectors
 import kotlin.jvm.Throws
 
 /**
@@ -114,19 +116,43 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     /**
      * Retrieves only assigned messages in the sub-queue for the provided [queueType].
      *
+     * By default, this calls [getQueueForType] and iterates through this to determine if the [QueueMessage.assignedTo]
+     * field is `not-null`, if [assignedTo] is `null` or is equal to the provided [assignedTo] if it is `not-null`.
+     *
      * @param queueType the identifier of the sub-queue [Queue]
      * @param assignedTo to further filter the messages returned this can be provided
      * @return a limited version of the [Queue] containing only assigned messages
      */
     fun getAssignedMessagesForType(queueType: String, assignedTo: String?): Queue<QueueMessage>
+    {
+        val queue = ConcurrentLinkedQueue<QueueMessage>()
+        val queueForType = getQueueForType(queueType)
+        if (assignedTo == null)
+        {
+            queue.addAll(queueForType.stream().filter { message -> message.assignedTo != null }.collect(Collectors.toList()))
+        }
+        else
+        {
+            queue.addAll(queueForType.stream().filter { message -> message.assignedTo == assignedTo }.collect(Collectors.toList()))
+        }
+        return queue
+    }
 
     /**
      * Retrieves only unassigned messages in the sub-queue for the provided [queueType].
+     *
+     * By default, this iterates over [getQueueForType] and includes only entries where [QueueMessage.assignedTo] is `null`.
      *
      * @param queueType the identifier of the sub-queue [Queue]
      * @return a limited version of the [Queue] containing only unassigned messages
      */
     fun getUnassignedMessagesForType(queueType:String): Queue<QueueMessage>
+    {
+        val queue = ConcurrentLinkedQueue<QueueMessage>()
+        val queueForType = getQueueForType(queueType)
+        queue.addAll(queueForType.stream().filter { message -> message.assignedTo == null }.collect(Collectors.toList()))
+        return queue
+    }
 
     /**
      * Get a map of assignee identifiers and the sub-queue identifier that they own messages in.
