@@ -607,15 +607,18 @@ abstract class AbstractMultiQueueTest
         val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), type)
         val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), type)
 
-        // Assign message 1 and 2
+        // Assign message 1
         val assignedTo = "me"
         message.assignedTo = assignedTo
-        message2.assignedTo = assignedTo
         Assertions.assertNull(message3.assignedTo)
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.add(message2))
         Assertions.assertTrue(multiQueue.add(message3))
+
+        // Assign and update message 2, to check that even if its changed and re-enqueued that it retains the correct order
+        message2.assignedTo = assignedTo
+        multiQueue.persistMessage(message2)
 
         // Ensure all messages are in the queue
         val messagesInSubQueue = multiQueue.getQueueForType(type)
@@ -649,7 +652,6 @@ abstract class AbstractMultiQueueTest
         val assignedTo = "me"
         val assignedTo2 = "me2"
         message.assignedTo = assignedTo
-        message2.assignedTo = assignedTo
         message3.assignedTo = assignedTo2
         Assertions.assertNull(message4.assignedTo)
 
@@ -657,6 +659,10 @@ abstract class AbstractMultiQueueTest
         Assertions.assertTrue(multiQueue.add(message2))
         Assertions.assertTrue(multiQueue.add(message3))
         Assertions.assertTrue(multiQueue.add(message4))
+
+        // Assign and update message 2, to check that even if its changed and re-enqueued that it retains the correct order
+        message2.assignedTo = assignedTo
+        multiQueue.persistMessage(message2)
 
         // Ensure all messages are in the queue
         val messagesInSubQueue = multiQueue.getQueueForType(type)
@@ -690,13 +696,17 @@ abstract class AbstractMultiQueueTest
         val assignedTo = "you"
         message.assignedTo = assignedTo
         message2.assignedTo = assignedTo
-        Assertions.assertNull(message3.assignedTo)
+        message3.assignedTo = assignedTo
         Assertions.assertNull(message4.assignedTo)
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.add(message2))
         Assertions.assertTrue(multiQueue.add(message3))
         Assertions.assertTrue(multiQueue.add(message4))
+
+        // Now unassign message 3 to make sure persisted messages are ordered properly after they are changed
+        message3.assignedTo = null
+        multiQueue.persistMessage(message3)
 
         // Ensure all messages are in the queue
         val messagesInSubQueue = multiQueue.getQueueForType(type)

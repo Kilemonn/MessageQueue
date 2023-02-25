@@ -360,7 +360,7 @@ class MessageQueueControllerTest
         keys.values.forEach { detailList -> Assertions.assertEquals(1, detailList.size) }
         Assertions.assertEquals(entries.first[0].removePayload(false).uuid, keys[type]!![0].uuid)
         // Since we did not pass a detailed flag value, ensure the payload is null
-        Assertions.assertNull(entries.first[0].removePayload(false).payload)
+        Assertions.assertEquals("***", entries.first[0].removePayload(false).payload)
         Assertions.assertEquals(entries.first[0].removePayload(false).assignedTo, keys[type]!![0].assignedTo)
         Assertions.assertEquals(entries.first[0].removePayload(false).type, keys[type]!![0].type)
     }

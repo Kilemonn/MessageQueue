@@ -87,6 +87,7 @@ class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @C
             newMessage.type = type
             newMessage.assignedTo = assignedTo
             newMessage.uuid = uuid
+            newMessage.payload = "***" // Mark as stars to indicate that it is there but not returned
             return newMessage
         }
         resolvePayloadObject()

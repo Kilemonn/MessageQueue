@@ -52,29 +52,6 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         return queueForType
     }
 
-    override fun getAssignedMessagesForType(queueType: String, assignedTo: String?): Queue<QueueMessage>
-    {
-        val queue = ConcurrentLinkedQueue<QueueMessage>()
-        val queueForType = getQueueForType(queueType)
-        if (assignedTo == null)
-        {
-            queue.addAll(queueForType.stream().filter { message -> message.assignedTo != null }.collect(Collectors.toList()))
-        }
-        else
-        {
-            queue.addAll(queueForType.stream().filter { message -> message.assignedTo == assignedTo }.collect(Collectors.toList()))
-        }
-        return queue
-    }
-
-    override fun getUnassignedMessagesForType(queueType: String): Queue<QueueMessage>
-    {
-        val queue = ConcurrentLinkedQueue<QueueMessage>()
-        val queueForType = getQueueForType(queueType)
-        queue.addAll(queueForType.stream().filter { message -> message.assignedTo == null }.collect(Collectors.toList()))
-        return queue
-    }
-
     override fun performHealthCheckInternal()
     {
         // Nothing to check for the in-memory storage since there is no external storage that needs to be checked
