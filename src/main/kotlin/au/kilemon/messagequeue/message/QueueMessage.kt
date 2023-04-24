@@ -1,7 +1,6 @@
 package au.kilemon.messagequeue.message
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import org.hibernate.annotations.Type
 import org.springframework.util.SerializationUtils
 import java.io.Serializable
 import java.util.*

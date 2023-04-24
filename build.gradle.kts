@@ -18,7 +18,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web:2.7.5")
+    implementation("org.springframework.boot:spring-boot-starter-web:3.0.6")
     implementation("org.springframework.boot:spring-boot-starter-validation:2.7.5")
 
     // JPA dependency
@@ -27,7 +27,7 @@ dependencies {
     // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-ui
     implementation("org.springdoc:springdoc-openapi-ui:1.6.11")
 
-    implementation("org.springframework.boot:spring-boot-starter-data-redis:2.7.5")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis:3.0.6")
 
     implementation("com.google.code.gson:gson:2.10")
 
@@ -40,9 +40,9 @@ dependencies {
     // https://mvnrepository.com/artifact/com.mysql/mysql-connector-j
     implementation("com.mysql:mysql-connector-j:8.0.31")
     // https://mvnrepository.com/artifact/org.postgresql/postgresql
-    implementation("org.postgresql:postgresql:42.5.0")
+    implementation("org.postgresql:postgresql:42.5.1")
 
-    testImplementation("org.springframework.boot:spring-boot-starter-test:2.7.5")
+    testImplementation("org.springframework.boot:spring-boot-starter-test:3.0.6")
     // Required to mock MultiQueue objects since they apparently override a final 'remove(Object)' method.
     testImplementation("org.mockito:mockito-inline:5.1.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")

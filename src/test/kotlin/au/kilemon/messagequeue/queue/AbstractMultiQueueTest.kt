@@ -8,7 +8,6 @@ import au.kilemon.messagequeue.queue.sql.SqlMultiQueue
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
 import au.kilemon.messagequeue.settings.MessageQueueSettings
-import org.junit.Assert
 import org.junit.jupiter.api.*
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -401,7 +400,7 @@ abstract class AbstractMultiQueueTest
     }
 
     /**
-     * Test the [MultiQueue.addAll] to ensure that if a duplicate element is added that `false` is returned to indicate that not all of the provided elements were added to the queue.
+     * Test the [MultiQueue.addAll] to ensure that if a duplicate element is added that `false` is returned to indicate that not all the provided elements were added to the queue.
      */
     @Test
     fun testAddAll_throwsDuplicateException()
@@ -704,7 +703,7 @@ abstract class AbstractMultiQueueTest
         Assertions.assertTrue(multiQueue.add(message3))
         Assertions.assertTrue(multiQueue.add(message4))
 
-        // Now unassign message 3 to make sure persisted messages are ordered properly after they are changed
+        // Now un-assign message 3 to make sure persisted messages are ordered properly after they are changed
         message3.assignedTo = null
         multiQueue.persistMessage(message3)
 
