@@ -31,7 +31,7 @@ import kotlin.collections.HashMap
  * The REST controller for the [MultiQueue]. It exposes endpoints to access and manipulate the queue and the messages inside it.
  * Using a base path of [MessageQueueController.MESSAGE_QUEUE_BASE_PATH] and various endpoints to manage the [MultiQueue].
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @Tag(name = MessageQueueController.MESSAGE_QUEUE_TAG)
 @RestController

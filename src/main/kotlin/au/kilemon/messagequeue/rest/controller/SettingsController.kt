@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * An endpoint which contains information about the running application.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @Tag(name = SettingsController.SETTINGS_TAG)
 @RestController

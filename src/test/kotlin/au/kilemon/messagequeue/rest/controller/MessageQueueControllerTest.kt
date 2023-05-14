@@ -32,7 +32,7 @@ import java.util.*
  * A test class for the [MessageQueueController].
  * Providing tests of the context and endpoint validation/handling itself.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
 @WebMvcTest(controllers = [MessageQueueController::class], properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=IN_MEMORY"])
@@ -42,7 +42,7 @@ class MessageQueueControllerTest
     /**
      * A [TestConfiguration] for the outer [MessageQueueControllerTest] class.
      *
-     * @author github.com/KyleGonzalez
+     * @author github.com/Kilemonn
      */
     @TestConfiguration
     open class TestConfig

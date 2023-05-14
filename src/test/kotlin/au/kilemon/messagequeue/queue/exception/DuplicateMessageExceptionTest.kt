@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 /**
  * A unit test class for the [DuplicateMessageException] for any specific tests related to this exception.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 class DuplicateMessageExceptionTest
 {

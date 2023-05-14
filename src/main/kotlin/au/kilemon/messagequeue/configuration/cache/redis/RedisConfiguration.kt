@@ -22,7 +22,7 @@ import java.net.InetSocketAddress
  * A class that creates the required [Bean] objects when redis is enabled.
  * This will create either a standalone configuration or a sentinel configuration based on the provided properties.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @Configuration
 class RedisConfiguration: HasLogger

@@ -12,7 +12,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 /**
  * Test the [MessageQueueSettings] values when they are set via the system properties.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
 @TestPropertySource(properties = [
@@ -27,7 +27,7 @@ class MessageQueueSettingsTest
     /**
      * A [TestConfiguration] for the [MessageQueueSettingsDefaultTest] class.
      *
-     * @author github.com/KyleGonzalez
+     * @author github.com/Kilemonn
      */
     @TestConfiguration
     internal class MessageQueueSettingsTestConfiguration

@@ -9,7 +9,7 @@ import java.util.*
 /**
  * A [Configuration] class to logging specific [Bean] initialisation such as for the [ReloadableResourceBundleMessageSource].
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @Configuration
 class LoggingConfiguration : HasLogger

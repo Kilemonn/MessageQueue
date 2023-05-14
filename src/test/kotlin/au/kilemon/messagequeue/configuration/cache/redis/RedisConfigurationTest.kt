@@ -15,7 +15,7 @@ import java.util.stream.IntStream
 /**
  * A test class for [RedisConfiguration] to test any helper methods or initialisation code.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
 class RedisConfigurationTest
@@ -23,7 +23,7 @@ class RedisConfigurationTest
     /**
      * A Spring configuration that is used for this test class.
      *
-     * @author github.com/KyleGonzalez
+     * @author github.com/Kilemonn
      */
     @TestConfiguration
     open class RedisConfigurationTestConfiguration

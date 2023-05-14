@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder
 /**
  * A response object which wraps the [QueueMessage], and exposes the `type` [String].
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @JsonPropertyOrder("queueType", "message")
 data class MessageResponse(val message: QueueMessage, val queueType: String = message.type)

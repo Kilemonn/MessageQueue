@@ -18,7 +18,7 @@ import java.util.HashMap
 /**
  * A test class for the [MYSQL_CONTAINER] to ensure the [SqlMultiQueue] works as expected with this underlying data storage DB.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @ContextConfiguration(initializers = [MySqlMultiQueueTest.Initializer::class])
 @Import( *[QueueConfiguration::class, LoggingConfiguration::class, AbstractMultiQueueTest.AbstractMultiQueueTestConfiguration::class] )
@@ -45,7 +45,7 @@ class MySqlMultiQueueTest : AbstractSqlMultiQueueTest()
     /**
      * The test initialiser for [MySqlMultiQueueTest] to initialise the container and test properties.
      *
-     * @author github.com/KyleGonzalez
+     * @author github.com/Kilemonn
      */
     internal class Initializer : ApplicationContextInitializer<ConfigurableApplicationContext>
     {

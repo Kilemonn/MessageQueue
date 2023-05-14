@@ -42,7 +42,7 @@ import java.util.*
  * This could also impact how the application actually runs since everything is [Lazy] initialised, so it could cause potentially some
  * delay when initialising the beans in some scenarios. At the moment everything is generally small, so it should be okay.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
 @TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=REDIS", "${MessageQueueSettings.REDIS_PREFIX}=test"])
@@ -72,7 +72,7 @@ class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest()
     /**
      * The test initialiser for [RedisStandAloneMultiQueueTest] to initialise the container and test properties.
      *
-     * @author github.com/KyleGonzalez
+     * @author github.com/Kilemonn
      */
     internal class Initializer : ApplicationContextInitializer<ConfigurableApplicationContext>
     {

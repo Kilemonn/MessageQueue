@@ -26,7 +26,7 @@ import java.util.stream.Stream
  * This class can be extended, and the [MultiQueue] member overridden to easily ensure that the different
  * [MultiQueue] implementations all operate as expected in the same test cases.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class AbstractMultiQueueTest
@@ -34,7 +34,7 @@ abstract class AbstractMultiQueueTest
     /**
      * A Spring configuration that is used for this test class.
      *
-     * @author github.com/KyleGonzalez
+     * @author github.com/Kilemonn
      */
     @TestConfiguration
     class AbstractMultiQueueTestConfiguration

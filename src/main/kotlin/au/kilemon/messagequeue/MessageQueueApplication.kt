@@ -7,7 +7,7 @@ import org.springframework.boot.runApplication
 /**
  * The main application class.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @SpringBootApplication
 open class MessageQueueApplication

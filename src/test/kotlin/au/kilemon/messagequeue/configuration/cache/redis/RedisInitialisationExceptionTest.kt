@@ -7,7 +7,7 @@ import java.lang.RuntimeException
 /**
  * A unit test class for the [RedisInitialisationException] for any specific tests related to this exception.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 class RedisInitialisationExceptionTest
 {

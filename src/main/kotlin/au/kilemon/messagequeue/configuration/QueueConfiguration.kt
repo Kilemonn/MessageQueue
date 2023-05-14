@@ -24,7 +24,7 @@ import java.util.*
  * A [Configuration] class holding all required [Bean]s for the [MessageQueueApplication] to run.
  * Mainly [Bean]s related to the [MultiQueue].
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @Configuration
 class QueueConfiguration : HasLogger

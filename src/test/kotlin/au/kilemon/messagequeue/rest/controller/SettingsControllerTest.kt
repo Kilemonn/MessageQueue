@@ -24,7 +24,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 /**
  * A test class for the [SettingsController] class. Mainly testing the endpoints in the `RestController`.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
 @WebMvcTest(controllers = [SettingsController::class], properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=IN_MEMORY"])
@@ -34,7 +34,7 @@ class SettingsControllerTest
     /**
      * The test configuration to be used by the [SettingsControllerTest] class.
      *
-     * @author github.com/KyleGonzalez
+     * @author github.com/Kilemonn
      */
     @TestConfiguration
     internal class TestConfig

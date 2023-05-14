@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component
  * `spring.jpa.hibernate.ddl-auto=create`
  * This will ensure the underlying tables will be created on start up if they do not exist.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @Component
 class MessageQueueSettings

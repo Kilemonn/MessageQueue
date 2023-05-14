@@ -9,7 +9,7 @@ import java.util.*
  * A test class for the [QueueMessage].
  * Specifically to verify the [equals] and [hashCode] methods and how they interact with containers and other things.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 class QueueMessageTest
 {

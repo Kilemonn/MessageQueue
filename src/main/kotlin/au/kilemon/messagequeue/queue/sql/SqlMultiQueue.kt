@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicLong
  * A database backed [MultiQueue]. All operations are performed directly on the database it is the complete source of truth.
  * It allows the messages to never go out of sync in a case where there are multiple [MultiQueue]s working on the same data source.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 class SqlMultiQueue : MultiQueue, HasLogger
 {

@@ -29,7 +29,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
  *
  * Need to define `spring.autoconfigure.exclude=` as empty to override the default in `application.properties` otherwise JPA will no auto initialise.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
 @Testcontainers

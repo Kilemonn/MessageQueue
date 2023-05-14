@@ -11,7 +11,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 /**
  * Test the [MessageQueueSettings] default annotation values are set correctly.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
 class MessageQueueSettingsDefaultTest
@@ -19,7 +19,7 @@ class MessageQueueSettingsDefaultTest
     /**
      * A [TestConfiguration] for the [MessageQueueSettingsDefaultTest] class.
      *
-     * @author github.com/KyleGonzalez
+     * @author github.com/Kilemonn
      */
     @TestConfiguration
     internal class MessageQueueSettingsDefaultTestConfiguration

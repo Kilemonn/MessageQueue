@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory
  *      }
  * }
  * ```
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 interface HasLogger
 {

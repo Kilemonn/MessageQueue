@@ -3,7 +3,7 @@ package au.kilemon.messagequeue.logging
 /**
  * An `object` that holds `const` [String] values used to look up in the `MessageSource` in the `messages.properties`.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 object Messages
 {

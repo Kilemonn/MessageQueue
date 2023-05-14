@@ -14,7 +14,7 @@ import java.util.*
  *
  * Reference: https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#jpa.query-methods.query-creation
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @Repository
 interface QueueMessageRepository: JpaRepository<QueueMessage, Long>

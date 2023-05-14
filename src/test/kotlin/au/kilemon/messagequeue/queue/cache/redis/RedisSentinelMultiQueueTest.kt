@@ -33,7 +33,7 @@ import java.util.*
  *
  * Very similar to [RedisStandAloneMultiQueueTest], refer to comments there for more detail about the flow of these tests.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
 @TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=REDIS"])
@@ -67,7 +67,7 @@ class RedisSentinelMultiQueueTest: AbstractMultiQueueTest()
     /**
      * The test initialiser for [RedisSentinelMultiQueueTest] to initialise the container and test properties.
      *
-     * @author github.com/KyleGonzalez
+     * @author github.com/Kilemonn
      */
     internal class Initializer : ApplicationContextInitializer<ConfigurableApplicationContext>
     {

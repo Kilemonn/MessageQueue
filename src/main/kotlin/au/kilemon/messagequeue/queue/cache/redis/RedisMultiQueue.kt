@@ -18,7 +18,7 @@ import java.util.stream.Collectors
  * All messages stored and accessed directly from the `Redis` cache.
  * This increasing overhead when checking UUID, but it is required incase the cache is edited manually, or by another message managing instance.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 class RedisMultiQueue(private val prefix: String = "", private val redisTemplate: RedisTemplate<String, QueueMessage>) : MultiQueue, HasLogger
 {

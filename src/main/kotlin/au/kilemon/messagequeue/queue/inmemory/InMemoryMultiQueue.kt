@@ -17,7 +17,7 @@ import kotlin.jvm.Throws
  * The InMemoryMultiQueue which implements the [MultiQueue]. It holds a [ConcurrentHashMap] with [Queue] entries.
  * Using the provided [String], specific entries in the queue can be manipulated and changed as needed.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 open class InMemoryMultiQueue : MultiQueue, HasLogger
 {

@@ -18,7 +18,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 /**
  * A test class for the [InMemoryMultiQueue] Component class.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
 @Import( *[QueueConfiguration::class, LoggingConfiguration::class, AbstractMultiQueueTest.AbstractMultiQueueTestConfiguration::class] )

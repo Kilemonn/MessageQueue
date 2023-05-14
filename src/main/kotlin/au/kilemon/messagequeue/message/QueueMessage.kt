@@ -11,7 +11,7 @@ import javax.persistence.*
  * This object wraps a [Any] type `T` which is the payload to be stored in the queue. (This is actually a [Serializable] but causes issues in initialisation
  * if the type is an `interface`. This needs to be [Serializable] if you want to use it with `Redis` or anything else).
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @Entity
 @Table(name = QueueMessage.TABLE_NAME) // TODO: Schema configuration schema = "\${${MessageQueueSettings.SQL_SCHEMA}:${MessageQueueSettings.SQL_SCHEMA_DEFAULT}}")

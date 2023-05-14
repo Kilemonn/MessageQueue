@@ -19,7 +19,7 @@ import java.util.*
 /**
  * A test class for the [POSTGRES_CONTAINER] to ensure the [SqlMultiQueue] works as expected with this underlying data storage DB.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 @ContextConfiguration(initializers = [PostgreSqlMultiQueueTest.Initializer::class])
 @Import( *[QueueConfiguration::class, LoggingConfiguration::class, AbstractMultiQueueTest.AbstractMultiQueueTestConfiguration::class] )
@@ -46,7 +46,7 @@ class PostgreSqlMultiQueueTest: AbstractSqlMultiQueueTest()
     /**
      * The test initialiser for [PostgreSqlMultiQueueTest] to initialise the container and test properties.
      *
-     * @author github.com/KyleGonzalez
+     * @author github.com/Kilemonn
      */
     internal class Initializer : ApplicationContextInitializer<ConfigurableApplicationContext>
     {

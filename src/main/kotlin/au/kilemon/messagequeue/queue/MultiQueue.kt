@@ -18,7 +18,7 @@ import kotlin.jvm.Throws
  * It contains various extra methods for interfacing with the [MultiQueue] using the [String]
  * to manipulate the appropriate underlying [Queue]s.
  *
- * @author github.com/KyleGonzalez
+ * @author github.com/Kilemonn
  */
 interface MultiQueue: Queue<QueueMessage>, HasLogger
 {
