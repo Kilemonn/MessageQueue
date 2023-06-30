@@ -102,7 +102,7 @@ class MessageQueueControllerTest
     fun testGetAllQueueTypeInfo()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE + "/")
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.content().json("0"))
@@ -117,7 +117,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(1, multiQueue.getQueueForType(message2.type).size)
         Assertions.assertEquals(2, multiQueue.size)
 
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE + "/")
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.content().json("2"))
