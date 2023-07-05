@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicLong
  */
 class SqlMultiQueue : MultiQueue, HasLogger
 {
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     @Lazy
     @Autowired

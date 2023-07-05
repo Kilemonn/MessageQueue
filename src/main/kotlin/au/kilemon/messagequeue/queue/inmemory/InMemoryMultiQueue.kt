@@ -21,7 +21,7 @@ import kotlin.jvm.Throws
  */
 open class InMemoryMultiQueue : MultiQueue, HasLogger
 {
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     /**
      * An internal [Map] that holds known [UUID]s (as a [String]) and their related `queueType` to quickly find entries within the [MultiQueue].

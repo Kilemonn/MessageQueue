@@ -38,7 +38,7 @@ import kotlin.collections.HashMap
 @RequestMapping(MessageQueueController.MESSAGE_QUEUE_BASE_PATH)
 open class MessageQueueController : HasLogger
 {
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     companion object
     {

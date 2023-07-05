@@ -27,7 +27,7 @@ import java.net.InetSocketAddress
 @Configuration
 class RedisConfiguration: HasLogger
 {
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     companion object
     {

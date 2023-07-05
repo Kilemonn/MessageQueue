@@ -22,7 +22,7 @@ import java.util.stream.Collectors
  */
 class RedisMultiQueue(private val prefix: String = "", private val redisTemplate: RedisTemplate<String, QueueMessage>) : MultiQueue, HasLogger
 {
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
 
