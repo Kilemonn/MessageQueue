@@ -53,7 +53,7 @@ class QueueConfiguration : HasLogger
     @Bean
     open fun getMultiQueue(): MultiQueue
     {
-        LOG.info(messageSource.getMessage(Messages.VERSION_START_UP, null, Locale.getDefault()), MessageQueueApplication.VERSION)
+        LOG.info(messageSource.getMessage(Messages.VERSION_START_UP, arrayOf(MessageQueueApplication.VERSION), Locale.getDefault()))
 
         // Default to in-memory
         var queue: MultiQueue = InMemoryMultiQueue()
@@ -66,7 +66,7 @@ class QueueConfiguration : HasLogger
             queue = SqlMultiQueue()
         }
         queue.initialiseQueueIndex()
-        LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType)
+        LOG.info(messageSource.getMessage(Messages.INITIALISING_QUEUE, arrayOf(queue::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType), Locale.getDefault()))
 
         return queue
     }

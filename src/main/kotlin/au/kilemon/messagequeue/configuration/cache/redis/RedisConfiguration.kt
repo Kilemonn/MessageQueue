@@ -1,6 +1,8 @@
 package au.kilemon.messagequeue.configuration.cache.redis
 
+import au.kilemon.messagequeue.logging.ExceptionMessages
 import au.kilemon.messagequeue.logging.HasLogger
+import au.kilemon.messagequeue.logging.Messages
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import lombok.Generated
@@ -9,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.support.ReloadableResourceBundleMessageSource
 import org.springframework.data.redis.connection.RedisConnectionFactory
 import org.springframework.data.redis.connection.RedisSentinelConfiguration
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration
@@ -16,6 +19,8 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.serializer.StringRedisSerializer
 import java.net.InetSocketAddress
+import java.util.*
+import kotlin.collections.ArrayList
 
 
 /**
@@ -28,6 +33,11 @@ import java.net.InetSocketAddress
 class RedisConfiguration: HasLogger
 {
     override val LOG: Logger = this.initialiseLogger()
+
+    @Autowired
+    @get:Generated
+    @set:Generated
+    lateinit var messageSource: ReloadableResourceBundleMessageSource
 
     companion object
     {
@@ -111,21 +121,20 @@ class RedisConfiguration: HasLogger
      */
     fun getSentinelConfiguration(): RedisSentinelConfiguration
     {
-        LOG.info("Initialising redis sentinel configuration with the following configuration: Endpoints {}, master {}. With prefix {}.",
-            messageQueueSettings.redisEndpoint, messageQueueSettings.redisMasterName, messageQueueSettings.redisPrefix)
+        LOG.info(messageSource.getMessage(Messages.RedisConfiguration.Sentinel.INITIALISING, arrayOf(messageQueueSettings.redisEndpoint, messageQueueSettings.redisMasterName, messageQueueSettings.redisPrefix), Locale.getDefault()))
         val redisSentinelConfiguration = RedisSentinelConfiguration()
         redisSentinelConfiguration.master(messageQueueSettings.redisMasterName)
         val sentinelEndpoints = stringToInetSocketAddresses(messageQueueSettings.redisEndpoint, REDIS_SENTINEL_DEFAULT_PORT)
 
         if (sentinelEndpoints.isEmpty())
         {
-            LOG.error("No redis endpoints defined for sentinel configuration. Unable to initialise redis configuration.")
-            throw RedisInitialisationException("No redis endpoint(s) provided.")
+            LOG.error(messageSource.getMessage(Messages.RedisConfiguration.Sentinel.NO_ENDPOINT, null, Locale.getDefault()))
+            throw RedisInitialisationException(messageSource.getMessage(ExceptionMessages.RedisConfiguration.Sentinel.NO_ENDPOINT, null, Locale.getDefault()))
         }
 
         for (sentinelEndpoint in sentinelEndpoints)
         {
-            LOG.debug("Initialising redis sentinel configuration with host {} and port {}.", sentinelEndpoint.hostName, sentinelEndpoint.port)
+            LOG.debug(messageSource.getMessage(Messages.RedisConfiguration.Sentinel.INITIALISING_WITH_HOST_AND_PORT, arrayOf(sentinelEndpoint.hostName, sentinelEndpoint.port), Locale.getDefault()))
             redisSentinelConfiguration.sentinel(sentinelEndpoint.hostName, sentinelEndpoint.port)
         }
         return redisSentinelConfiguration
@@ -136,18 +145,17 @@ class RedisConfiguration: HasLogger
      */
     fun getStandAloneConfiguration(): RedisStandaloneConfiguration
     {
-        LOG.info("Initialising redis configuration with the following configuration: Endpoint [{}], prefix [{}].",
-            messageQueueSettings.redisEndpoint, messageQueueSettings.redisPrefix)
+        LOG.info(messageSource.getMessage(Messages.RedisConfiguration.Standalone.INITIALISING, arrayOf(messageQueueSettings.redisEndpoint, messageQueueSettings.redisPrefix), Locale.getDefault()))
         val redisConfiguration = RedisStandaloneConfiguration()
         val redisEndpoints = stringToInetSocketAddresses(messageQueueSettings.redisEndpoint, REDIS_DEFAULT_PORT)
         if (redisEndpoints.isEmpty())
         {
-            LOG.error("No redis endpoints defined for standalone configuration. Unable to initialise redis configuration.")
-            throw RedisInitialisationException("No redis endpoint(s) provided.")
+            LOG.error(messageSource.getMessage(Messages.RedisConfiguration.Standalone.NO_ENDPOINT, null, Locale.getDefault()))
+            throw RedisInitialisationException(messageSource.getMessage(ExceptionMessages.RedisConfiguration.Standalone.NO_ENDPOINT, null, Locale.getDefault()))
         }
         else if (redisEndpoints.size > 1)
         {
-            LOG.warn("Multiple redis endpoints defined for standalone configuration. Using first provided endpoint: [{}:{}].", redisEndpoints[0].hostName, redisEndpoints[0].port)
+            LOG.warn(messageSource.getMessage(Messages.RedisConfiguration.Standalone.MULTIPLE_ENDPOINTS, arrayOf(redisEndpoints[0].hostName, redisEndpoints[0].port), Locale.getDefault()))
         }
 
         redisConfiguration.hostName = redisEndpoints[0].hostName

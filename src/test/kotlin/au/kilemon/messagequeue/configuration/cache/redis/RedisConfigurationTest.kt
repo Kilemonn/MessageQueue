@@ -1,5 +1,7 @@
 package au.kilemon.messagequeue.configuration.cache.redis
 
+import au.kilemon.messagequeue.configuration.QueueConfiguration
+import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -8,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Lazy
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.util.stream.IntStream
@@ -18,6 +21,7 @@ import java.util.stream.IntStream
  * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
+@Import( *[LoggingConfiguration::class, RedisConfiguration::class])
 class RedisConfigurationTest
 {
     /**
@@ -41,6 +45,9 @@ class RedisConfigurationTest
 
     @Autowired
     lateinit var messageQueueSettings: MessageQueueSettings
+
+    @Autowired
+    lateinit var redisConfiguration: RedisConfiguration
 
     /**
      * The default port to be used when no port is supplied with the hostname endpoint string.
@@ -133,9 +140,8 @@ class RedisConfigurationTest
         Assertions.assertTrue(messageQueueSettings.redisUseSentinels.toBoolean())
         Assertions.assertEquals("", messageQueueSettings.redisEndpoint)
         Assertions.assertThrows(RedisInitialisationException::class.java) {
-            val config = RedisConfiguration()
-            config.messageQueueSettings = messageQueueSettings
-            config.getSentinelConfiguration()
+            redisConfiguration.messageQueueSettings = messageQueueSettings
+            redisConfiguration.getSentinelConfiguration()
         }
     }
 
@@ -150,9 +156,8 @@ class RedisConfigurationTest
         Assertions.assertFalse(messageQueueSettings.redisUseSentinels.toBoolean())
         Assertions.assertEquals("", messageQueueSettings.redisEndpoint)
         Assertions.assertThrows(RedisInitialisationException::class.java) {
-            val config = RedisConfiguration()
-            config.messageQueueSettings = messageQueueSettings
-            config.getStandAloneConfiguration()
+            redisConfiguration.messageQueueSettings = messageQueueSettings
+            redisConfiguration.getStandAloneConfiguration()
         }
     }
 
@@ -171,9 +176,8 @@ class RedisConfigurationTest
         messageQueueSettings.redisEndpoint = endpoints
         Assertions.assertFalse(messageQueueSettings.redisUseSentinels.toBoolean())
         Assertions.assertEquals(endpoints, messageQueueSettings.redisEndpoint)
-        val config = RedisConfiguration()
-        config.messageQueueSettings = messageQueueSettings
-        val standAloneConfiguration = config.getStandAloneConfiguration()
+        redisConfiguration.messageQueueSettings = messageQueueSettings
+        val standAloneConfiguration = redisConfiguration.getStandAloneConfiguration()
         Assertions.assertEquals(endpoint1Host, standAloneConfiguration.hostName)
         Assertions.assertEquals(endpoint1Port.toInt(), standAloneConfiguration.port)
     }

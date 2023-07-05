@@ -22,6 +22,8 @@ class LoggingConfiguration : HasLogger
          * The `resource` path to the `messages.properties` file that holds external source messages.
          */
         const val SOURCE_MESSAGES: String = "classpath:messages"
+
+        const val EXCEPTION_SOURCE_MESSAGES: String = "classpath:exception_messages"
     }
 
     /**
@@ -31,10 +33,10 @@ class LoggingConfiguration : HasLogger
     open fun getMessageSource(): ReloadableResourceBundleMessageSource
     {
         val messageSource = ReloadableResourceBundleMessageSource()
-        messageSource.setBasename(SOURCE_MESSAGES)
+        messageSource.setBasenames(SOURCE_MESSAGES, EXCEPTION_SOURCE_MESSAGES)
         messageSource.setDefaultLocale(Locale.getDefault())
         messageSource.setFallbackToSystemLocale(false)
-        LOG.debug(messageSource.getMessage(Messages.INITIALISING_MESSAGE_SOURCE, null, Locale.getDefault()), SOURCE_MESSAGES)
+        LOG.debug(messageSource.getMessage(Messages.INITIALISING_MESSAGE_SOURCE, arrayOf(SOURCE_MESSAGES), Locale.getDefault()))
         return messageSource
     }
 }
