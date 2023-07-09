@@ -26,5 +26,6 @@ WORKDIR /messagequeue
 COPY --from=builder /builder/build/libs/messagequeue-*.jar ./messagequeue.jar
 
 EXPOSE 8080
+EXPOSE 8443
 
 ENTRYPOINT ["java", "-jar", "messagequeue.jar"]
