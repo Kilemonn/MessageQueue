@@ -1,5 +1,7 @@
 package au.kilemon.messagequeue.queue.inmemory
 
+import au.kilemon.messagequeue.MockAllExecutionListener
+import au.kilemon.messagequeue.NotMocked
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
 import org.junit.jupiter.api.Assertions
@@ -7,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
+import org.springframework.test.context.TestExecutionListeners
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.util.*
 
@@ -14,9 +17,11 @@ import java.util.*
  * A [Mockito] test that is used to simulate hard to cover error cases in calling code for all `MultiQueue` related methods that are hard to test.
  */
 @ExtendWith(SpringExtension::class)
+@TestExecutionListeners(MockAllExecutionListener::class)
 class InMemoryMockMultiQueueTest
 {
-    private val multiQueue: InMemoryMultiQueue = Mockito.spy(InMemoryMultiQueue::class.java)
+    @NotMocked([InMemoryMultiQueue::class])
+    private lateinit var multiQueue: InMemoryMultiQueue
 
     @BeforeEach
     fun setUp()
