@@ -8,7 +8,11 @@ import org.springframework.test.context.TestContext
 import org.springframework.test.context.TestExecutionListener
 import org.springframework.util.ReflectionUtils.makeAccessible
 import org.springframework.util.ReflectionUtils.setField
+import java.lang.reflect.Constructor
+import java.util.*
 import javax.annotation.Resource
+import kotlin.collections.HashMap
+import kotlin.collections.HashSet
 import kotlin.reflect.KClass
 
 /**
@@ -21,7 +25,7 @@ class MockAllExecutionListener : TestExecutionListener, Ordered
 {
     private val injectableAnnotation: List<Class<out Annotation>> = injectableAnnotations()
 
-    private val spyClasses: HashSet<KClass<*>> = HashSet()
+    private val spyKClasses: HashSet<KClass<*>> = HashSet()
 
     private val initialisedMocks = HashMap<Class<*>, Any>()
 
@@ -33,6 +37,24 @@ class MockAllExecutionListener : TestExecutionListener, Ordered
     }
 
     /**
+     * Returns the held [testContext], this method is here to be used for mocking.
+     */
+    fun getTestContext(): TestContext
+    {
+        return testContext
+    }
+
+    /**
+     * Set the stored reference to the [TestContext]
+     *
+     * @param testContext the new [TestContext] to set
+     */
+    private fun setTestContext(testContext: TestContext)
+    {
+        this.testContext = testContext
+    }
+
+    /**
      * The entry point for the test instance initialisation.
      * This will iterate over all fields in the test class and inject any mocks required. This will inject mocks into
      * parent class members.
@@ -41,7 +63,7 @@ class MockAllExecutionListener : TestExecutionListener, Ordered
      */
     override fun prepareTestInstance(testContext: TestContext)
     {
-        this.testContext = testContext
+        setTestContext(testContext)
         initialisedMocks[testContext.testClass] = testContext.testInstance
         var clazz = testContext.testClass
         do
@@ -53,7 +75,7 @@ class MockAllExecutionListener : TestExecutionListener, Ordered
 
     /**
      * This method will create a [Mockito.mock] of any field marked with an [injectableAnnotations].
-     * Or, if the field is contained in [spyClasses] it will be created as a [Mockito.spy].
+     * Or, if the field is contained in [spyKClasses] it will be created as a [Mockito.spy].
      * The [NotMocked] class will be instanciated using a first constructor found.
      *
      * @param clazz the current class that we should process
@@ -67,20 +89,59 @@ class MockAllExecutionListener : TestExecutionListener, Ordered
             val notMocked: NotMocked? = field.getAnnotation(NotMocked::class.java)
             if (notMocked != null)
             {
-                spyClasses.addAll(notMocked.spyClasses.asList())
+                spyKClasses.addAll(notMocked.spyClasses.asList())
 
-                val shouldSpyNotMocked = spyClasses.contains(field.type.kotlin)
-                setField(field, testContext.testInstance, if (shouldSpyNotMocked) { createOrGetInstance(field.type, true)} else { field.type.getDeclaredConstructor().newInstance() })
+                setField(field, getTestContext().testInstance, createActualOrSpy(field.type.kotlin))
                 mockAnnotationFields(field.type)
             }
 
             val hasAnyInjectionAnnotations = injectableAnnotation.stream().map { annotation -> field.getAnnotation(annotation) }.toList().filterNotNull().isNotEmpty()
             if (hasAnyInjectionAnnotations)
             {
-                setField(field, createOrGetInstance(clazz), createMockOrSpy(field.type, spyClasses.contains(field.type.kotlin)))
+                setField(field, createOrGetInstance(clazz), createMockOrSpy(field.type, spyKClasses.contains(field.type.kotlin)))
                 mockAnnotationFields(field.type)
             }
         }
+    }
+
+    /**
+     * Create an actual object of [T] or a [Mockito.spy] depending on whether the provided [KClass] exists in the [spyKClasses].
+     * If we need to create an actual object we will delegate the creation to the [findZeroArgConstructor] to find the correct constructor.
+     *
+     * @param kClass the incoming class that we should create an instance or [Mockito.spy] of
+     * @return the constructed [Mockito.spy] OR instance of [T]
+     */
+    private fun <T : Any> createActualOrSpy(kClass: KClass<T>): T
+    {
+        val shouldSpyNotMocked = spyKClasses.contains(kClass)
+        return if (shouldSpyNotMocked)
+        {
+            createOrGetInstance(kClass.java, true)
+        }
+        else
+        {
+            findZeroArgConstructor(kClass.java).newInstance()
+        }
+    }
+
+    /**
+     * Find the [clazz]'s zero arg constructor.
+     *
+     * @param clazz the [Class] to find the zero arg constructor of
+     * @return the zero argument constructor for the provided [Class]
+     * @throws IllegalArgumentException if there is no zero argument constructor defined for this [clazz]
+     */
+    private fun <T> findZeroArgConstructor(clazz: Class<T>): Constructor<T>
+    {
+        val constructors: Array<out Constructor<*>> = clazz.declaredConstructors
+        val defaultConstructor = Arrays.stream(constructors).filter { constructor -> constructor.parameterCount == 0 }.findFirst()
+
+        if (defaultConstructor.isEmpty)
+        {
+            throw IllegalArgumentException("Unable to find default zero argument constructor for class [" + clazz.name + "] for usage with [" + NotMocked::class.qualifiedName + "].")
+        }
+
+        return defaultConstructor.get() as Constructor<T>
     }
 
     /**
