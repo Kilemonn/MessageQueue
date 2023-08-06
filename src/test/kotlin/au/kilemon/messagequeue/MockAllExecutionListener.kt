@@ -39,7 +39,7 @@ class MockAllExecutionListener : TestExecutionListener, Ordered
     /**
      * Returns the held [testContext], this method is here to be used for mocking.
      */
-    fun getTestContext(): TestContext
+    private fun getTestContext(): TestContext
     {
         return testContext
     }
@@ -76,7 +76,7 @@ class MockAllExecutionListener : TestExecutionListener, Ordered
     /**
      * This method will create a [Mockito.mock] of any field marked with an [injectableAnnotations].
      * Or, if the field is contained in [spyKClasses] it will be created as a [Mockito.spy].
-     * The [NotMocked] class will be instanciated using a first constructor found.
+     * The [NotMocked] class will be instantiated using a first constructor found.
      *
      * @param clazz the current class that we should process
      */
@@ -185,6 +185,6 @@ class MockAllExecutionListener : TestExecutionListener, Ordered
      */
     private fun injectableAnnotations(): List<Class<out Annotation>>
     {
-        return listOf(Autowired::class.java, Resource::class.java, Service::class.java);
+        return listOf(Autowired::class.java, Resource::class.java, Service::class.java)
     }
 }
