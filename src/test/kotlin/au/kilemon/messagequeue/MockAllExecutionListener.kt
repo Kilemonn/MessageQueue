@@ -64,8 +64,8 @@ class MockAllExecutionListener : TestExecutionListener, Ordered
     override fun prepareTestInstance(testContext: TestContext)
     {
         setTestContext(testContext)
-        initialisedMocks[testContext.testClass] = testContext.testInstance
-        var clazz = testContext.testClass
+        initialisedMocks[getTestContext().testClass] = getTestContext().testInstance
+        var clazz = getTestContext().testClass
         do
         {
             mockAnnotationFields(clazz)
@@ -91,7 +91,7 @@ class MockAllExecutionListener : TestExecutionListener, Ordered
             {
                 spyKClasses.addAll(notMocked.spyClasses.asList())
 
-                setField(field, getTestContext().testInstance, createActualOrSpy(field.type.kotlin))
+                setField(field, createOrGetInstance(clazz), createActualOrSpy(field.type.kotlin))
                 mockAnnotationFields(field.type)
             }
 
