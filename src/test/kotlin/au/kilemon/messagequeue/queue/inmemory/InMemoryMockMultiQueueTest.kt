@@ -1,7 +1,7 @@
 package au.kilemon.messagequeue.queue.inmemory
 
-import au.kilemon.messagequeue.MockAllExecutionListener
-import au.kilemon.messagequeue.NotMocked
+import au.kilemon.mockall.MockAllExecutionListener
+import au.kilemon.mockall.NotMocked
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
 import org.junit.jupiter.api.Assertions

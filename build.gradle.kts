@@ -15,6 +15,7 @@ java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
@@ -48,6 +49,9 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
     testImplementation("org.testcontainers:testcontainers:1.17.5")
     testImplementation("org.testcontainers:junit-jupiter:1.17.5")
+
+    testImplementation("au.kilemon:mock-all:0.1.0")
+
     testImplementation(kotlin("test"))
 }
 
