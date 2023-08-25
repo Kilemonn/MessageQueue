@@ -1,10 +1,13 @@
 package au.kilemon.messagequeue.rest.controller
 
+import lombok.Generated
+
 /**
  * A collection of constants used as REST parameters.
  *
  * @author github.com/Kilemonn
  */
+@Generated
 object RestParameters
 {
     const val ASSIGNED_TO = "assignedTo"

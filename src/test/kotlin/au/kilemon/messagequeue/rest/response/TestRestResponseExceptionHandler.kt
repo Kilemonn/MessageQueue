@@ -1,6 +1,7 @@
 package au.kilemon.messagequeue.rest.response
 
 import au.kilemon.messagequeue.filter.CorrelationIdFilter
+import org.junit.AfterClass
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -16,6 +17,16 @@ import java.util.*
  */
 class TestRestResponseExceptionHandler
 {
+    companion object
+    {
+        @JvmStatic
+        @AfterClass
+        fun tearDownClass()
+        {
+            MDC.clear()
+        }
+    }
+
     @BeforeEach
     fun setUp()
     {

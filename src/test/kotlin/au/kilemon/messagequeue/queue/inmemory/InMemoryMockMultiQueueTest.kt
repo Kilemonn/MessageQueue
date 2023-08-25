@@ -50,4 +50,18 @@ class InMemoryMockMultiQueueTest
         }
         Assertions.assertEquals(wrappedException, thrown.cause)
     }
+
+    /**
+     * Test [InMemoryMultiQueue.retainAll] and test a specific scenario where we think the entry exists in the queue and
+     * attempt to remove it, but fail to remove it from the queue.
+     */
+    @Test
+    fun testRetainAll_removeFails()
+    {
+        val message = QueueMessage("payload", "type-string")
+        Mockito.`when`(multiQueue.remove(message)).thenReturn(false)
+
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertFalse(multiQueue.retainAll(Collections.emptyList()))
+    }
 }

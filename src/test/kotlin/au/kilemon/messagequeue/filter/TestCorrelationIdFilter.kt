@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.filter
 
+import org.junit.AfterClass
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -13,6 +14,16 @@ import java.util.*
  */
 class TestCorrelationIdFilter
 {
+    companion object
+    {
+        @JvmStatic
+        @AfterClass
+        fun tearDownClass()
+        {
+            MDC.clear()
+        }
+    }
+
     private val correlationIdFilter = CorrelationIdFilter()
 
     @BeforeEach
