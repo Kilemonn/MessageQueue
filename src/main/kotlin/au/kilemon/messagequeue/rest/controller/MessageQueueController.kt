@@ -127,10 +127,10 @@ open class MessageQueueController : HasLogger
      */
     @Hidden
     @Operation(summary = "Retrieve queue information for a specific sub queue.", description = "Retrieve information about the specified queueType within the queue, specifically information on the queue entries.")
-    @GetMapping("$ENDPOINT_TYPE/{queueType}", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @GetMapping("$ENDPOINT_TYPE/{${RestParameters.QUEUE_TYPE}}", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponse(responseCode = "200", description = "Successfully returns the information payload.")
     fun getQueueTypeInfo(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The queueType to retrieve information about.")
-                         @PathVariable queueType: String): ResponseEntity<String>
+                         @PathVariable(name = RestParameters.QUEUE_TYPE) queueType: String): ResponseEntity<String>
     {
         val queueForType = messageQueue.getQueueForType(queueType)
         LOG.debug("Returning size [{}] for queue with type [{}].", queueForType.size, queueType)
@@ -152,10 +152,12 @@ open class MessageQueueController : HasLogger
         return try
         {
             messageQueue.performHealthCheck()
+            LOG.trace("Health check passed.")
             ResponseEntity.ok().build()
         }
         catch(ex: HealthCheckFailureException)
         {
+            LOG.error("Health check failed.")
             ResponseEntity.internalServerError().build()
         }
     }
@@ -169,12 +171,12 @@ open class MessageQueueController : HasLogger
      * @return [MessageResponse] containing the found [QueueMessage] otherwise a [HttpStatus.NO_CONTENT] exception will be thrown
      */
     @Operation(summary = "Retrieve a queue message by UUID.", description = "Retrieve a queue message regardless of its sub queue, directly by UUID.")
-    @GetMapping("$ENDPOINT_ENTRY/{uuid}", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @GetMapping("$ENDPOINT_ENTRY/{${RestParameters.UUID}}", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "Successfully returns the queue message matching the provided UUID."),
         ApiResponse(responseCode = "204", description = "No queue messages match the provided UUID.", content = [Content()]) // Add empty Content() to remove duplicate responses in swagger docs
     )
-    fun getEntry(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The UUID of the queue message to retrieve.") @PathVariable uuid: String): ResponseEntity<MessageResponse>
+    fun getEntry(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The UUID of the queue message to retrieve.") @PathVariable(name = RestParameters.UUID) uuid: String): ResponseEntity<MessageResponse>
     {
         val entry = messageQueue.getMessageByUUID(uuid)
         if (entry.isPresent)
@@ -222,7 +224,7 @@ open class MessageQueueController : HasLogger
             else
             {
                 LOG.error("Failed to add entry with UUID [{}] to queue with type [{}]. AND the message does not already exist. This could be a memory limitation or an issue with the underlying collection.", queueMessage.uuid, queueMessage.type)
-                throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to add entry with UUID: ${queueMessage.uuid} to queue with type ${queueMessage.type}")
+                throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to add entry with UUID: [${queueMessage.uuid}] to queue with type [${queueMessage.type}]")
             }
         }
         catch (ex: DuplicateMessageException)
@@ -244,7 +246,7 @@ open class MessageQueueController : HasLogger
     @GetMapping(ENDPOINT_KEYS, produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponse(responseCode = "200", description = "Successfully returns the list of keys.")
     fun getKeys(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "Indicates whether to include keys that currently have zero entries (but have had entries previously). Is true by default.")
-                @RequestParam(required = false) includeEmpty: Boolean?): ResponseEntity<Set<String>>
+                @RequestParam(required = false, name = RestParameters.INCLUDE_EMPTY) includeEmpty: Boolean?): ResponseEntity<Set<String>>
     {
         return ResponseEntity.ok(messageQueue.keys(includeEmpty ?: true))
     }
@@ -259,8 +261,8 @@ open class MessageQueueController : HasLogger
     @Operation(summary = "Retrieve a limited or full version of the held messages.", description = "Retrieve queue message summaries for the held messages. This can be limited to a specific sub queue type and complete message detail to be included in the response if requested.")
     @GetMapping(ENDPOINT_ALL, produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponse(responseCode = "200", description = "Successfully returns the list of summary entries for either the whole multi-queue or the sub queue.")
-    fun getAll(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "Indicates whether the response messages should contain all message details including the underlying payload. By default details are hidden.") @RequestParam(required = false) detailed: Boolean = false,
-               @Parameter(`in` = ParameterIn.QUERY, required = false, description = "The sub queue type to search, if not provide all messages in the whole multi-queue will be returned.") @RequestParam(required = false) queueType: String?): ResponseEntity<Map<String, List<QueueMessage>>>
+    fun getAll(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "Indicates whether the response messages should contain all message details including the underlying payload. By default details are hidden.") @RequestParam(required = false, name = RestParameters.DETAILED) detailed: Boolean = false,
+               @Parameter(`in` = ParameterIn.QUERY, required = false, description = "The sub queue type to search, if not provide all messages in the whole multi-queue will be returned.") @RequestParam(required = false, name = RestParameters.QUEUE_TYPE) queueType: String?): ResponseEntity<Map<String, List<QueueMessage>>>
     {
         val responseMap = HashMap<String, List<QueueMessage>>()
         if ( !queueType.isNullOrBlank())
@@ -294,8 +296,8 @@ open class MessageQueueController : HasLogger
     @Operation(summary = "Retrieve all owned queue messages based on the provided user identifier.", description = "Retrieve all owned messages for the provided assignee identifier for the provided sub queue type.")
     @GetMapping(ENDPOINT_OWNED, produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponse(responseCode = "200", description = "Successfully returns the list of owned queue messages in the sub queue for the provided assignee identifier.")
-    fun getOwned(@Parameter(`in` = ParameterIn.QUERY, required = true, description = "The identifier that must match the message's `assigned` property in order to be returned.") @RequestParam(required = true) assignedTo: String,
-                 @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The sub queue to search for the assigned messages.") @RequestParam(required = true) queueType: String): ResponseEntity<List<MessageResponse>>
+    fun getOwned(@Parameter(`in` = ParameterIn.QUERY, required = true, description = "The identifier that must match the message's `assigned` property in order to be returned.") @RequestParam(required = true, name = RestParameters.ASSIGNED_TO) assignedTo: String,
+                 @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The sub queue to search for the assigned messages.") @RequestParam(required = true, name = RestParameters.QUEUE_TYPE) queueType: String): ResponseEntity<List<MessageResponse>>
     {
         val assignedMessages: Queue<QueueMessage> = messageQueue.getAssignedMessagesForType(queueType, assignedTo)
         val ownedMessages = assignedMessages.stream().map { message -> MessageResponse(message) }.collect(Collectors.toList())
@@ -315,15 +317,15 @@ open class MessageQueueController : HasLogger
      * @return the [QueueMessage] object after it has been marked as `assigned`. Returns [HttpStatus.ACCEPTED] if the [QueueMessage] is already assigned to the current user, otherwise [HttpStatus.OK] if it was not `assigned` previously.
      */
     @Operation(summary = "Assign an existing queue message to the provided identifier.", description = "Assign an existing queue message to the provided identifier. The message must already exist and not be assigned already to another identifier in order to be successfully assigned to the provided identifier.")
-    @PutMapping("$ENDPOINT_ASSIGN/{uuid}", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @PutMapping("$ENDPOINT_ASSIGN/{${RestParameters.UUID}}", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "Successfully assigned the message to the provided identifier. The message was not previously assigned."),
         ApiResponse(responseCode = "202", description = "The message was already assigned to the provided identifier."),
         ApiResponse(responseCode = "204", description = "No queue messages match the provided UUID.", content = [Content()]),
         ApiResponse(responseCode = "409", description = "The message is already assigned to another identifier.", content = [Content()])
     )
-    fun assignMessage(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The queue message UUID to assign.") @PathVariable(required = true) uuid: String,
-                      @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The identifier to assign the queue message to.") @RequestParam(required = true) assignedTo: String): ResponseEntity<MessageResponse>
+    fun assignMessage(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The queue message UUID to assign.") @PathVariable(required = true, name = RestParameters.UUID) uuid: String,
+                      @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The identifier to assign the queue message to.") @RequestParam(required = true, name = RestParameters.ASSIGNED_TO) assignedTo: String): ResponseEntity<MessageResponse>
     {
         val message = messageQueue.getMessageByUUID(uuid)
         if (message.isPresent)
@@ -340,7 +342,7 @@ open class MessageQueueController : HasLogger
                 else
                 {
                     LOG.error("Message with uuid [{}] in queue with type [{}] is already assigned to the identifier [{}]. Attempting to assign to identifier [{}].", messageToAssign.uuid, messageToAssign.type, messageToAssign.assignedTo, assignedTo)
-                    throw ResponseStatusException(HttpStatus.CONFLICT, "The message with UUID: $uuid and ${messageToAssign.type} is already assigned to the identifier ${messageToAssign.assignedTo}.")
+                    throw ResponseStatusException(HttpStatus.CONFLICT, "The message with UUID: [$uuid] and [${messageToAssign.type}] is already assigned to the identifier [${messageToAssign.assignedTo}].")
                 }
             }
 
@@ -368,8 +370,8 @@ open class MessageQueueController : HasLogger
         ApiResponse(responseCode = "200", description = "Successfully returns the next message in queue after assigning it to the provided `assignedTo` identifier."),
         ApiResponse(responseCode = "204", description = "No messages are available.", content = [Content()])
     )
-    fun getNext(@Parameter(`in` = ParameterIn.QUERY, required = true, description = "The sub queue identifier to query the next available message from.") @RequestParam(required = true) queueType: String,
-                @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The identifier to assign the next available message to if one exists.") @RequestParam(required = true) assignedTo: String): ResponseEntity<MessageResponse>
+    fun getNext(@Parameter(`in` = ParameterIn.QUERY, required = true, description = "The sub queue identifier to query the next available message from.") @RequestParam(required = true, name = RestParameters.QUEUE_TYPE) queueType: String,
+                @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The identifier to assign the next available message to if one exists.") @RequestParam(required = true, name = RestParameters.ASSIGNED_TO) assignedTo: String): ResponseEntity<MessageResponse>
     {
         val queueForType: Queue<QueueMessage> = messageQueue.getUnassignedMessagesForType(queueType)
         return if (queueForType.iterator().hasNext())
@@ -399,15 +401,15 @@ open class MessageQueueController : HasLogger
      * @return the [QueueMessage] object after it has been `released`. Returns [HttpStatus.ACCEPTED] if the [QueueMessage] is already `released`, otherwise [HttpStatus.OK] if it was `released` successfully.
      */
     @Operation(summary = "Release the message assigned to the provided identifier.", description = "Release an assigned message so it can be assigned to another identifier.")
-    @PutMapping("$ENDPOINT_RELEASE/{uuid}", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @PutMapping("$ENDPOINT_RELEASE/{${RestParameters.UUID}}", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "Successfully released the message. The message was previously assigned."),
         ApiResponse(responseCode = "202", description = "The message is not currently assigned."),
         ApiResponse(responseCode = "204", description = "No queue messages match the provided UUID.", content = [Content()]),
         ApiResponse(responseCode = "409", description = "The identifier was provided and the message is assigned to another identifier so it cannot be released.", content = [Content()])
     )
-    fun releaseMessage(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The UUID of the message to release.") @PathVariable(required = true) uuid: String,
-                       @Parameter(`in` = ParameterIn.QUERY, required = false, description = "If provided, the message will only be released if the current assigned identifier matches this value.") @RequestParam(required = false) assignedTo: String?): ResponseEntity<MessageResponse>
+    fun releaseMessage(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The UUID of the message to release.") @PathVariable(required = true, name = RestParameters.UUID) uuid: String,
+                       @Parameter(`in` = ParameterIn.QUERY, required = false, description = "If provided, the message will only be released if the current assigned identifier matches this value.") @RequestParam(required = false, name = RestParameters.ASSIGNED_TO) assignedTo: String?): ResponseEntity<MessageResponse>
     {
         val message = messageQueue.getMessageByUUID(uuid)
         if (message.isPresent)
@@ -422,7 +424,7 @@ open class MessageQueueController : HasLogger
 
             if (!assignedTo.isNullOrBlank() && messageToRelease.assignedTo != assignedTo)
             {
-                val errorMessage = "The message with UUID: $uuid and ${messageToRelease.type} cannot be released because it is already assigned to identifier ${messageToRelease.assignedTo} and the provided identifier was $assignedTo."
+                val errorMessage = "The message with UUID: [$uuid] and [${messageToRelease.type}] cannot be released because it is already assigned to identifier [${messageToRelease.assignedTo}] and the provided identifier was [$assignedTo]."
                 LOG.error(errorMessage)
                 throw ResponseStatusException(HttpStatus.CONFLICT, errorMessage)
             }
@@ -450,14 +452,14 @@ open class MessageQueueController : HasLogger
      * @return [HttpStatus.NO_CONTENT]
      */
     @Operation(summary = "Remove a queue message by UUID.", description = "Remove a queue message by UUID. If `assignedTo` is provided, the message must be currently assigned to that identifier for it to be removed.")
-    @DeleteMapping("$ENDPOINT_ENTRY/{uuid}")
+    @DeleteMapping("$ENDPOINT_ENTRY/{${RestParameters.UUID}}")
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "Successfully removed the message."),
         ApiResponse(responseCode = "204", description = "No queue messages match the provided UUID.", content = [Content()]),
         ApiResponse(responseCode = "403", description = "The provided identifier does not match the message's current assignee so it cannot be removed.", content = [Content()])
     )
-    fun removeMessage(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The UUID of the message to remove.") @PathVariable(required = true) uuid: String,
-                      @Parameter(`in` = ParameterIn.QUERY, required = false, description = "If provided, the message will only be removed if it is assigned to an identifier that matches this value.") @RequestParam(required = false) assignedTo: String?): ResponseEntity<Void>
+    fun removeMessage(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The UUID of the message to remove.") @PathVariable(required = true, name = RestParameters.UUID) uuid: String,
+                      @Parameter(`in` = ParameterIn.QUERY, required = false, description = "If provided, the message will only be removed if it is assigned to an identifier that matches this value.") @RequestParam(required = false, name = RestParameters.ASSIGNED_TO) assignedTo: String?): ResponseEntity<Void>
     {
         val message = messageQueue.getMessageByUUID(uuid)
         if (message.isPresent)
@@ -465,7 +467,7 @@ open class MessageQueueController : HasLogger
             val messageToRemove = message.get()
             if ( !assignedTo.isNullOrBlank() && messageToRemove.assignedTo != assignedTo)
             {
-                val errorMessage = "Unable to remove message with UUID $uuid in Queue ${messageToRemove.type} because the provided assignee identifier: [$assignedTo] does not match the message's assignee identifier`: ${messageToRemove.assignedTo}"
+                val errorMessage = "Unable to remove message with UUID [$uuid] in Queue [${messageToRemove.type}] because the provided assignee identifier: [$assignedTo] does not match the message's assignee identifier: [${messageToRemove.assignedTo}]"
                 LOG.error(errorMessage)
                 throw ResponseStatusException(HttpStatus.FORBIDDEN, errorMessage)
             }
@@ -493,7 +495,7 @@ open class MessageQueueController : HasLogger
     @Operation(summary = "Retrieve all unique owner identifiers for either a specified sub-queue or all sub-queues.", description = "Retrieve all owner identifier mapped to a list of the sub-queue identifiers that they are assigned any messages in.")
     @GetMapping(ENDPOINT_OWNERS, produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponse(responseCode = "200", description = "Successfully returns the map of owner identifiers mapped to all the sub-queues that they have one or more assigned messages in.")
-    fun getOwners(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "The sub queue to search for the owner identifiers.") @RequestParam(required = false) queueType: String?): ResponseEntity<Map<String, HashSet<String>>>
+    fun getOwners(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "The sub queue to search for the owner identifiers.") @RequestParam(required = false, name = RestParameters.QUEUE_TYPE) queueType: String?): ResponseEntity<Map<String, HashSet<String>>>
     {
         return ResponseEntity.ok(messageQueue.getOwnersAndKeysMap(queueType))
     }

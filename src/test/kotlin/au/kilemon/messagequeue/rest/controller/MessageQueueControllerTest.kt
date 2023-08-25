@@ -1,6 +1,7 @@
 package au.kilemon.messagequeue.rest.controller
 
 import au.kilemon.messagequeue.configuration.QueueConfiguration
+import au.kilemon.messagequeue.filter.CorrelationIdFilter
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
@@ -167,7 +168,7 @@ class MessageQueueControllerTest
     @Test
     fun testCreateQueueEntry_withProvidedDefaults()
     {
-        val message = createQueueMessage(type = "testCreateQueueEntry_withProvidedDefaults", assignedTo = "assignedTo")
+        val message = createQueueMessage(type = "testCreateQueueEntry_withProvidedDefaults", assignedTo = "user-1")
 
         val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -280,7 +281,7 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getKeys] to ensure that all keys are returned. Specifically when entries are added and `includeEmpty` is set to `false`.
+     * Test [MessageQueueController.getKeys] to ensure that all keys are returned. Specifically when entries are added and [RestParameters.INCLUDE_EMPTY] is set to `false`.
      */
     @Test
     fun testGetKeys_excludeEmpty()
@@ -291,7 +292,7 @@ class MessageQueueControllerTest
 
         val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("includeEmpty", "false"))
+            .param(RestParameters.INCLUDE_EMPTY, "false"))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
@@ -317,7 +318,7 @@ class MessageQueueControllerTest
         val type = entries.first[0].type
         val detailed = true
 
-        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL + "?detailed=" + detailed)
+        val mvcResult: MvcResult = mockMvc.perform(get("${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}/${MessageQueueController.ENDPOINT_ALL}?${RestParameters.DETAILED}=$detailed")
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
@@ -348,7 +349,7 @@ class MessageQueueControllerTest
         val type = entries.first[0].type
         val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("queueType", type))
+            .param(RestParameters.QUEUE_TYPE, type))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
@@ -376,8 +377,8 @@ class MessageQueueControllerTest
 
         val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("assignedTo", assignedTo)
-            .param("queueType", entries.first[0].type))
+            .param(RestParameters.ASSIGNED_TO, assignedTo)
+            .param(RestParameters.QUEUE_TYPE, entries.first[0].type))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
@@ -402,8 +403,8 @@ class MessageQueueControllerTest
 
         val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("assignedTo", assignedTo)
-            .param("queueType", type))
+            .param(RestParameters.ASSIGNED_TO, assignedTo)
+            .param(RestParameters.QUEUE_TYPE, type))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
@@ -428,7 +429,7 @@ class MessageQueueControllerTest
         val assignedTo = "assigned"
         mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("assignedTo", assignedTo))
+            .param(RestParameters.ASSIGNED_TO, assignedTo))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
@@ -445,7 +446,7 @@ class MessageQueueControllerTest
 
         val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("assignedTo", assignedTo))
+            .param(RestParameters.ASSIGNED_TO, assignedTo))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
@@ -472,7 +473,7 @@ class MessageQueueControllerTest
 
         val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("assignedTo", assignedTo))
+            .param(RestParameters.ASSIGNED_TO, assignedTo))
             .andExpect(MockMvcResultMatchers.status().isAccepted)
             .andReturn()
 
@@ -505,7 +506,7 @@ class MessageQueueControllerTest
         val wrongAssignee = "wrong-assignee"
         mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("assignedTo", wrongAssignee))
+            .param(RestParameters.ASSIGNED_TO, wrongAssignee))
             .andExpect(MockMvcResultMatchers.status().isConflict)
 
         // Check the message is still assigned to the correct ID
@@ -524,8 +525,8 @@ class MessageQueueControllerTest
         val type = "testGetNext_noNewMessages"
         mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("queueType", type)
-            .param("assignedTo", assignedTo))
+            .param(RestParameters.QUEUE_TYPE, type)
+            .param(RestParameters.ASSIGNED_TO, assignedTo))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
 
         Assertions.assertTrue(multiQueue.getQueueForType(type).isEmpty())
@@ -549,8 +550,8 @@ class MessageQueueControllerTest
 
         mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("queueType", type)
-            .param("assignedTo", assignedTo))
+            .param(RestParameters.QUEUE_TYPE, type)
+            .param(RestParameters.ASSIGNED_TO, assignedTo))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
@@ -574,8 +575,8 @@ class MessageQueueControllerTest
 
         val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("queueType", type)
-            .param("assignedTo", assignedTo))
+            .param(RestParameters.QUEUE_TYPE, type)
+            .param(RestParameters.ASSIGNED_TO, assignedTo))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
@@ -614,7 +615,7 @@ class MessageQueueControllerTest
 
         val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("assignedTo", assignedTo))
+            .param(RestParameters.ASSIGNED_TO, assignedTo))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
@@ -693,7 +694,7 @@ class MessageQueueControllerTest
         val wrongAssignedTo = "wrong-assigned"
         mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("assignedTo", wrongAssignedTo))
+            .param(RestParameters.ASSIGNED_TO, wrongAssignedTo))
             .andExpect(MockMvcResultMatchers.status().isConflict)
 
         val assignedEntry = multiQueue.peekForType(message.type).get()
@@ -760,7 +761,7 @@ class MessageQueueControllerTest
         val wrongAssignedTo = "wrong-assignee"
         mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("assignedTo", wrongAssignedTo))
+            .param(RestParameters.ASSIGNED_TO, wrongAssignedTo))
             .andExpect(MockMvcResultMatchers.status().isForbidden)
 
         val assignedEntry = multiQueue.peekForType(message.type).get()
@@ -788,7 +789,7 @@ class MessageQueueControllerTest
 
         val mvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNERS)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .param("queueType", type))
+            .param(RestParameters.QUEUE_TYPE, type))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
@@ -858,6 +859,61 @@ class MessageQueueControllerTest
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
+    }
+
+    @Test
+    fun testCorrelationId_randomIdOnSuccess()
+    {
+        val message = createQueueMessage(type = "testCorrelationId_providedId")
+
+        val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .content(gson.toJson(message)))
+            .andExpect(MockMvcResultMatchers.status().isCreated)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+        Assertions.assertNotNull(messageResponse.correlationId)
+        Assertions.assertEquals(UUID.fromString(messageResponse.correlationId).toString(), messageResponse.correlationId)
+    }
+
+    @Test
+    fun testCorrelationId_providedId()
+    {
+        val message = createQueueMessage(type = "testCorrelationId_providedId")
+        val correlationId = "my-correlation-id-123456"
+
+        val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .header(CorrelationIdFilter.CORRELATION_ID_HEADER, correlationId)
+            .content(gson.toJson(message)))
+            .andExpect(MockMvcResultMatchers.status().isCreated)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+        Assertions.assertEquals(correlationId, messageResponse.correlationId)
+    }
+
+    @Test
+    fun testCorrelationId_randomIdOnError()
+    {
+        val assignedTo = "assignee"
+        val message = createQueueMessage(type = "testCorrelationId_randomIdOnError", assignedTo = assignedTo)
+        Assertions.assertTrue(multiQueue.add(message))
+
+        val wrongAssignedTo = "wrong-assignee"
+        val mvcResult: MvcResult = mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param(RestParameters.ASSIGNED_TO, wrongAssignedTo))
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, Map::class.java)
+        Assertions.assertNotNull(messageResponse)
+        Assertions.assertTrue(messageResponse.containsKey(CorrelationIdFilter.CORRELATION_ID))
+        val correlationId = messageResponse[CorrelationIdFilter.CORRELATION_ID]
+        Assertions.assertTrue(correlationId is String)
+        Assertions.assertEquals(correlationId, UUID.fromString(correlationId as String).toString())
     }
 
     /**
