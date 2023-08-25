@@ -14,12 +14,14 @@ import javax.persistence.*
  * @author github.com/Kilemonn
  */
 @Entity
-@Table(name = QueueMessage.TABLE_NAME) // TODO: Schema configuration schema = "\${${MessageQueueSettings.SQL_SCHEMA}:${MessageQueueSettings.SQL_SCHEMA_DEFAULT}}")
+@Table(name = QueueMessage.TABLE_NAME, schema = QueueMessage.SCHEMA_NAME) // TODO: Schema configuration schema = "\${${MessageQueueSettings.SQL_SCHEMA}:${MessageQueueSettings.SQL_SCHEMA_DEFAULT}}")
 class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
 {
     companion object
     {
         const val TABLE_NAME: String = "multiqueuemessages"
+
+        const val SCHEMA_NAME: String = "multiqueue"
     }
 
     @Transient
