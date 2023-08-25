@@ -11,4 +11,4 @@ import org.slf4j.MDC
  * @author github.com/Kilemonn
  */
 @JsonPropertyOrder("correlationId", "queueType", "message")
-data class MessageResponse(val message: QueueMessage, val queueType: String = message.type, val correlationId: String? = MDC.get(CorrelationIdFilter.CORRELATION_LOG_PARAMETER))
+data class MessageResponse(val message: QueueMessage, val queueType: String = message.type, val correlationId: String? = MDC.get(CorrelationIdFilter.CORRELATION_ID))
