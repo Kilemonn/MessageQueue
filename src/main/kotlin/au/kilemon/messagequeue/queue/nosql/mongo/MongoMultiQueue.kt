@@ -2,6 +2,7 @@ package au.kilemon.messagequeue.queue.nosql.mongo
 
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
+import au.kilemon.messagequeue.message.QueueMessageDocument
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.nosql.mongo.repository.MongoQueueMessageRepository
 import org.slf4j.Logger
@@ -30,7 +31,8 @@ class MongoMultiQueue : MultiQueue, HasLogger
 
     override fun persistMessage(message: QueueMessage)
     {
-        TODO("Not yet implemented")
+        val queueMessageDocument = QueueMessageDocument(message)
+        queueMessageRepository.save(queueMessageDocument)
     }
 
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
@@ -40,7 +42,7 @@ class MongoMultiQueue : MultiQueue, HasLogger
 
     override fun performHealthCheckInternal()
     {
-        TODO("Not yet implemented")
+        queueMessageRepository.existsById(1)
     }
 
     override fun getMessageByUUID(uuid: String): Optional<QueueMessage>
@@ -70,16 +72,30 @@ class MongoMultiQueue : MultiQueue, HasLogger
 
     override fun containsUUID(uuid: String): Optional<String>
     {
-        TODO("Not yet implemented")
+        val optionalMessage = queueMessageRepository.findByUuid(uuid)
+        return if (optionalMessage.isPresent)
+        {
+            val message = optionalMessage.get()
+            LOG.debug("Found queue type [{}] for UUID: [{}].", message.type, uuid)
+            Optional.of(message.type)
+        }
+        else
+        {
+            LOG.debug("No queue type exists for UUID: [{}].", uuid)
+            Optional.empty()
+        }
     }
 
     override fun addInternal(element: QueueMessage): Boolean
     {
-        TODO("Not yet implemented")
+        val queueMessageDocument = QueueMessageDocument(element)
+        val saved = queueMessageRepository.save(queueMessageDocument)
+        return saved.id != null
     }
 
     override fun removeInternal(element: QueueMessage): Boolean
     {
-        TODO("Not yet implemented")
+        val removedCount = queueMessageRepository.deleteByUuid(element.uuid)
+        return removedCount > 0
     }
 }

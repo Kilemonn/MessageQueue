@@ -13,18 +13,26 @@ import javax.persistence.*
  * @author github.com/Kilemonn
  */
 @Document
-class QueueMessageDocument(var payload: Any?, @Column(nullable = false) var type: String, @Column(name = "assignedto") var assignedTo: String? = null)
+class QueueMessageDocument(var payload: Any?, var type: String, var assignedTo: String? = null)
 {
-    @Column(nullable = false, unique = true)
     var uuid: String = UUID.randomUUID().toString()
 
     @JsonIgnore
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null
 
     /**
      * Required for JSON deserialisation.
      */
     constructor() : this(null, "")
+
+    constructor(queueMessage: QueueMessage) : this()
+    {
+        val resolvedQueueMessage = queueMessage.resolvePayloadObject()
+        this.type = resolvedQueueMessage.type
+        this.uuid = resolvedQueueMessage.uuid
+        this.id = resolvedQueueMessage.id
+        this.payload = resolvedQueueMessage.payload
+        this.assignedTo = resolvedQueueMessage.assignedTo
+    }
 }

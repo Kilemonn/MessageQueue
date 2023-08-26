@@ -17,7 +17,7 @@ import javax.persistence.*
  */
 @Entity
 @Table(name = QueueMessage.TABLE_NAME) // TODO: Schema configuration schema = "\${${MessageQueueSettings.SQL_SCHEMA}:${MessageQueueSettings.SQL_SCHEMA_DEFAULT}}")
-class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @Column(name = "assignedto") var assignedTo: String? = null): Serializable, PayloadResolvableMessage<QueueMessage>
+class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
 {
     companion object
     {
@@ -50,6 +50,15 @@ class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @C
      */
     constructor() : this(null, "")
 
+    constructor(queueMessageDocument: QueueMessageDocument) : this()
+    {
+        this.type = queueMessageDocument.type
+        this.uuid = queueMessageDocument.uuid
+        this.id = queueMessageDocument.id
+        this.payload = queueMessageDocument.payload
+        this.assignedTo = queueMessageDocument.assignedTo
+    }
+
     /**
      * When the [QueueMessage] is read back from a database serialised form, only the
      * [QueueMessage.payloadBytes] will be persisted, [QueueMessage.payload] will still be `null` by default.
@@ -63,7 +72,7 @@ class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @C
      *
      * @return the current instance with the conditionally modified [QueueMessage.payload] member based on the points above
      */
-    override fun resolvePayloadObject(): QueueMessage
+    fun resolvePayloadObject(): QueueMessage
     {
         if (payloadBytes != null && payload == null)
         {
@@ -79,7 +88,7 @@ class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @C
      * @param detailed when `true` the [payload] object will be logged as well, otherwise the [payload] will not be contained in the response or `null`.
      * @return [QueueMessage] that is either a copy of `this` without the payload, or `this` with a resolved payload
      */
-    override fun removePayload(detailed: Boolean?): QueueMessage
+    fun removePayload(detailed: Boolean?): QueueMessage
     {
         if (detailed == false)
         {
