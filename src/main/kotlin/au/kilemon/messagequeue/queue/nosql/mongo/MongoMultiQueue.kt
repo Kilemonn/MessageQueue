@@ -1,16 +1,16 @@
-package au.kilemon.messagequeue.queue.nosql
+package au.kilemon.messagequeue.queue.nosql.mongo
 
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
-import au.kilemon.messagequeue.queue.nosql.repository.MongoQueueMessageRepository
+import au.kilemon.messagequeue.queue.nosql.mongo.repository.MongoQueueMessageRepository
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
 import java.util.*
 import java.util.concurrent.atomic.AtomicLong
 
-class NoSqlMultiQueue : MultiQueue, HasLogger
+class MongoMultiQueue : MultiQueue, HasLogger
 {
     override val LOG: Logger = initialiseLogger()
 

@@ -1,4 +1,4 @@
-package au.kilemon.messagequeue.queue.nosql.repository
+package au.kilemon.messagequeue.queue.nosql.mongo.repository
 
 import au.kilemon.messagequeue.message.QueueMessageDocument
 import au.kilemon.messagequeue.queue.repository.QueueMessageRepository
