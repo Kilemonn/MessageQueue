@@ -11,11 +11,13 @@ import javax.persistence.*
  * This object wraps a [Any] type `T` which is the payload to be stored in the queue. (This is actually a [Serializable] but causes issues in initialisation
  * if the type is an `interface`. This needs to be [Serializable] if you want to use it with `Redis` or anything else).
  *
+ * This is used for `InMemory`, `Redis` and `SQL` queues.
+ *
  * @author github.com/Kilemonn
  */
 @Entity
 @Table(name = QueueMessage.TABLE_NAME) // TODO: Schema configuration schema = "\${${MessageQueueSettings.SQL_SCHEMA}:${MessageQueueSettings.SQL_SCHEMA_DEFAULT}}")
-class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
+class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @Column(name = "assignedto") var assignedTo: String? = null): Serializable, PayloadResolvableMessage<QueueMessage>
 {
     companion object
     {
@@ -61,7 +63,7 @@ class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @C
      *
      * @return the current instance with the conditionally modified [QueueMessage.payload] member based on the points above
      */
-    fun resolvePayloadObject(): QueueMessage
+    override fun resolvePayloadObject(): QueueMessage
     {
         if (payloadBytes != null && payload == null)
         {
@@ -77,7 +79,7 @@ class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @C
      * @param detailed when `true` the [payload] object will be logged as well, otherwise the [payload] will not be contained in the response or `null`.
      * @return [QueueMessage] that is either a copy of `this` without the payload, or `this` with a resolved payload
      */
-    fun removePayload(detailed: Boolean?): QueueMessage
+    override fun removePayload(detailed: Boolean?): QueueMessage
     {
         if (detailed == false)
         {

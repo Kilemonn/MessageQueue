@@ -4,7 +4,7 @@ import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
-import au.kilemon.messagequeue.queue.sql.repository.QueueMessageRepository
+import au.kilemon.messagequeue.queue.sql.repository.SQLQueueMessageRepository
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
@@ -24,7 +24,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
 
     @Lazy
     @Autowired
-    private lateinit var queueMessageRepository: QueueMessageRepository
+    private lateinit var queueMessageRepository: SQLQueueMessageRepository
 
     override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
 
@@ -39,7 +39,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {
         val entries = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
-        return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
+        return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() as QueueMessage })
     }
 
     /**
@@ -56,7 +56,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
             queueMessageRepository.findByTypeAndAssignedToOrderByIdAsc(queueType, assignedTo)
         }
 
-        return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
+        return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() as QueueMessage })
     }
 
     /**
@@ -65,7 +65,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
     override fun getUnassignedMessagesForType(queueType: String): Queue<QueueMessage>
     {
         val entries = queueMessageRepository.findByTypeAndAssignedToIsNullOrderByIdAsc(queueType)
-        return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
+        return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() as QueueMessage })
     }
 
     override fun performHealthCheckInternal()
@@ -95,7 +95,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
         val messages = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
         return if (messages.isNotEmpty())
         {
-            return Optional.of(messages[0].resolvePayloadObject())
+            return Optional.of(messages[0].resolvePayloadObject() as QueueMessage)
         }
         else
         {

@@ -269,7 +269,7 @@ open class MessageQueueController : HasLogger
         {
             LOG.debug("Retrieving all entry details from queue with type [{}].", queueType)
             val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
-            val queueDetails = queueForType.stream().map { message -> message.removePayload(detailed) }.collect(Collectors.toList())
+            val queueDetails = queueForType.stream().map { message -> message.removePayload(detailed) as QueueMessage }.collect(Collectors.toList())
             responseMap[queueType] = queueDetails
         }
         else
@@ -279,7 +279,7 @@ open class MessageQueueController : HasLogger
             {
                 // No need to empty check since we passed `false` to `keys()` above
                 val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(key)
-                val queueDetails = queueForType.stream().map { message -> message.removePayload(detailed) }.collect(Collectors.toList())
+                val queueDetails = queueForType.stream().map { message -> message.removePayload(detailed) as QueueMessage }.collect(Collectors.toList())
                 responseMap[key] = queueDetails
             }
         }
