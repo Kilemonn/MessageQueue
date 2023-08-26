@@ -3,13 +3,13 @@ package au.kilemon.messagequeue.queue.nosql.mongo
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
-import au.kilemon.messagequeue.queue.sql.MySqlMultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
+import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.util.TestPropertyValues
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
@@ -22,8 +22,9 @@ import org.testcontainers.utility.DockerImageName
 
 @ExtendWith(SpringExtension::class)
 @Testcontainers
-@DataJpaTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=MONGO"])
+@DataMongoTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=MONGO"])
 @ContextConfiguration(initializers = [MongoMultiQueueTest.Initializer::class])
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import( *[QueueConfiguration::class, LoggingConfiguration::class, AbstractMultiQueueTest.AbstractMultiQueueTestConfiguration::class] )
 class MongoMultiQueueTest: AbstractMultiQueueTest()
 {
@@ -72,9 +73,9 @@ class MongoMultiQueueTest: AbstractMultiQueueTest()
             val endpoint = "mongodb://${mongoDb.host}:${mongoDb.getMappedPort(MONGO_PORT)}"
 
             TestPropertyValues.of(
-                "spring.datasource.url=$endpoint",
-                "spring.datasource.username=$username",
-                "spring.datasource.password=$password",
+                "spring.data.mongo.host=$endpoint",
+                "spring.data.mongo.username=$username",
+                "spring.data.mongo.password=$password",
             ).applyTo(configurableApplicationContext.environment)
         }
     }
