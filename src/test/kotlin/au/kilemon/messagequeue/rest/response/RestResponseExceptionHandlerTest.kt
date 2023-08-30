@@ -14,7 +14,7 @@ import java.util.*
  *
  * @author github.com/Kilemonn
  */
-class TestRestResponseExceptionHandler
+class RestResponseExceptionHandlerTest
 {
     @BeforeEach
     fun setUp()

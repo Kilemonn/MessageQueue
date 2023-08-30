@@ -4,6 +4,7 @@ import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
+import au.kilemon.messagequeue.queue.nosql.mongo.MongoMultiQueue
 import au.kilemon.messagequeue.queue.sql.SqlMultiQueue
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
@@ -248,7 +249,7 @@ abstract class AbstractMultiQueueTest
     @Test
     fun testInitialiseQueueIndex_reInitialise()
     {
-        if (multiQueue is SqlMultiQueue)
+        if (multiQueue is SqlMultiQueue || multiQueue is MongoMultiQueue)
         {
             return
         }
@@ -287,7 +288,30 @@ abstract class AbstractMultiQueueTest
 
         if (multiQueue is SqlMultiQueue)
         {
+            // Ensure that we always return an empty optional
             Assertions.assertFalse(multiQueue.getAndIncrementQueueIndex(queueType).isPresent)
+        }
+        else if (multiQueue is MongoMultiQueue)
+        {
+            // Ensure that no matter the provided queueType argument, that the single entry is always incremented
+            Assertions.assertNull(multiQueue.maxQueueIndex[queueType])
+            Assertions.assertNull(multiQueue.maxQueueIndex[MongoMultiQueue.INDEX_ID])
+
+            Assertions.assertEquals(1, multiQueue.getAndIncrementQueueIndex(queueType).get())
+            Assertions.assertEquals(2, multiQueue.getAndIncrementQueueIndex(MongoMultiQueue.INDEX_ID).get())
+            Assertions.assertEquals(3, multiQueue.getAndIncrementQueueIndex(queueType).get())
+            Assertions.assertEquals(4, multiQueue.getAndIncrementQueueIndex(MongoMultiQueue.INDEX_ID).get())
+            Assertions.assertEquals(5, multiQueue.getAndIncrementQueueIndex(queueType).get())
+
+            multiQueue.clearForType(queueType)
+            Assertions.assertFalse(multiQueue.maxQueueIndex.isEmpty())
+            Assertions.assertNull(multiQueue.maxQueueIndex[queueType])
+            Assertions.assertNotNull(multiQueue.maxQueueIndex[MongoMultiQueue.INDEX_ID])
+
+            multiQueue.clear()
+            Assertions.assertTrue(multiQueue.maxQueueIndex.isEmpty())
+            Assertions.assertNull(multiQueue.maxQueueIndex[queueType])
+            Assertions.assertNull(multiQueue.maxQueueIndex[MongoMultiQueue.INDEX_ID])
         }
         else
         {

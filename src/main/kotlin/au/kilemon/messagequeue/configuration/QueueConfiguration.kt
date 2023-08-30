@@ -7,6 +7,7 @@ import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.cache.redis.RedisMultiQueue
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
+import au.kilemon.messagequeue.queue.nosql.mongo.MongoMultiQueue
 import au.kilemon.messagequeue.queue.sql.SqlMultiQueue
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import au.kilemon.messagequeue.settings.MultiQueueType
@@ -57,13 +58,16 @@ class QueueConfiguration : HasLogger
 
         // Default to in-memory
         var queue: MultiQueue = InMemoryMultiQueue()
-        if (MultiQueueType.REDIS.toString() == messageQueueSettings.multiQueueType)
-        {
-            queue = RedisMultiQueue(messageQueueSettings.redisPrefix, redisTemplate)
-        }
-        else if (MultiQueueType.SQL.toString() == messageQueueSettings.multiQueueType)
-        {
-            queue = SqlMultiQueue()
+        when (messageQueueSettings.multiQueueType) {
+            MultiQueueType.REDIS.toString() -> {
+                queue = RedisMultiQueue(messageQueueSettings.redisPrefix, redisTemplate)
+            }
+            MultiQueueType.SQL.toString() -> {
+                queue = SqlMultiQueue()
+            }
+            MultiQueueType.MONGO.toString() -> {
+                queue = MongoMultiQueue()
+            }
         }
         queue.initialiseQueueIndex()
         LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType)

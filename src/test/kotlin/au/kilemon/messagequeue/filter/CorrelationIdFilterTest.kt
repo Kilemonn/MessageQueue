@@ -11,7 +11,7 @@ import java.util.*
  *
  * @author github.com/Kilemonn
  */
-class TestCorrelationIdFilter
+class CorrelationIdFilterTest
 {
     private val correlationIdFilter = CorrelationIdFilter()
 

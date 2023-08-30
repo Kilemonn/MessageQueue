@@ -4,7 +4,7 @@ import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
-import au.kilemon.messagequeue.queue.sql.repository.QueueMessageRepository
+import au.kilemon.messagequeue.queue.sql.repository.SQLQueueMessageRepository
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
@@ -24,7 +24,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
 
     @Lazy
     @Autowired
-    private lateinit var queueMessageRepository: QueueMessageRepository
+    private lateinit var queueMessageRepository: SQLQueueMessageRepository
 
     override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
 

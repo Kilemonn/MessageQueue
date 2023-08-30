@@ -21,5 +21,10 @@ enum class MultiQueueType
     /**
      * Will initialise and connect to a defined SQL database instance to store queue messages against.
      */
-    SQL;
+    SQL,
+
+    /**
+     * Initialise and connect to the defined `mongo` store.
+     */
+    MONGO;
 }
