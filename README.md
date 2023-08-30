@@ -181,6 +181,15 @@ The port that the mongo db has exposed.
 
 The whole url can be provided in the following format: `mongodb://<username>:<password>@<host>:<port>/<database>` for example: `mongodb://root:password@localhost:27107/messagequeue`.
 
+### Example:
+***Note:** the use of `?authSource=admin` is to allow you to get up and running quickly, properly secured credentials and a non-admin account should always be used.*
+
+```yaml
+environment:
+- MULTI_QUEUE_TYPE=MONGO
+- spring.data.mongodb.uri=mongodb://root:password@mongo:27017/messagequeue?authSource=admin
+```
+
 ---
 
 ## HTTPS
