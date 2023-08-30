@@ -288,7 +288,30 @@ abstract class AbstractMultiQueueTest
 
         if (multiQueue is SqlMultiQueue)
         {
+            // Ensure that we always return an empty optional
             Assertions.assertFalse(multiQueue.getAndIncrementQueueIndex(queueType).isPresent)
+        }
+        else if (multiQueue is MongoMultiQueue)
+        {
+            // Ensure that no matter the provided queueType argument, that the single entry is always incremented
+            Assertions.assertNull(multiQueue.maxQueueIndex[queueType])
+            Assertions.assertNull(multiQueue.maxQueueIndex[MongoMultiQueue.INDEX_ID])
+
+            Assertions.assertEquals(1, multiQueue.getAndIncrementQueueIndex(queueType).get())
+            Assertions.assertEquals(2, multiQueue.getAndIncrementQueueIndex(MongoMultiQueue.INDEX_ID).get())
+            Assertions.assertEquals(3, multiQueue.getAndIncrementQueueIndex(queueType).get())
+            Assertions.assertEquals(4, multiQueue.getAndIncrementQueueIndex(MongoMultiQueue.INDEX_ID).get())
+            Assertions.assertEquals(5, multiQueue.getAndIncrementQueueIndex(queueType).get())
+
+            multiQueue.clearForType(queueType)
+            Assertions.assertFalse(multiQueue.maxQueueIndex.isEmpty())
+            Assertions.assertNull(multiQueue.maxQueueIndex[queueType])
+            Assertions.assertNotNull(multiQueue.maxQueueIndex[MongoMultiQueue.INDEX_ID])
+
+            multiQueue.clear()
+            Assertions.assertTrue(multiQueue.maxQueueIndex.isEmpty())
+            Assertions.assertNull(multiQueue.maxQueueIndex[queueType])
+            Assertions.assertNull(multiQueue.maxQueueIndex[MongoMultiQueue.INDEX_ID])
         }
         else
         {

@@ -15,6 +15,11 @@ import java.util.concurrent.atomic.AtomicLong
 
 class MongoMultiQueue : MultiQueue, HasLogger
 {
+    companion object
+    {
+        const val INDEX_ID = "index_id"
+    }
+
     override val LOG: Logger = initialiseLogger()
 
     override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
@@ -130,5 +135,34 @@ class MongoMultiQueue : MultiQueue, HasLogger
     {
         val removedCount = queueMessageRepository.deleteByUuid(element.uuid)
         return removedCount > 0
+    }
+
+    /**
+     * Overriding to use the constant [INDEX_ID] for all look-ups since the ID is shared and needs to be assigned to
+     * the [QueueMessageDocument] before it is created.
+     */
+    override fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
+    {
+        return super.getAndIncrementQueueIndex(INDEX_ID)
+    }
+
+    /**
+     * Override to never clear the queue index for the type, since it's a shared index map.
+     */
+    override fun clearQueueIndexForType(queueType: String)
+    {
+
+    }
+
+    /**
+     * Clear the [maxQueueIndex] if the entire map is cleared.
+     *
+     *
+     * Since [clearQueueIndexForType] is not clearing any of map entries.
+     */
+    override fun clear()
+    {
+        super.clear()
+        maxQueueIndex.clear()
     }
 }
