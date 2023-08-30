@@ -4,11 +4,13 @@ import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.message.QueueMessageDocument
 import au.kilemon.messagequeue.queue.MultiQueue
+import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.queue.nosql.mongo.repository.MongoQueueMessageRepository
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
 import java.util.*
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicLong
 
 class MongoMultiQueue : MultiQueue, HasLogger
@@ -32,12 +34,20 @@ class MongoMultiQueue : MultiQueue, HasLogger
     override fun persistMessage(message: QueueMessage)
     {
         val queueMessageDocument = QueueMessageDocument(message)
-        queueMessageRepository.save(queueMessageDocument)
+        try
+        {
+            queueMessageRepository.save(queueMessageDocument)
+        }
+        catch (ex: Exception)
+        {
+            throw MessageUpdateException(message.uuid, ex)
+        }
     }
 
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {
-        TODO("Not yet implemented")
+        val entries = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
+        return ConcurrentLinkedQueue(entries.map { entry -> QueueMessage(entry) })
     }
 
     override fun performHealthCheckInternal()
@@ -47,27 +57,50 @@ class MongoMultiQueue : MultiQueue, HasLogger
 
     override fun getMessageByUUID(uuid: String): Optional<QueueMessage>
     {
-        return queueMessageRepository.findByUuid(uuid)
+        val documentMessage = queueMessageRepository.findByUuid(uuid)
+        return if (documentMessage.isPresent)
+        {
+            Optional.of(QueueMessage(documentMessage.get()))
+        }
+        else
+        {
+            Optional.empty()
+        }
     }
 
     override fun clearForTypeInternal(queueType: String): Int
     {
-        TODO("Not yet implemented")
+        val amountCleared = queueMessageRepository.deleteByType(queueType)
+        LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, amountCleared)
+        return amountCleared
     }
 
     override fun isEmptyForType(queueType: String): Boolean
     {
-        TODO("Not yet implemented")
+        return queueMessageRepository.findByTypeOrderByIdAsc(queueType).isEmpty()
     }
 
     override fun pollInternal(queueType: String): Optional<QueueMessage>
     {
-        TODO("Not yet implemented")
+        val messages = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
+        return if (messages.isNotEmpty())
+        {
+            return Optional.of(QueueMessage(messages[0]))
+        }
+        else
+        {
+            Optional.empty()
+        }
     }
 
+    /**
+     * The [includeEmpty] value makes no difference it is always effectively `false`.
+     */
     override fun keys(includeEmpty: Boolean): Set<String>
     {
-        TODO("Not yet implemented")
+        val keySet = queueMessageRepository.getDistinctTypes().toSet()
+        LOG.debug("Total amount of queue keys [{}].", keySet.size)
+        return keySet
     }
 
     override fun containsUUID(uuid: String): Optional<String>

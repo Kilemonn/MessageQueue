@@ -63,19 +63,24 @@ class MongoMultiQueueTest: AbstractMultiQueueTest()
             val password = "password"
             val username = "root"
             val envMap = HashMap<String, String>()
-            envMap["ME_CONFIG_MONGODB_ADMINPASSWORD"] = password
-            envMap["ME_CONFIG_MONGODB_ADMINUSERNAME"] = username
+            envMap["MONGO_INITDB_ROOT_PASSWORD"] = password
+            envMap["MONGO_INITDB_ROOT_USERNAME"] = username
 
             mongoDb = GenericContainer(DockerImageName.parse(MONGO_CONTAINER))
                 .withExposedPorts(MONGO_PORT).withReuse(false).withEnv(envMap)
             mongoDb.start()
 
-            val endpoint = "mongodb://${mongoDb.host}:${mongoDb.getMappedPort(MONGO_PORT)}"
+            val databaseName = "MultiQueue"
+            // mongodb://<username>:<password>@<host>:<port>/<database>
+            val endpoint = "mongodb://$username:$password@${mongoDb.host}:${mongoDb.getMappedPort(MONGO_PORT)}/$databaseName?authSource=admin"
 
             TestPropertyValues.of(
-                "spring.data.mongo.host=$endpoint",
-                "spring.data.mongo.username=$username",
-                "spring.data.mongo.password=$password",
+//                "spring.data.mongodb.host=${mongoDb.host}",
+//                "spring.data.mongodb.database=$databaseName",
+//                "spring.data.mongodb.username=$username",
+//                "spring.data.mongodb.password=$password",
+//                "spring.data.mongodb.port=${mongoDb.getMappedPort(MONGO_PORT)}",
+                "spring.data.mongodb.uri=$endpoint"
             ).applyTo(configurableApplicationContext.environment)
         }
     }

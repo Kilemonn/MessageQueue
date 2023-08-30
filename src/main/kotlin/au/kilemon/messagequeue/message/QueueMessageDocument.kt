@@ -12,9 +12,14 @@ import javax.persistence.*
  *
  * @author github.com/Kilemonn
  */
-@Document
+@Document(value = QueueMessageDocument.DOCUMENT_NAME)
 class QueueMessageDocument(var payload: Any?, var type: String, var assignedTo: String? = null)
 {
+    companion object
+    {
+        const val DOCUMENT_NAME: String = "multiqueuemessages"
+    }
+
     var uuid: String = UUID.randomUUID().toString()
 
     @JsonIgnore

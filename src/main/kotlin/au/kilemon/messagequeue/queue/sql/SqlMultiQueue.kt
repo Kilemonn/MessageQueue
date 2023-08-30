@@ -39,7 +39,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {
         val entries = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
-        return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() as QueueMessage })
+        return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
     }
 
     /**
@@ -56,7 +56,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
             queueMessageRepository.findByTypeAndAssignedToOrderByIdAsc(queueType, assignedTo)
         }
 
-        return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() as QueueMessage })
+        return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
     }
 
     /**
@@ -65,7 +65,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
     override fun getUnassignedMessagesForType(queueType: String): Queue<QueueMessage>
     {
         val entries = queueMessageRepository.findByTypeAndAssignedToIsNullOrderByIdAsc(queueType)
-        return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() as QueueMessage })
+        return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
     }
 
     override fun performHealthCheckInternal()
@@ -95,7 +95,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
         val messages = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
         return if (messages.isNotEmpty())
         {
-            return Optional.of(messages[0].resolvePayloadObject() as QueueMessage)
+            return Optional.of(messages[0].resolvePayloadObject())
         }
         else
         {

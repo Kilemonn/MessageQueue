@@ -4,6 +4,7 @@ import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
+import au.kilemon.messagequeue.queue.nosql.mongo.MongoMultiQueue
 import au.kilemon.messagequeue.queue.sql.SqlMultiQueue
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
@@ -248,7 +249,7 @@ abstract class AbstractMultiQueueTest
     @Test
     fun testInitialiseQueueIndex_reInitialise()
     {
-        if (multiQueue is SqlMultiQueue)
+        if (multiQueue is SqlMultiQueue || multiQueue is MongoMultiQueue)
         {
             return
         }
