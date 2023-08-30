@@ -8,9 +8,7 @@ The message storage mechanisms supported are:
 - In-memory (default)
 - Redis (stand alone and sentinel support)
 - SQL Database (MySQL, PostgreSQL)
-
-With plans to add support for the following mechanisms:
-- NoSQL
+- No SQL Database (Mongo)
 
 ## Rest API Documentation
 
@@ -137,6 +135,51 @@ environment:
  - spring.datasource.username=postgres
  - spring.datasource.password=5up3r5tR0nG!
 ```
+
+## NO SQL (Mongo DB)
+
+The application can be set into `MONGO` mode to interface with a NoSQL database. Similarly to the others you can set the type with `MULTI_QUEUE_TYPE=MONGO`. 
+
+### NoSQL Environment Properties
+
+You can either specify all properties individually via, `spring.data.mongodb.host`, `spring.data.mongodb.port`, `spring.data.mongodb.database`, `spring.data.mongodb.username`, `spring.data.mongodb.password`.
+Or you can provide all together in a single property: `spring.data.mongodb.uri`.
+
+#### spring.data.mongodb.host
+
+***This property is required unless `spring.data.mongodb.uri` is provided***.
+
+This is the host that the mongo DB is accessible from.
+
+#### spring.data.mongodb.database
+
+***This property is required unless `spring.data.mongodb.uri` is provided***.
+
+This is the database that should be connected to and where the related documents will be created.
+
+#### spring.data.mongodb.username
+
+***This property is required unless `spring.data.mongodb.uri` is provided***.
+
+This is the username/account name used to access the database at the configured endpoint.
+
+#### spring.data.mongodb.password
+
+***This property is required unless `spring.data.mongodb.uri` is provided***.
+
+This is the password used to access the database at the configured endpoint.
+
+#### spring.data.mongodb.port
+
+***This property is required unless `spring.data.mongodb.uri` is provided***.
+
+The port that the mongo db has exposed.
+
+#### spring.data.mongodb.uri
+
+***This property is required unless the above properties are already provided***.
+
+The whole url can be provided in the following format: `mongodb://<username>:<password>@<host>:<port>/<database>` for example: `mongodb://root:password@localhost:27107/messagequeue`.
 
 ---
 
