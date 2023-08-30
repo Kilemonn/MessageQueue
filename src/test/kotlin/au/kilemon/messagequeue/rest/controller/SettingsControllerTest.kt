@@ -66,6 +66,7 @@ class SettingsControllerTest
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
         val settings = gson.fromJson(mvcResult.response.contentAsString, MessageQueueSettings::class.java)
+
         Assertions.assertEquals(MultiQueueType.IN_MEMORY.toString(), settings.multiQueueType)
 
         Assertions.assertTrue(settings.redisPrefix.isEmpty())

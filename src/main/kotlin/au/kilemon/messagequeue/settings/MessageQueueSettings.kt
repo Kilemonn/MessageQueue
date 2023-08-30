@@ -15,17 +15,6 @@ import org.springframework.stereotype.Component
  * - The type of `MultiQueue` being used
  * - Other utility configuration for the application to use.
  *
- * This does not hold the dialect and driver information for the database mode.
- * This is the dialect that hibernate will use when interacting with the underlying database.
- * Supported dialects are listed below:
- * - MySQL (e.g. `org.hibernate.dialect.MySQLDialect`)
- * - Postgresql (e.g. `org.hibernate.dialect.PostgreSQLDialect`)
- *
- * Defines the underlying driver which is used to connect to the requested database.
- * Currently supports:
- * - MySQL (e.g. `com.mysql.jdbc.Driver`)
- * - Postgresql (e.g. `org.postgresql.Driver`)
- *
  * When `SQL` is used, the following property must be provided:
  * `spring.jpa.hibernate.ddl-auto=create`
  * This will ensure the underlying tables will be created on start up if they do not exist.
