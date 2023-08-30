@@ -66,12 +66,21 @@ class SettingsControllerTest
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
         val settings = gson.fromJson(mvcResult.response.contentAsString, MessageQueueSettings::class.java)
+
         Assertions.assertEquals(MultiQueueType.IN_MEMORY.toString(), settings.multiQueueType)
+
         Assertions.assertTrue(settings.redisPrefix.isEmpty())
         Assertions.assertEquals(MessageQueueSettings.REDIS_ENDPOINT_DEFAULT, settings.redisEndpoint)
         Assertions.assertEquals("false", settings.redisUseSentinels)
         Assertions.assertEquals(MessageQueueSettings.REDIS_MASTER_NAME_DEFAULT, settings.redisMasterName)
+
         Assertions.assertTrue(settings.sqlEndpoint.isEmpty())
         Assertions.assertTrue(settings.sqlUsername.isEmpty())
+
+        Assertions.assertTrue(settings.mongoHost.isEmpty())
+        Assertions.assertTrue(settings.mongoPort.isEmpty())
+        Assertions.assertTrue(settings.mongoDatabase.isEmpty())
+        Assertions.assertTrue(settings.mongoUsername.isEmpty())
+        Assertions.assertTrue(settings.mongoUri.isEmpty())
     }
 }

@@ -262,8 +262,18 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      */
     fun clearForType(queueType: String): Int
     {
-        maxQueueIndex.remove(queueType)
+        clearQueueIndexForType(queueType)
         return clearForTypeInternal(queueType)
+    }
+
+    /**
+     * Clear the [MultiQueue.maxQueueIndex] entry matching the provided key [queueType].
+     *
+     * @param queueType the [String] of the [Queue] to clear
+     */
+    fun clearQueueIndexForType(queueType: String)
+    {
+        maxQueueIndex.remove(queueType)
     }
 
     /**

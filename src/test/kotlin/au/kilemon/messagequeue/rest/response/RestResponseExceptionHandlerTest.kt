@@ -15,7 +15,7 @@ import java.util.*
  *
  * @author github.com/Kilemonn
  */
-class TestRestResponseExceptionHandler
+class RestResponseExceptionHandlerTest
 {
     companion object
     {

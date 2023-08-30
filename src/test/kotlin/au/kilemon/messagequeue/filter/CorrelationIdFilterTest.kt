@@ -12,7 +12,7 @@ import java.util.*
  *
  * @author github.com/Kilemonn
  */
-class TestCorrelationIdFilter
+class CorrelationIdFilterTest
 {
     companion object
     {

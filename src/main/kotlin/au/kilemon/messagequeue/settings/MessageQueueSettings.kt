@@ -15,17 +15,6 @@ import org.springframework.stereotype.Component
  * - The type of `MultiQueue` being used
  * - Other utility configuration for the application to use.
  *
- * This does not hold the dialect and driver information for the database mode.
- * This is the dialect that hibernate will use when interacting with the underlying database.
- * Supported dialects are listed below:
- * - MySQL (e.g. `org.hibernate.dialect.MySQLDialect`)
- * - Postgresql (e.g. `org.hibernate.dialect.PostgreSQLDialect`)
- *
- * Defines the underlying driver which is used to connect to the requested database.
- * Currently supports:
- * - MySQL (e.g. `com.mysql.jdbc.Driver`)
- * - Postgresql (e.g. `org.postgresql.Driver`)
- *
  * When `SQL` is used, the following property must be provided:
  * `spring.jpa.hibernate.ddl-auto=create`
  * This will ensure the underlying tables will be created on start up if they do not exist.
@@ -60,6 +49,16 @@ class MessageQueueSettings
         const val SQL_ENDPOINT: String = "spring.datasource.url"
         const val SQL_USERNAME: String = "spring.datasource.username"
         const val SQL_PASSWORD: String = "spring.datasource.password"
+
+        /**
+         * Start MONGO related properties
+         */
+        const val MONGO_HOST: String = "spring.data.mongodb.host"
+        const val MONGO_DATABASE: String = "spring.data.mongodb.database"
+        const val MONGO_PORT: String = "spring.data.mongodb.port"
+        const val MONGO_USERNAME: String = "spring.data.mongodb.username"
+        const val MONGO_PASSWORD: String = "spring.data.mongodb.password"
+        const val MONGO_URI: String = "spring.data.mongodb.uri"
 
         /**
          * SQL Schema properties
@@ -167,4 +166,70 @@ class MessageQueueSettings
     // @JsonProperty(SQL_PASSWORD)
     // @Value("\${$SQL_PASSWORD:}")
     // lateinit var sqlPassword: String
+
+    /**
+     * Required when [MultiQueueType.MONGO] is used and [mongoUri] is empty.
+     * It specifies the host name that the mongo db is available at.
+     */
+    @SerializedName(MONGO_HOST)
+    @JsonProperty(MONGO_HOST)
+    @Value("\${$MONGO_HOST:}")
+    @get:Generated
+    @set:Generated
+    lateinit var mongoHost: String
+
+    /**
+     * Required when [MultiQueueType.MONGO] is used and [mongoUri] is empty.
+     * It specifies the port that the mongo db is available on.
+     */
+    @SerializedName(MONGO_PORT)
+    @JsonProperty(MONGO_PORT)
+    @Value("\${$MONGO_PORT:}")
+    @get:Generated
+    @set:Generated
+    lateinit var mongoPort: String
+
+    /**
+     * Required when [MultiQueueType.MONGO] is used and [mongoUri] is empty.
+     * It specifies the database you wish to connect to.
+     */
+    @SerializedName(MONGO_DATABASE)
+    @JsonProperty(MONGO_DATABASE)
+    @Value("\${$MONGO_DATABASE:}")
+    @get:Generated
+    @set:Generated
+    lateinit var mongoDatabase: String
+
+    /**
+     * Required when [MultiQueueType.MONGO] is used and [mongoUri] is empty.
+     * It specifies the username that you wish to connect with.
+     */
+    @SerializedName(MONGO_USERNAME)
+    @JsonProperty(MONGO_USERNAME)
+    @Value("\${$MONGO_USERNAME:}")
+    @get:Generated
+    @set:Generated
+    lateinit var mongoUsername: String
+
+    /**
+     * Required when [MultiQueueType.MONGO] is used and [mongoUri] is empty.
+     * It specifies the password for the user that you wish to connect with.
+     */
+    // TODO: Commenting out since it is unused and returned in the settings endpoint without masking
+    // @JsonIgnore
+    // @SerializedName(MONGO_PASSWORD)
+    // @JsonProperty(MONGO_PASSWORD)
+    // @Value("\${MONGO_PASSWORD:}")
+    // lateinit var mongoPassword: String
+
+    /**
+     * Required when [MultiQueueType.MONGO] is used and the above mongo properties are empty.
+     * It specifies all properties of the mongo connection in the format of `mongodb://<username>:<password>@<host>:<port>/<database>`.
+     */
+    @SerializedName(MONGO_URI)
+    @JsonProperty(MONGO_URI)
+    @Value("\${$MONGO_URI:}")
+    @get:Generated
+    @set:Generated
+    lateinit var mongoUri: String
 }

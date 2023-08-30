@@ -42,6 +42,11 @@ dependencies {
     // https://mvnrepository.com/artifact/org.postgresql/postgresql
     implementation("org.postgresql:postgresql:42.5.1")
 
+    // No SQL drivers
+    // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-data-mongodb
+    implementation("org.springframework.boot:spring-boot-starter-data-mongodb:3.1.3")
+
+    // Test dependencies
     testImplementation("org.springframework.boot:spring-boot-starter-test:3.0.6")
     // Required to mock MultiQueue objects since they apparently override a final 'remove(Object)' method.
     testImplementation("org.mockito:mockito-inline:5.1.0")

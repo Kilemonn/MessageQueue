@@ -11,6 +11,8 @@ import javax.persistence.*
  * This object wraps a [Any] type `T` which is the payload to be stored in the queue. (This is actually a [Serializable] but causes issues in initialisation
  * if the type is an `interface`. This needs to be [Serializable] if you want to use it with `Redis` or anything else).
  *
+ * This is used for `InMemory`, `Redis` and `SQL` queues.
+ *
  * @author github.com/Kilemonn
  */
 @Entity
@@ -47,6 +49,15 @@ class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @C
      * Required for JSON deserialisation.
      */
     constructor() : this(null, "")
+
+    constructor(queueMessageDocument: QueueMessageDocument) : this()
+    {
+        this.type = queueMessageDocument.type
+        this.uuid = queueMessageDocument.uuid
+        this.id = queueMessageDocument.id
+        this.payload = queueMessageDocument.payload
+        this.assignedTo = queueMessageDocument.assignedTo
+    }
 
     /**
      * When the [QueueMessage] is read back from a database serialised form, only the
