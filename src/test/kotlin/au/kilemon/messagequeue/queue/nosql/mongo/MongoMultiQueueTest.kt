@@ -3,6 +3,7 @@ package au.kilemon.messagequeue.queue.nosql.mongo
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
+import au.kilemon.messagequeue.queue.nosql.mongo.MongoMultiQueueTest.Companion.MONGO_CONTAINER
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
@@ -20,6 +21,11 @@ import org.testcontainers.containers.GenericContainer
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
 
+/**
+ * A test class for the [MONGO_CONTAINER] to ensure the [MongoMultiQueue] works as expected with this underlying data storage DB.
+ *
+ * @author github.com/Kilemonn
+ */
 @ExtendWith(SpringExtension::class)
 @Testcontainers
 @DataMongoTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=MONGO"])
