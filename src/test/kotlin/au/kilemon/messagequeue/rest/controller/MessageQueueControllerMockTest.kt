@@ -1,6 +1,7 @@
 package au.kilemon.messagequeue.rest.controller
 
 import au.kilemon.messagequeue.logging.LoggingConfiguration
+import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
 import au.kilemon.messagequeue.settings.MessageQueueSettings
@@ -67,5 +68,23 @@ class MessageQueueControllerMockTest
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isInternalServerError)
             .andReturn()
+    }
+
+    /**
+     * Test [MessageQueueController.createMessage] to ensure that an internal server error is returned when [MultiQueue.add] returns `false`.
+     */
+    @Test
+    fun testCreateMessage_addFails()
+    {
+        val message = QueueMessage("payload", "type")
+        multiQueue.initialiseQueueIndex()
+
+        Mockito.`when`(multiQueue.add(message)).thenReturn(false)
+
+        mockMvc.perform(
+            MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .content(gson.toJson(message)))
+            .andExpect(MockMvcResultMatchers.status().isInternalServerError)
     }
 }
