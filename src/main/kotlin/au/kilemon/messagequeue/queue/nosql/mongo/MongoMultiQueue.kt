@@ -35,11 +35,30 @@ class MongoMultiQueue : MultiQueue, HasLogger
     private lateinit var queueMessageRepository: MongoQueueMessageRepository
 
     /**
-     * Just initialise map, so it's not null, but the SQL [QueueMessage] ID is maintained by the database.
+     * Special initialisation for mongo, since the max ID is shared for all sub queues we need to set the [INDEX_ID]
+     * to the highest ID of all elements in all the queues.
      */
     override fun initialiseQueueIndex()
     {
         maxQueueIndex = HashMap()
+        var maxIndex: Long? = null
+        keys(false).forEach{ queueType ->
+            val queueForType = getQueueForType(queueType)
+            val index = queueForType.last().id
+            if (index != null)
+            {
+                maxIndex = if (maxIndex == null)
+                {
+                    index
+                }
+                else
+                {
+                    Math.max(maxIndex!!, index)
+                }
+            }
+        }
+
+        maxQueueIndex[INDEX_ID] = AtomicLong(maxIndex?.plus(1) ?: 1)
     }
 
     override fun persistMessage(message: QueueMessage)
