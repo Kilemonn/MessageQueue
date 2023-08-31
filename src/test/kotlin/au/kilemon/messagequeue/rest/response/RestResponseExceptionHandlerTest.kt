@@ -1,6 +1,7 @@
 package au.kilemon.messagequeue.rest.response
 
 import au.kilemon.messagequeue.filter.CorrelationIdFilter
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,6 +19,15 @@ class RestResponseExceptionHandlerTest
 {
     @BeforeEach
     fun setUp()
+    {
+        MDC.clear()
+    }
+
+    /**
+     * This should be after class but works better here.
+     */
+    @AfterEach
+    fun tearDown()
     {
         MDC.clear()
     }

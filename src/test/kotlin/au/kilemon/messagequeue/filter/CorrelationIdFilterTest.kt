@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.filter
 
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -17,6 +18,15 @@ class CorrelationIdFilterTest
 
     @BeforeEach
     fun setUp()
+    {
+        MDC.clear()
+    }
+
+    /**
+     * This should be afterclass but works better here.
+     */
+    @AfterEach
+    fun tearDown()
     {
         MDC.clear()
     }
