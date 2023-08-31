@@ -33,7 +33,17 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
      */
     private val messageQueue: ConcurrentHashMap<String, Queue<QueueMessage>> = ConcurrentHashMap()
 
-    override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
+    override var maxQueueIndex: HashMap<String, AtomicLong>? = null
+
+    override fun getMaxQueueMap(): HashMap<String, AtomicLong>
+    {
+        if (maxQueueIndex == null)
+        {
+            initialiseQueueIndex()
+        }
+
+        return maxQueueIndex!!
+    }
 
 
     override fun getQueueForType(queueType: String): Queue<QueueMessage>

@@ -26,7 +26,17 @@ class SqlMultiQueue : MultiQueue, HasLogger
     @Autowired
     private lateinit var queueMessageRepository: SQLQueueMessageRepository
 
-    override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
+    override var maxQueueIndex: HashMap<String, AtomicLong>? = null
+
+    override fun getMaxQueueMap(): HashMap<String, AtomicLong>
+    {
+        if (maxQueueIndex == null)
+        {
+            initialiseQueueIndex()
+        }
+
+        return maxQueueIndex!!
+    }
 
     /**
      * Just initialise map, so it's not null, but the SQL [QueueMessage] ID is maintained by the database.

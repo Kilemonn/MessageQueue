@@ -28,18 +28,50 @@ class MongoMultiQueue : MultiQueue, HasLogger
 
     override val LOG: Logger = initialiseLogger()
 
-    override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
+    override var maxQueueIndex: HashMap<String, AtomicLong>? = null
+
+    override fun getMaxQueueMap(): HashMap<String, AtomicLong>
+    {
+        if (maxQueueIndex == null)
+        {
+            initialiseQueueIndex()
+        }
+
+        return maxQueueIndex!!
+    }
 
     @Lazy
     @Autowired
     private lateinit var queueMessageRepository: MongoQueueMessageRepository
 
     /**
-     * Just initialise map, so it's not null, but the SQL [QueueMessage] ID is maintained by the database.
+     * Special initialisation for mongo, since the max ID is shared for all sub queues we need to set the [INDEX_ID]
+     * to the highest ID of all elements in all the queues.
      */
     override fun initialiseQueueIndex()
     {
         maxQueueIndex = HashMap()
+        var maxIndex: Long? = null
+        keys(false).forEach{ queueType ->
+            val queueForType = getQueueForType(queueType)
+            val index = queueForType.last().id
+            if (index != null)
+            {
+                maxIndex = if (maxIndex == null)
+                {
+                    index
+                }
+                else
+                {
+                    Math.max(maxIndex!!, index)
+                }
+            }
+        }
+
+        if (maxIndex != null)
+        {
+            maxQueueIndex!![INDEX_ID] = AtomicLong(maxIndex!!)
+        }
     }
 
     override fun persistMessage(message: QueueMessage)
@@ -163,12 +195,11 @@ class MongoMultiQueue : MultiQueue, HasLogger
     /**
      * Clear the [maxQueueIndex] if the entire map is cleared.
      *
-     *
-     * Since [clearQueueIndexForType] is not clearing any of map entries.
+     * Since [MongoMultiQueue.clearQueueIndexForType] is not clearing any of map entries.
      */
     override fun clear()
     {
         super.clear()
-        maxQueueIndex.clear()
+        getMaxQueueMap().clear()
     }
 }
