@@ -68,6 +68,7 @@ class SettingsControllerTest
         val settings = gson.fromJson(mvcResult.response.contentAsString, MessageQueueSettings::class.java)
 
         Assertions.assertEquals(MultiQueueType.IN_MEMORY.toString(), settings.multiQueueType)
+        Assertions.assertEquals("false", settings.multiQueueLazyInitialise)
 
         Assertions.assertTrue(settings.redisPrefix.isEmpty())
         Assertions.assertEquals(MessageQueueSettings.REDIS_ENDPOINT_DEFAULT, settings.redisEndpoint)

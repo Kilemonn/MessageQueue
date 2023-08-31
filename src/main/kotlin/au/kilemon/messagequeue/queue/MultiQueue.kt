@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicLong
 import java.util.stream.Collectors
+import kotlin.collections.HashMap
 import kotlin.jvm.Throws
 
 /**
@@ -54,7 +55,15 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * This is used to track the next ID of the queue index that should be set and gives order to the
      * received messages as they are created in storage mechanisms that don't guarantee order.
      */
-    var maxQueueIndex: HashMap<String, AtomicLong>
+    var maxQueueIndex: HashMap<String, AtomicLong>?
+
+    /**
+     * Lazy initialise the index for use in tests when the backing mechanism is not ready, but we are creating
+     * the [MultiQueue].
+     *
+     * This could be extended to provide a property to force lazy initialisation.
+     */
+    fun getMaxQueueMap(): HashMap<String, AtomicLong>
 
     /**
      * Initialise the [maxQueueIndex] based on any existing [QueueMessage]s in the storage mechanism.
@@ -65,7 +74,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
         keys(false).forEach{ queueType ->
             val queueForType = getQueueForType(queueType)
             val maxIndex = queueForType.last().id
-            maxQueueIndex[queueType] = AtomicLong(maxIndex?.plus(1) ?: 1)
+            maxQueueIndex!![queueType] = AtomicLong(maxIndex?.plus(1) ?: 1)
         }
     }
 
@@ -81,11 +90,11 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      */
     fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
     {
-        var index = maxQueueIndex[queueType]
+        var index = getMaxQueueMap()[queueType]
         if (index == null)
         {
             index = AtomicLong(1)
-            maxQueueIndex[queueType] = index
+            getMaxQueueMap()[queueType] = index
         }
         return Optional.of(index.getAndIncrement())
     }
@@ -273,7 +282,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      */
     fun clearQueueIndexForType(queueType: String)
     {
-        maxQueueIndex.remove(queueType)
+        getMaxQueueMap().remove(queueType)
     }
 
     /**
@@ -522,7 +531,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
             val amountRemovedForQueue = clearForType(key)
             removedEntryCount += amountRemovedForQueue
         }
-        maxQueueIndex.clear()
+        getMaxQueueMap().clear()
         LOG.debug("Cleared multi-queue, removed [{}] message entries over [{}] queue types.", removedEntryCount, keys)
     }
 

@@ -12,6 +12,7 @@ import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicLong
 import java.util.stream.Collectors
+import kotlin.collections.HashMap
 
 /**
  * A `Redis` specific implementation of the [MultiQueue].
@@ -24,7 +25,17 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
 {
     override val LOG: Logger = initialiseLogger()
 
-    override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
+    override var maxQueueIndex: HashMap<String, AtomicLong>? = null
+
+    override fun getMaxQueueMap(): HashMap<String, AtomicLong>
+    {
+        if (maxQueueIndex == null)
+        {
+            initialiseQueueIndex()
+        }
+
+        return maxQueueIndex!!
+    }
 
     /**
      * Append the [MessageQueueSettings.redisPrefix] to the provided [queueType] [String].

@@ -28,7 +28,17 @@ class MongoMultiQueue : MultiQueue, HasLogger
 
     override val LOG: Logger = initialiseLogger()
 
-    override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
+    override var maxQueueIndex: HashMap<String, AtomicLong>? = null
+
+    override fun getMaxQueueMap(): HashMap<String, AtomicLong>
+    {
+        if (maxQueueIndex == null)
+        {
+            initialiseQueueIndex()
+        }
+
+        return maxQueueIndex!!
+    }
 
     @Lazy
     @Autowired
@@ -58,7 +68,10 @@ class MongoMultiQueue : MultiQueue, HasLogger
             }
         }
 
-        maxQueueIndex[INDEX_ID] = AtomicLong(maxIndex?.plus(1) ?: 1)
+        if (maxIndex != null)
+        {
+            maxQueueIndex!![INDEX_ID] = AtomicLong(maxIndex!!)
+        }
     }
 
     override fun persistMessage(message: QueueMessage)
@@ -182,12 +195,11 @@ class MongoMultiQueue : MultiQueue, HasLogger
     /**
      * Clear the [maxQueueIndex] if the entire map is cleared.
      *
-     *
-     * Since [clearQueueIndexForType] is not clearing any of map entries.
+     * Since [MongoMultiQueue.clearQueueIndexForType] is not clearing any of map entries.
      */
     override fun clear()
     {
         super.clear()
-        maxQueueIndex.clear()
+        getMaxQueueMap().clear()
     }
 }

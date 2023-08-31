@@ -239,7 +239,7 @@ abstract class AbstractMultiQueueTest
     {
         Assertions.assertTrue(multiQueue.isEmpty())
         Assertions.assertNotNull(multiQueue.maxQueueIndex)
-        Assertions.assertTrue(multiQueue.maxQueueIndex.isEmpty())
+        Assertions.assertTrue(multiQueue.maxQueueIndex!!.isEmpty())
     }
 
     /**
@@ -249,7 +249,7 @@ abstract class AbstractMultiQueueTest
     @Test
     fun testInitialiseQueueIndex_reInitialise()
     {
-        if (multiQueue is SqlMultiQueue || multiQueue is MongoMultiQueue)
+        if (multiQueue is SqlMultiQueue)
         {
             return
         }
@@ -262,16 +262,16 @@ abstract class AbstractMultiQueueTest
         val list2 = listOf(QueueMessage("test", queueType2), QueueMessage(123, queueType2))
         Assertions.assertTrue(multiQueue.addAll(list1))
         Assertions.assertTrue(multiQueue.addAll(list2))
-        Assertions.assertEquals(list1.size + 1, multiQueue.maxQueueIndex[queueType1]!!.toInt())
-        Assertions.assertEquals(list2.size + 1, multiQueue.maxQueueIndex[queueType2]!!.toInt())
+        Assertions.assertEquals(list1.size + 1, multiQueue.maxQueueIndex!![queueType1]!!.toInt())
+        Assertions.assertEquals(list2.size + 1, multiQueue.maxQueueIndex!![queueType2]!!.toInt())
         Assertions.assertEquals(list1.size + 1, multiQueue.getAndIncrementQueueIndex(queueType1).get().toInt())
         Assertions.assertEquals(list2.size + 1, multiQueue.getAndIncrementQueueIndex(queueType2).get().toInt())
-        Assertions.assertEquals(list1.size + 2, multiQueue.maxQueueIndex[queueType1]!!.toInt())
-        Assertions.assertEquals(list2.size + 2, multiQueue.maxQueueIndex[queueType2]!!.toInt())
+        Assertions.assertEquals(list1.size + 2, multiQueue.maxQueueIndex!![queueType1]!!.toInt())
+        Assertions.assertEquals(list2.size + 2, multiQueue.maxQueueIndex!![queueType2]!!.toInt())
 
         multiQueue.initialiseQueueIndex()
-        Assertions.assertEquals(list1.size + 1, multiQueue.maxQueueIndex[queueType1]!!.toInt())
-        Assertions.assertEquals(list2.size + 1, multiQueue.maxQueueIndex[queueType2]!!.toInt())
+        Assertions.assertEquals(list1.size + 1, multiQueue.maxQueueIndex!![queueType1]!!.toInt())
+        Assertions.assertEquals(list2.size + 1, multiQueue.maxQueueIndex!![queueType2]!!.toInt())
     }
 
     /**
@@ -294,8 +294,8 @@ abstract class AbstractMultiQueueTest
         else if (multiQueue is MongoMultiQueue)
         {
             // Ensure that no matter the provided queueType argument, that the single entry is always incremented
-            Assertions.assertNull(multiQueue.maxQueueIndex[queueType])
-            Assertions.assertNull(multiQueue.maxQueueIndex[MongoMultiQueue.INDEX_ID])
+            Assertions.assertNull(multiQueue.maxQueueIndex!![queueType])
+            Assertions.assertNull(multiQueue.maxQueueIndex!![MongoMultiQueue.INDEX_ID])
 
             Assertions.assertEquals(1, multiQueue.getAndIncrementQueueIndex(queueType).get())
             Assertions.assertEquals(2, multiQueue.getAndIncrementQueueIndex(MongoMultiQueue.INDEX_ID).get())
@@ -304,20 +304,20 @@ abstract class AbstractMultiQueueTest
             Assertions.assertEquals(5, multiQueue.getAndIncrementQueueIndex(queueType).get())
 
             multiQueue.clearForType(queueType)
-            Assertions.assertFalse(multiQueue.maxQueueIndex.isEmpty())
-            Assertions.assertNull(multiQueue.maxQueueIndex[queueType])
-            Assertions.assertNotNull(multiQueue.maxQueueIndex[MongoMultiQueue.INDEX_ID])
+            Assertions.assertFalse(multiQueue.maxQueueIndex!!.isEmpty())
+            Assertions.assertNull(multiQueue.maxQueueIndex!![queueType])
+            Assertions.assertNotNull(multiQueue.maxQueueIndex!![MongoMultiQueue.INDEX_ID])
 
             multiQueue.clear()
-            Assertions.assertTrue(multiQueue.maxQueueIndex.isEmpty())
-            Assertions.assertNull(multiQueue.maxQueueIndex[queueType])
-            Assertions.assertNull(multiQueue.maxQueueIndex[MongoMultiQueue.INDEX_ID])
+            Assertions.assertTrue(multiQueue.maxQueueIndex!!.isEmpty())
+            Assertions.assertNull(multiQueue.maxQueueIndex!![queueType])
+            Assertions.assertNull(multiQueue.maxQueueIndex!![MongoMultiQueue.INDEX_ID])
         }
         else
         {
 
-            Assertions.assertTrue(multiQueue.maxQueueIndex.isEmpty())
-            Assertions.assertNull(multiQueue.maxQueueIndex[queueType])
+            Assertions.assertTrue(multiQueue.maxQueueIndex!!.isEmpty())
+            Assertions.assertNull(multiQueue.maxQueueIndex!![queueType])
 
             Assertions.assertEquals(1, multiQueue.getAndIncrementQueueIndex(queueType).get())
             Assertions.assertEquals(2, multiQueue.getAndIncrementQueueIndex(queueType).get())
@@ -326,8 +326,8 @@ abstract class AbstractMultiQueueTest
             Assertions.assertEquals(5, multiQueue.getAndIncrementQueueIndex(queueType).get())
 
             multiQueue.clearForType(queueType)
-            Assertions.assertTrue(multiQueue.maxQueueIndex.isEmpty())
-            Assertions.assertNull(multiQueue.maxQueueIndex[queueType])
+            Assertions.assertTrue(multiQueue.maxQueueIndex!!.isEmpty())
+            Assertions.assertNull(multiQueue.maxQueueIndex!![queueType])
         }
     }
 
