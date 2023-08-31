@@ -255,6 +255,7 @@ abstract class AbstractMultiQueueTest
         }
 
         Assertions.assertTrue(multiQueue.isEmpty())
+
         val queueType1 = "testInitialiseQueueIndex_reInitialise1"
         val queueType2 = "testInitialiseQueueIndex_reInitialise2"
 
@@ -262,16 +263,35 @@ abstract class AbstractMultiQueueTest
         val list2 = listOf(QueueMessage("test", queueType2), QueueMessage(123, queueType2))
         Assertions.assertTrue(multiQueue.addAll(list1))
         Assertions.assertTrue(multiQueue.addAll(list2))
-        Assertions.assertEquals(list1.size + 1, multiQueue.maxQueueIndex!![queueType1]!!.toInt())
-        Assertions.assertEquals(list2.size + 1, multiQueue.maxQueueIndex!![queueType2]!!.toInt())
-        Assertions.assertEquals(list1.size + 1, multiQueue.getAndIncrementQueueIndex(queueType1).get().toInt())
-        Assertions.assertEquals(list2.size + 1, multiQueue.getAndIncrementQueueIndex(queueType2).get().toInt())
-        Assertions.assertEquals(list1.size + 2, multiQueue.maxQueueIndex!![queueType1]!!.toInt())
-        Assertions.assertEquals(list2.size + 2, multiQueue.maxQueueIndex!![queueType2]!!.toInt())
 
-        multiQueue.initialiseQueueIndex()
-        Assertions.assertEquals(list1.size + 1, multiQueue.maxQueueIndex!![queueType1]!!.toInt())
-        Assertions.assertEquals(list2.size + 1, multiQueue.maxQueueIndex!![queueType2]!!.toInt())
+        if (multiQueue is MongoMultiQueue)
+        {
+            Assertions.assertEquals(list1.size + list2.size + 1, multiQueue.maxQueueIndex!![MongoMultiQueue.INDEX_ID]!!.toInt())
+            Assertions.assertEquals(list1.size + list2.size + 1, multiQueue.maxQueueIndex!![MongoMultiQueue.INDEX_ID]!!.toInt())
+            Assertions.assertEquals(list1.size + list2.size + 1, multiQueue.getAndIncrementQueueIndex(MongoMultiQueue.INDEX_ID).get().toInt())
+            Assertions.assertEquals(list1.size + list2.size + 2, multiQueue.getAndIncrementQueueIndex(queueType1).get().toInt())
+            Assertions.assertEquals(list1.size + list2.size + 3, multiQueue.getAndIncrementQueueIndex(queueType2).get().toInt())
+            Assertions.assertEquals(list1.size + list2.size + 4, multiQueue.maxQueueIndex!![MongoMultiQueue.INDEX_ID]!!.toInt())
+            Assertions.assertEquals(list1.size + list2.size + 4, multiQueue.maxQueueIndex!![MongoMultiQueue.INDEX_ID]!!.toInt())
+
+            multiQueue.initialiseQueueIndex()
+            // The mongo ID is based on the store entries
+            Assertions.assertEquals(list1.size + list2.size, multiQueue.maxQueueIndex!![MongoMultiQueue.INDEX_ID]!!.toInt())
+            Assertions.assertEquals(list1.size + list2.size, multiQueue.maxQueueIndex!![MongoMultiQueue.INDEX_ID]!!.toInt())
+        }
+        else
+        {
+            Assertions.assertEquals(list1.size + 1, multiQueue.maxQueueIndex!![queueType1]!!.toInt())
+            Assertions.assertEquals(list2.size + 1, multiQueue.maxQueueIndex!![queueType2]!!.toInt())
+            Assertions.assertEquals(list1.size + 1, multiQueue.getAndIncrementQueueIndex(queueType1).get().toInt())
+            Assertions.assertEquals(list2.size + 1, multiQueue.getAndIncrementQueueIndex(queueType2).get().toInt())
+            Assertions.assertEquals(list1.size + 2, multiQueue.maxQueueIndex!![queueType1]!!.toInt())
+            Assertions.assertEquals(list2.size + 2, multiQueue.maxQueueIndex!![queueType2]!!.toInt())
+
+            multiQueue.initialiseQueueIndex()
+            Assertions.assertEquals(list1.size + 1, multiQueue.maxQueueIndex!![queueType1]!!.toInt())
+            Assertions.assertEquals(list2.size + 1, multiQueue.maxQueueIndex!![queueType2]!!.toInt())
+        }
     }
 
     /**

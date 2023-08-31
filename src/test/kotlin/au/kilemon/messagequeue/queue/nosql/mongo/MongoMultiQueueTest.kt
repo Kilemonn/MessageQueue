@@ -103,6 +103,6 @@ class MongoMultiQueueTest: AbstractMultiQueueTest()
     {
         Assertions.assertTrue(mongoDb.isRunning)
         multiQueue.clear()
-        multiQueue.initialiseQueueIndex()
+        multiQueue.getMaxQueueMap()
     }
 }
