@@ -77,7 +77,6 @@ class MessageQueueControllerMockTest
     fun testCreateMessage_addFails()
     {
         val message = QueueMessage("payload", "type")
-        multiQueue.initialiseQueueIndex()
 
         Mockito.`when`(multiQueue.add(message)).thenReturn(false)
 

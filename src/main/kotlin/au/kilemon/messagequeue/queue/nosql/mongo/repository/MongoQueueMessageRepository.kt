@@ -55,4 +55,11 @@ interface MongoQueueMessageRepository: MongoRepository<QueueMessageDocument, Lon
      */
     @Modifying
     fun deleteByUuid(uuid: String): Int
+
+    /**
+     * Get the entry with the largest ID.
+     *
+     * @return the [QueueMessageDocument] with the largest ID, otherwise [Optional.empty]
+     */
+    fun findTopByOrderByIdDesc(): Optional<QueueMessageDocument>
 }

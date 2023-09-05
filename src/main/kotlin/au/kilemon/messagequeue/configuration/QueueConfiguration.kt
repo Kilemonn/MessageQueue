@@ -70,16 +70,6 @@ class QueueConfiguration : HasLogger
             }
         }
 
-        if (!messageQueueSettings.multiQueueLazyInitialise.toBoolean())
-        {
-            LOG.trace("Lazy initialising is disabled, initialising queue indexes for existing messages now.")
-            queue.initialiseQueueIndex()
-        }
-        else
-        {
-            LOG.debug("Lazy initialise enabled with provided argument [{}], delaying initialisation.", messageQueueSettings.multiQueueLazyInitialise)
-        }
-
         LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType)
 
         return queue

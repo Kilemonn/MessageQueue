@@ -28,7 +28,7 @@ import org.testcontainers.utility.DockerImageName
  */
 @ExtendWith(SpringExtension::class)
 @Testcontainers
-@DataMongoTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=MONGO", "${MessageQueueSettings.MULTI_QUEUE_LAZY_INITIALISE}=true"])
+@DataMongoTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=MONGO"])
 @ContextConfiguration(initializers = [MongoMultiQueueTest.Initializer::class])
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import( *[QueueConfiguration::class, LoggingConfiguration::class, AbstractMultiQueueTest.AbstractMultiQueueTestConfiguration::class] )
@@ -103,6 +103,5 @@ class MongoMultiQueueTest: AbstractMultiQueueTest()
     {
         Assertions.assertTrue(mongoDb.isRunning)
         multiQueue.clear()
-        multiQueue.getMaxQueueMap()
     }
 }

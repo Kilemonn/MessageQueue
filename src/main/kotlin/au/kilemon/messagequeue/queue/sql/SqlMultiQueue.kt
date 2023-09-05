@@ -26,26 +26,6 @@ class SqlMultiQueue : MultiQueue, HasLogger
     @Autowired
     private lateinit var queueMessageRepository: SQLQueueMessageRepository
 
-    override var maxQueueIndex: HashMap<String, AtomicLong>? = null
-
-    override fun getMaxQueueMap(): HashMap<String, AtomicLong>
-    {
-        if (maxQueueIndex == null)
-        {
-            initialiseQueueIndex()
-        }
-
-        return maxQueueIndex!!
-    }
-
-    /**
-     * Just initialise map, so it's not null, but the SQL [QueueMessage] ID is maintained by the database.
-     */
-    override fun initialiseQueueIndex()
-    {
-        maxQueueIndex = HashMap()
-    }
-
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {
         val entries = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
@@ -172,7 +152,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
      * Overriding to return [Optional.EMPTY] so that the [MultiQueue.add] does set an `id` into the [QueueMessage]
      * even if the id is `null`.
      */
-    override fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
+    override fun getNextQueueIndex(queueType: String): Optional<Long>
     {
         return Optional.empty()
     }

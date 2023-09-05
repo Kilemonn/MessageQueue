@@ -25,18 +25,6 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
 {
     override val LOG: Logger = initialiseLogger()
 
-    override var maxQueueIndex: HashMap<String, AtomicLong>? = null
-
-    override fun getMaxQueueMap(): HashMap<String, AtomicLong>
-    {
-        if (maxQueueIndex == null)
-        {
-            initialiseQueueIndex()
-        }
-
-        return maxQueueIndex!!
-    }
-
     /**
      * Append the [MessageQueueSettings.redisPrefix] to the provided [queueType] [String].
      *
@@ -109,9 +97,17 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
     /**
      * Overriding to pass in the [queueType] into [appendPrefix].
      */
-    override fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
+    override fun getNextQueueIndex(queueType: String): Optional<Long>
     {
-        return super.getAndIncrementQueueIndex(appendPrefix(queueType))
+        val queueForType = getQueueForType(appendPrefix(queueType))
+        return if (queueForType.isNotEmpty())
+        {
+            Optional.ofNullable(queueForType.last().id?.plus(1) ?: 1)
+        }
+        else
+        {
+            Optional.of(1)
+        }
     }
 
     override fun removeInternal(element: QueueMessage): Boolean

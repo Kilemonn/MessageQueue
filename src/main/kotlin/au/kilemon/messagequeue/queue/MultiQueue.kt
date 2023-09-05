@@ -51,35 +51,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      */
 
     /**
-     * A holder for the current max [QueueMessage] index per sub-queue type.
-     * This is used to track the next ID of the queue index that should be set and gives order to the
-     * received messages as they are created in storage mechanisms that don't guarantee order.
-     */
-    var maxQueueIndex: HashMap<String, AtomicLong>?
-
-    /**
-     * Lazy initialise the index for use in tests when the backing mechanism is not ready, but we are creating
-     * the [MultiQueue].
-     *
-     * This could be extended to provide a property to force lazy initialisation.
-     */
-    fun getMaxQueueMap(): HashMap<String, AtomicLong>
-
-    /**
-     * Initialise the [maxQueueIndex] based on any existing [QueueMessage]s in the storage mechanism.
-     */
-    fun initialiseQueueIndex()
-    {
-        maxQueueIndex = HashMap()
-        keys(false).forEach{ queueType ->
-            val queueForType = getQueueForType(queueType)
-            val maxIndex = queueForType.last().id
-            maxQueueIndex!![queueType] = AtomicLong(maxIndex?.plus(1) ?: 1)
-        }
-    }
-
-    /**
-     * Get the [maxQueueIndex] then increment it.
+     * Get the next queue index.
      * If it does not exist yet, a default value of 1 will be set and returned.
      *
      * This can be overridden to return [Optional.EMPTY] to not override the ID of the
@@ -88,16 +60,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      *
      * @return the current value of the index before it was incremented
      */
-    fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
-    {
-        var index = getMaxQueueMap()[queueType]
-        if (index == null)
-        {
-            index = AtomicLong(1)
-            getMaxQueueMap()[queueType] = index
-        }
-        return Optional.of(index.getAndIncrement())
-    }
+    fun getNextQueueIndex(queueType: String): Optional<Long>
 
     /**
      * Used to persist the updated [QueueMessage] to the storage mechanism.
@@ -271,18 +234,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      */
     fun clearForType(queueType: String): Int
     {
-        clearQueueIndexForType(queueType)
         return clearForTypeInternal(queueType)
-    }
-
-    /**
-     * Clear the [MultiQueue.maxQueueIndex] entry matching the provided key [queueType].
-     *
-     * @param queueType the [String] of the [Queue] to clear
-     */
-    fun clearQueueIndexForType(queueType: String)
-    {
-        getMaxQueueMap().remove(queueType)
     }
 
     /**
@@ -381,7 +333,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
         {
             if (element.id == null)
             {
-                val index = getAndIncrementQueueIndex(element.type)
+                val index = getNextQueueIndex(element.type)
                 if (index.isPresent)
                 {
                     element.id = index.get()
@@ -531,7 +483,6 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
             val amountRemovedForQueue = clearForType(key)
             removedEntryCount += amountRemovedForQueue
         }
-        getMaxQueueMap().clear()
         LOG.debug("Cleared multi-queue, removed [{}] message entries over [{}] queue types.", removedEntryCount, keys)
     }
 

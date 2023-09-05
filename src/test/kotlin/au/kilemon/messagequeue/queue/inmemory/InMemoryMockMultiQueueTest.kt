@@ -18,12 +18,6 @@ class InMemoryMockMultiQueueTest
 {
     private val multiQueue: InMemoryMultiQueue = Mockito.spy(InMemoryMultiQueue::class.java)
 
-    @BeforeEach
-    fun setUp()
-    {
-        multiQueue.initialiseQueueIndex()
-    }
-
     /**
      * Test [InMemoryMultiQueue.add] to ensure that `false` is returned when [InMemoryMultiQueue.addInternal] returns `false`.
      */
