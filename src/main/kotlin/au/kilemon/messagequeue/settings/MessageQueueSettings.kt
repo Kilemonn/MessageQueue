@@ -28,7 +28,6 @@ class MessageQueueSettings
     {
         const val MULTI_QUEUE_TYPE: String = "MULTI_QUEUE_TYPE"
         const val MULTI_QUEUE_TYPE_DEFAULT: String = "IN_MEMORY"
-        const val MULTI_QUEUE_LAZY_INITIALISE: String = "MULTI_QUEUE_LAZY_INITIALISE"
 
         /**
          * Start redis related properties
@@ -79,18 +78,6 @@ class MessageQueueSettings
     @get:Generated
     @set:Generated
     lateinit var multiQueueType: String
-
-    /**
-     * `Optional` uses the [MULTI_QUEUE_TYPE] environment variable to determine where
-     * the underlying multi queue is persisted. It can be any value of [MultiQueueType].
-     * Defaults to [MultiQueueType.IN_MEMORY] ([MULTI_QUEUE_TYPE_DEFAULT]).
-     */
-    @SerializedName(MULTI_QUEUE_LAZY_INITIALISE)
-    @JsonProperty(MULTI_QUEUE_LAZY_INITIALISE)
-    @Value("\${$MULTI_QUEUE_LAZY_INITIALISE:false}")
-    @get:Generated
-    @set:Generated
-    lateinit var multiQueueLazyInitialise: String
 
 
     /**

@@ -33,18 +33,22 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
      */
     private val messageQueue: ConcurrentHashMap<String, Queue<QueueMessage>> = ConcurrentHashMap()
 
-    override var maxQueueIndex: HashMap<String, AtomicLong>? = null
+    private val maxQueueIndex: HashMap<String, AtomicLong> = HashMap()
 
-    override fun getMaxQueueMap(): HashMap<String, AtomicLong>
+    /**
+     * This index is special compared to the other types it will be incremented once retrieved. So we could be skipping
+     * indexes, but it should be fine since it's only used for message ordering.
+     */
+    override fun getNextQueueIndex(queueType: String): Optional<Long>
     {
-        if (maxQueueIndex == null)
+        var index = maxQueueIndex[queueType]
+        if (index == null)
         {
-            initialiseQueueIndex()
+            index = AtomicLong(1)
+            maxQueueIndex[queueType] = index
         }
-
-        return maxQueueIndex!!
+        return Optional.of(index.getAndIncrement())
     }
-
 
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {
@@ -82,6 +86,7 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
     {
         var amountRemoved = 0
         val queueForType: Queue<QueueMessage>? = messageQueue[queueType]
+        maxQueueIndex.remove(queueType)
         if (queueForType != null)
         {
             amountRemoved = queueForType.size
@@ -95,6 +100,12 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
             LOG.debug("Attempting to clear non-existent queue for type [{}]. No messages cleared.", queueType)
         }
         return amountRemoved
+    }
+
+    override fun clear()
+    {
+        super.clear()
+        maxQueueIndex.clear()
     }
 
     @Throws(DuplicateMessageException::class)

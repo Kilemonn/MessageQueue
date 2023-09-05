@@ -28,51 +28,9 @@ class MongoMultiQueue : MultiQueue, HasLogger
 
     override val LOG: Logger = initialiseLogger()
 
-    override var maxQueueIndex: HashMap<String, AtomicLong>? = null
-
-    override fun getMaxQueueMap(): HashMap<String, AtomicLong>
-    {
-        if (maxQueueIndex == null)
-        {
-            initialiseQueueIndex()
-        }
-
-        return maxQueueIndex!!
-    }
-
     @Lazy
     @Autowired
     private lateinit var queueMessageRepository: MongoQueueMessageRepository
-
-    /**
-     * Special initialisation for mongo, since the max ID is shared for all sub queues we need to set the [INDEX_ID]
-     * to the highest ID of all elements in all the queues.
-     */
-    override fun initialiseQueueIndex()
-    {
-        maxQueueIndex = HashMap()
-        var maxIndex: Long? = null
-        keys(false).forEach{ queueType ->
-            val queueForType = getQueueForType(queueType)
-            val index = queueForType.last().id
-            if (index != null)
-            {
-                maxIndex = if (maxIndex == null)
-                {
-                    index
-                }
-                else
-                {
-                    Math.max(maxIndex!!, index)
-                }
-            }
-        }
-
-        if (maxIndex != null)
-        {
-            maxQueueIndex!![INDEX_ID] = AtomicLong(maxIndex!!)
-        }
-    }
 
     override fun persistMessage(message: QueueMessage)
     {
@@ -179,27 +137,16 @@ class MongoMultiQueue : MultiQueue, HasLogger
      * Overriding to use the constant [INDEX_ID] for all look-ups since the ID is shared and needs to be assigned to
      * the [QueueMessageDocument] before it is created.
      */
-    override fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
+    override fun getNextQueueIndex(queueType: String): Optional<Long>
     {
-        return super.getAndIncrementQueueIndex(INDEX_ID)
-    }
-
-    /**
-     * Override to never clear the queue index for the type, since it's a shared index map.
-     */
-    override fun clearQueueIndexForType(queueType: String)
-    {
-
-    }
-
-    /**
-     * Clear the [maxQueueIndex] if the entire map is cleared.
-     *
-     * Since [MongoMultiQueue.clearQueueIndexForType] is not clearing any of map entries.
-     */
-    override fun clear()
-    {
-        super.clear()
-        getMaxQueueMap().clear()
+        val largestIdMessage = queueMessageRepository.findTopByOrderByIdDesc()
+        return if (largestIdMessage.isPresent)
+        {
+            Optional.ofNullable(largestIdMessage.get().id?.plus(1) ?: 1)
+        }
+        else
+        {
+            Optional.of(1)
+        }
     }
 }
