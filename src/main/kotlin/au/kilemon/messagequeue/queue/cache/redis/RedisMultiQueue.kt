@@ -21,7 +21,7 @@ import kotlin.collections.HashMap
  *
  * @author github.com/Kilemonn
  */
-class RedisMultiQueue(private val prefix: String = "", private val redisTemplate: RedisTemplate<String, QueueMessage>) : MultiQueue, HasLogger
+class RedisMultiQueue(private val prefix: String = "", private val redisTemplate: RedisTemplate<String, QueueMessage>) : MultiQueue(), HasLogger
 {
     override val LOG: Logger = initialiseLogger()
 
@@ -196,7 +196,7 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
      * [RedisTemplate] does not allow for inplace object updates, so we will need to remove the [message] then re-add the [message] to perform the update.
      * Since we cannot "remove" the message directly, we need to find the matching message via UUID.
      */
-    override fun persistMessage(message: QueueMessage)
+    override fun persistMessageInternal(message: QueueMessage)
     {
         val queue = getQueueForType(message.type)
         val matchingMessage = queue.stream().filter{ element -> element.uuid == message.uuid }.findFirst()

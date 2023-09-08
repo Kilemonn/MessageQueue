@@ -9,26 +9,25 @@ import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicLong
 import java.util.stream.Collectors
 import kotlin.collections.HashMap
 import kotlin.jvm.Throws
 
 /**
- * A [MultiQueue] interface, which extends [Queue].
- * It contains various extra methods for interfacing with the [MultiQueue] using the [String]
+ * A [MultiQueue] base class, which extends [Queue].
+ * It contains various extra methods for interfacing with the [MultiQueue] using the [String] as a queue type identifier
  * to manipulate the appropriate underlying [Queue]s.
  *
  * @author github.com/Kilemonn
  */
-interface MultiQueue: Queue<QueueMessage>, HasLogger
+abstract class MultiQueue: Queue<QueueMessage>, HasLogger
 {
     companion object
     {
         private const val NOT_IMPLEMENTED_METHOD: String = "Method is not implemented."
     }
 
-    override val LOG: Logger
+    abstract override val LOG: Logger
 
     /**
      * Get the underlying size of the [MultiQueue].
@@ -60,7 +59,22 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      *
      * @return the current value of the index before it was incremented
      */
-    fun getNextQueueIndex(queueType: String): Optional<Long>
+    abstract fun getNextQueueIndex(queueType: String): Optional<Long>
+
+    /**
+     * A wrapper for the [MultiQueue.persistMessageInternal] so this method can be synchronised.
+     *
+     * Synchronising so that multiple messages are not updated out of order.
+     *
+     * @param message the updated [QueueMessage] to persist
+     * @return `true` if the [QueueMessage] was updated successfully, otherwise `false`
+     */
+    @Synchronized
+    @Throws(MessageUpdateException::class)
+    fun persistMessage(message: QueueMessage)
+    {
+        persistMessageInternal(message)
+    }
 
     /**
      * Used to persist the updated [QueueMessage] to the storage mechanism.
@@ -73,7 +87,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @return `true` if the [QueueMessage] was updated successfully, otherwise `false`
      */
     @Throws(MessageUpdateException::class)
-    fun persistMessage(message: QueueMessage)
+    abstract fun persistMessageInternal(message: QueueMessage)
 
     /**
      * Retrieves or creates a new [Queue] of type [QueueMessage] for the provided [String].
@@ -83,7 +97,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param queueType the identifier of the sub-queue [Queue]
      * @return the [Queue] matching the provided [String]
      */
-    fun getQueueForType(queueType: String): Queue<QueueMessage>
+    abstract fun getQueueForType(queueType: String): Queue<QueueMessage>
 
     /**
      * Retrieves only assigned messages in the sub-queue for the provided [queueType].
@@ -95,7 +109,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param assignedTo to further filter the messages returned this can be provided
      * @return a limited version of the [Queue] containing only assigned messages
      */
-    fun getAssignedMessagesForType(queueType: String, assignedTo: String?): Queue<QueueMessage>
+    open fun getAssignedMessagesForType(queueType: String, assignedTo: String?): Queue<QueueMessage>
     {
         val queue = ConcurrentLinkedQueue<QueueMessage>()
         val queueForType = getQueueForType(queueType)
@@ -118,7 +132,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param queueType the identifier of the sub-queue [Queue]
      * @return a limited version of the [Queue] containing only unassigned messages
      */
-    fun getUnassignedMessagesForType(queueType:String): Queue<QueueMessage>
+    open fun getUnassignedMessagesForType(queueType:String): Queue<QueueMessage>
     {
         val queue = ConcurrentLinkedQueue<QueueMessage>()
         val queueForType = getQueueForType(queueType)
@@ -206,7 +220,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * Performs a health check on the underlying storage mechanism.
      * If there are any errors an [Exception] should be thrown, otherwise no exception should be thrown to indicate a sucessful health check.
      */
-    fun performHealthCheckInternal()
+    abstract fun performHealthCheckInternal()
 
     /**
      * Get a [QueueMessage] directly from the [MultiQueue] that matches the provided [uuid].
@@ -214,7 +228,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param uuid of the [QueueMessage] to find within the [MultiQueue]
      * @return the matching [QueueMessage] or [Optional.EMPTY]
      */
-    fun getMessageByUUID(uuid: String): Optional<QueueMessage>
+    abstract fun getMessageByUUID(uuid: String): Optional<QueueMessage>
 
     /**
      * Clears the underlying [Queue] for the provided [String]. By calling [Queue.clear].
@@ -224,10 +238,10 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param queueType the [String] of the [Queue] to clear
      * @return the number of entries removed
      */
-    fun clearForTypeInternal(queueType: String): Int
+    abstract fun clearForTypeInternal(queueType: String): Int
 
     /**
-     * Clear the [MultiQueue.maxQueueIndex] then call to [MultiQueue.clearForTypeInternal].
+     * Call to [MultiQueue.clearForTypeInternal].
      *
      * @param queueType the [String] of the [Queue] to clear
      * @return the number of entries removed
@@ -243,7 +257,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param queueType the [String] of the [Queue] to check whether it is empty
      * @return `true` if the [Queue] for the [String] is empty, otherwise `false`
      */
-    fun isEmptyForType(queueType: String): Boolean
+    abstract fun isEmptyForType(queueType: String): Boolean
 
     /**
      * Calls [Queue.poll] on the underlying [Queue] for the provided [String].
@@ -252,7 +266,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param queueType [String] of the [Queue] to poll
      * @return the head element or `null`
      */
-    fun pollForType(queueType: String): Optional<QueueMessage>
+    open fun pollForType(queueType: String): Optional<QueueMessage>
     {
         val head = pollInternal(queueType)
         if (head.isPresent)
@@ -277,7 +291,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param queueType the sub-queue to poll
      * @return the first message wrapped as an [Optional] otherwise [Optional.empty]
      */
-    fun pollInternal(queueType: String): Optional<QueueMessage>
+    abstract fun pollInternal(queueType: String): Optional<QueueMessage>
 
     /**
      * Calls [Queue.peek] on the underlying [Queue] for the provided [String].
@@ -307,7 +321,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param includeEmpty *true* to include any empty queues which one had elements in them, otherwise *false* to only include keys from queues which have elements.
      * @return a [Set] of the available `QueueTypes` that have entries in the [MultiQueue].
      */
-    fun keys(includeEmpty: Boolean = true): Set<String>
+    abstract fun keys(includeEmpty: Boolean = true): Set<String>
 
     /**
      * Returns the `queueType` that the [QueueMessage] with the provided [UUID] exists in.
@@ -315,7 +329,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param uuid the [UUID] (as a [String]) to look up
      * @return the `queueType` [String] if a [QueueMessage] exists with the provided [UUID] otherwise [Optional.empty]
      */
-    fun containsUUID(uuid: String): Optional<String>
+    abstract fun containsUUID(uuid: String): Optional<String>
 
     /**
      * Any overridden methods to update the signature for all implementing [MultiQueue] classes.
@@ -323,9 +337,13 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
     /**
      * Override [add] method to declare [Throws] [DuplicateMessageException] annotation.
      *
+     * [Synchronized] so that the call to [MultiQueue.getNextQueueIndex] does not cause issues, since retrieving the next index does
+     * not force it to be auto incremented or unusable by another thread.
+     *
      * @throws [DuplicateMessageException] if a message already exists with the same [QueueMessage.uuid] in `any` other queue.
      */
     @Throws(DuplicateMessageException::class)
+    @Synchronized
     override fun add(element: QueueMessage): Boolean
     {
         val elementIsMappedToType = containsUUID(element.uuid)
@@ -366,7 +384,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param element the element to add
      * @return `true` if the element was added successfully, otherwise `false`.
      */
-    fun addInternal(element: QueueMessage): Boolean
+    abstract fun addInternal(element: QueueMessage): Boolean
 
     override fun remove(element: QueueMessage): Boolean
     {
@@ -389,7 +407,7 @@ interface MultiQueue: Queue<QueueMessage>, HasLogger
      * @param element the element to remove
      * @return `true` if the element was removed successfully, otherwise `false`.
      */
-    fun removeInternal(element: QueueMessage): Boolean
+    abstract fun removeInternal(element: QueueMessage): Boolean
 
     override fun contains(element: QueueMessage?): Boolean
     {

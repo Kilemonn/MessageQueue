@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong
  *
  * @author github.com/Kilemonn
  */
-class MongoMultiQueue : MultiQueue, HasLogger
+class MongoMultiQueue : MultiQueue(), HasLogger
 {
     companion object
     {
@@ -32,7 +32,7 @@ class MongoMultiQueue : MultiQueue, HasLogger
     @Autowired
     private lateinit var queueMessageRepository: MongoQueueMessageRepository
 
-    override fun persistMessage(message: QueueMessage)
+    override fun persistMessageInternal(message: QueueMessage)
     {
         val queueMessageDocument = QueueMessageDocument(message)
         try

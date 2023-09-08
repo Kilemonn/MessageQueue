@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong
  *
  * @author github.com/Kilemonn
  */
-class SqlMultiQueue : MultiQueue, HasLogger
+class SqlMultiQueue : MultiQueue(), HasLogger
 {
     override val LOG: Logger = initialiseLogger()
 
@@ -133,7 +133,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
         return removedCount > 0
     }
 
-    override fun persistMessage(message: QueueMessage)
+    override fun persistMessageInternal(message: QueueMessage)
     {
         // We are working with an object from JPA if there is an existing ID
         // If there is no id in the provided message then we will check that the message with the same UUID does exist
