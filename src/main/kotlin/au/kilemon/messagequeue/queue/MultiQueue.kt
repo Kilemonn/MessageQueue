@@ -14,8 +14,8 @@ import kotlin.collections.HashMap
 import kotlin.jvm.Throws
 
 /**
- * A [MultiQueue] interface, which extends [Queue].
- * It contains various extra methods for interfacing with the [MultiQueue] using the [String]
+ * A [MultiQueue] base class, which extends [Queue].
+ * It contains various extra methods for interfacing with the [MultiQueue] using the [String] as a queue type identifier
  * to manipulate the appropriate underlying [Queue]s.
  *
  * @author github.com/Kilemonn
