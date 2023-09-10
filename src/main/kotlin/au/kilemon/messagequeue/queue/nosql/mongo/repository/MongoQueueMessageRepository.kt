@@ -1,9 +1,11 @@
 package au.kilemon.messagequeue.queue.nosql.mongo.repository
 
+import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.message.QueueMessageDocument
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.mongodb.repository.Aggregation
 import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
 /**
@@ -62,4 +64,32 @@ interface MongoQueueMessageRepository: MongoRepository<QueueMessageDocument, Lon
      * @return the [QueueMessageDocument] with the largest ID, otherwise [Optional.empty]
      */
     fun findTopByOrderByIdDesc(): Optional<QueueMessageDocument>
+
+    /**
+     * Find the entity with the matching [QueueMessageDocument.type] and that has a non-null [QueueMessageDocument.assignedTo]. Sorted by ID ascending.
+     *
+     * @param type the type to match [QueueMessageDocument.type] with
+     * @return a [List] of [QueueMessageDocument] who have a matching [QueueMessageDocument.type] with the provided [type] and non-null [QueueMessageDocument.assignedTo]
+     */
+    @Transactional
+    fun findByTypeAndAssignedToIsNotNullOrderByIdAsc(type: String): List<QueueMessageDocument>
+
+    /**
+     * Find the entity with the matching [QueueMessageDocument.type] and [QueueMessageDocument.assignedTo]. Sorted by ID ascending.
+     *
+     * @param type the type to match [QueueMessageDocument.type] with
+     * @param assignedTo the identifier to match [QueueMessageDocument.assignedTo] with
+     * @return a [List] of [QueueMessageDocument] who have a matching [QueueMessageDocument.type] and [QueueMessageDocument.assignedTo]
+     */
+    @Transactional
+    fun findByTypeAndAssignedToOrderByIdAsc(type: String, assignedTo: String): List<QueueMessageDocument>
+
+    /**
+     * Find the entity with the matching [QueueMessageDocument.type] and that has [QueueMessageDocument.assignedTo] set to `null`. Sorted by ID ascending.
+     *
+     * @param type the type to match [QueueMessageDocument.type] with
+     * @return a [List] of [QueueMessageDocument] who have a matching [QueueMessageDocument.type] with the provided [type] and `null` [QueueMessageDocument.assignedTo]
+     */
+    @Transactional
+    fun findByTypeAndAssignedToIsNullOrderByIdAsc(type: String): List<QueueMessageDocument>
 }
