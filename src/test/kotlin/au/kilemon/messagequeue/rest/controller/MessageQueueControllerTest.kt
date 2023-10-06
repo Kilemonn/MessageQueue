@@ -861,6 +861,9 @@ class MessageQueueControllerTest
             .andReturn()
     }
 
+    /**
+     * Ensure that the [CorrelationIdFilter] will generate a random Correlation ID when one is not provided and that it is returned in the [MessageResponse].
+     */
     @Test
     fun testCorrelationId_randomIdOnSuccess()
     {
@@ -877,6 +880,9 @@ class MessageQueueControllerTest
         Assertions.assertEquals(UUID.fromString(messageResponse.correlationId).toString(), messageResponse.correlationId)
     }
 
+    /**
+     * Ensure that the [CorrelationIdFilter] will use the same correlationID that is provided is used and returned in the [MessageResponse].
+     */
     @Test
     fun testCorrelationId_providedId()
     {
@@ -894,6 +900,9 @@ class MessageQueueControllerTest
         Assertions.assertEquals(correlationId, messageResponse.correlationId)
     }
 
+    /**
+     * Ensure that the [CorrelationIdFilter] will generate a random Correlation ID is generated on error and returned in the response.
+     */
     @Test
     fun testCorrelationId_randomIdOnError()
     {
@@ -914,6 +923,61 @@ class MessageQueueControllerTest
         val correlationId = messageResponse[CorrelationIdFilter.CORRELATION_ID]
         Assertions.assertTrue(correlationId is String)
         Assertions.assertEquals(correlationId, UUID.fromString(correlationId as String).toString())
+    }
+
+    /**
+     * Ensure that [MessageQueueController.deleteKeys] will only delete keys by the specified [RestParameters.QUEUE_TYPE] when it is provided and that other sub queues are not cleared.
+     */
+    @Test
+    fun testDeleteKeys_singleKey()
+    {
+        val subQueue1 = "testDeleteKeys_singleKey1"
+        var message = createQueueMessage(subQueue1)
+        Assertions.assertTrue(multiQueue.add(message))
+        message = createQueueMessage(subQueue1)
+        Assertions.assertTrue(multiQueue.add(message))
+        message = createQueueMessage(subQueue1)
+        Assertions.assertTrue(multiQueue.add(message))
+
+        Assertions.assertEquals(3, multiQueue.size)
+
+        val subQueue2 = "testDeleteKeys_singleKey2"
+        message = createQueueMessage(subQueue2)
+        Assertions.assertTrue(multiQueue.add(message))
+        message = createQueueMessage(subQueue2)
+        Assertions.assertTrue(multiQueue.add(message))
+
+        Assertions.assertEquals(5, multiQueue.size)
+
+        Assertions.assertTrue(multiQueue.keys().contains(subQueue1))
+        Assertions.assertTrue(multiQueue.keys().contains(subQueue2))
+
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param(RestParameters.QUEUE_TYPE, subQueue1))
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
+
+        Assertions.assertEquals(2, multiQueue.size)
+        Assertions.assertFalse(multiQueue.keys().contains(subQueue1))
+        Assertions.assertTrue(multiQueue.keys().contains(subQueue2))
+    }
+
+    /**
+     * Ensure that [MessageQueueController.deleteKeys] will only delete all keys/queues when the provided [RestParameters.QUEUE_TYPE] is `null`.
+     */
+    @Test
+    fun testDeleteKeys_allKeys()
+    {
+        val (messages, types) = initialiseMapWithEntries()
+        Assertions.assertEquals(messages.size, multiQueue.size)
+        types.forEach { type -> Assertions.assertTrue(multiQueue.keys().contains(type)) }
+
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
+
+        Assertions.assertTrue(multiQueue.isEmpty())
+        types.forEach { type -> Assertions.assertFalse(multiQueue.keys().contains(type)) }
     }
 
     /**

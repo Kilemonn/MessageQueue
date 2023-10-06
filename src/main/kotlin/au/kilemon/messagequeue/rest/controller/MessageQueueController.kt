@@ -251,6 +251,23 @@ open class MessageQueueController : HasLogger
         return ResponseEntity.ok(messageQueue.keys(includeEmpty ?: true))
     }
 
+    @Operation(summary = "Delete a keys or all keys, in turn clearing that sub queue.", description = "Delete the sub queue that matches the provided key. If no key is provided, all sub queues will be cleared.")
+    @DeleteMapping(ENDPOINT_KEYS, produces = [MediaType.APPLICATION_JSON_VALUE])
+    @ApiResponse(responseCode = "204", description = "Successfully cleared the sub queue(s) with the provided key, or all sub queues if the key is null.")
+    fun deleteKeys(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "The queue type to clear the sub queue of. If it is not provided, all sub queues will be cleared.")
+                @RequestParam(required = false, name = RestParameters.QUEUE_TYPE) queueType: String?): ResponseEntity<Void>
+    {
+        if (queueType != null)
+        {
+            messageQueue.clearForType(queueType)
+        }
+        else
+        {
+            messageQueue.clear()
+        }
+        return ResponseEntity.noContent().build()
+    }
+
     /**
      * A [GetMapping] endpoint which retrieves all the stored [QueueMessage]s that are currently available in the [MultiQueue].
      *
