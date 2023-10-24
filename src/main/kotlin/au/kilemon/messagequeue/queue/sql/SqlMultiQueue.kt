@@ -4,13 +4,12 @@ import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
-import au.kilemon.messagequeue.queue.sql.repository.SQLQueueMessageRepository
+import au.kilemon.messagequeue.queue.sql.repository.SqlQueueMessageRepository
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * A database backed [MultiQueue]. All operations are performed directly on the database it is the complete source of truth.
@@ -24,7 +23,7 @@ class SqlMultiQueue : MultiQueue(), HasLogger
 
     @Lazy
     @Autowired
-    private lateinit var queueMessageRepository: SQLQueueMessageRepository
+    private lateinit var queueMessageRepository: SqlQueueMessageRepository
 
     override fun getQueueForType(queueType: String): Queue<QueueMessage>
     {

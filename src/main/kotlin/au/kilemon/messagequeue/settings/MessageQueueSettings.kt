@@ -65,6 +65,15 @@ class MessageQueueSettings
          */
         const val SQL_SCHEMA: String = "SQL_SCHEMA"
         const val SQL_SCHEMA_DEFAULT: String = "public"
+
+        /**
+         * Start authenticated sub queue properties.
+         */
+        /**
+         * Indicates what authentication mode the `MultiQueue` should be in.
+         */
+        const val MULTI_QUEUE_AUTHENTICATION: String = "MULTI_QUEUE_AUTHENTICATION"
+        const val MULTI_QUEUE_AUTHENTICATION_DEFAULT: String = ""
     }
 
     /**
@@ -78,6 +87,18 @@ class MessageQueueSettings
     @get:Generated
     @set:Generated
     lateinit var multiQueueType: String
+
+    /**
+     * `Optional` uses the [MULTI_QUEUE_AUTHENTICATION] environment variable to determine whether specific sub-queues
+     * will require authentication or not to create or access. It can be any value of [MultiQueueType].
+     * Defaults to [MultiQueueType.IN_MEMORY] ([MULTI_QUEUE_AUTHENTICATION_DEFAULT]).
+     */
+    @SerializedName(MULTI_QUEUE_AUTHENTICATION)
+    @JsonProperty(MULTI_QUEUE_AUTHENTICATION)
+    @Value("\${$MULTI_QUEUE_AUTHENTICATION:$MULTI_QUEUE_AUTHENTICATION_DEFAULT}")
+    @get:Generated
+    @set:Generated
+    lateinit var multiQueueAuthentication: String
 
 
     /**

@@ -10,6 +10,12 @@ import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
 import au.kilemon.messagequeue.queue.nosql.mongo.MongoMultiQueue
 import au.kilemon.messagequeue.queue.sql.SqlMultiQueue
 import au.kilemon.messagequeue.settings.MessageQueueSettings
+import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
+import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
+import au.kilemon.messagequeue.authentication.authenticator.cache.redis.RedisAuthenticator
+import au.kilemon.messagequeue.authentication.authenticator.inmemory.InMemoryAuthenticator
+import au.kilemon.messagequeue.authentication.authenticator.nosql.mongo.MongoAuthenticator
+import au.kilemon.messagequeue.authentication.authenticator.sql.SqlAuthenticator
 import au.kilemon.messagequeue.settings.MultiQueueType
 import lombok.Generated
 import org.slf4j.Logger
@@ -58,7 +64,7 @@ class QueueConfiguration : HasLogger
 
         // Default to in-memory
         var queue: MultiQueue = InMemoryMultiQueue()
-        when (messageQueueSettings.multiQueueType) {
+        when (messageQueueSettings.multiQueueType.uppercase()) {
             MultiQueueType.REDIS.toString() -> {
                 queue = RedisMultiQueue(messageQueueSettings.redisPrefix, redisTemplate)
             }
@@ -73,5 +79,54 @@ class QueueConfiguration : HasLogger
         LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType)
 
         return queue
+    }
+
+    /**
+     * Initialise the [MultiQueueAuthenticationType] which drives how sub queues are accessed and created.
+     */
+    @Bean
+    open fun getMultiQueueAuthenticationType(): MultiQueueAuthenticationType
+    {
+        var authenticationType = MultiQueueAuthenticationType.NONE
+
+        if (messageQueueSettings.multiQueueAuthentication.isNotBlank())
+        {
+            try
+            {
+                authenticationType = MultiQueueAuthenticationType.valueOf(messageQueueSettings.multiQueueAuthentication.uppercase())
+            }
+            catch (ex: Exception)
+            {
+                LOG.warn("Unable to initialise appropriate authentication type with provided value [{}], falling back to default [{}].", messageQueueSettings.multiQueueAuthentication, MultiQueueAuthenticationType.NONE, ex)
+            }
+        }
+
+        LOG.info("Using [{}] authentication as the [{}] is set to [{}].", authenticationType, MessageQueueSettings.MULTI_QUEUE_AUTHENTICATION, messageQueueSettings.multiQueueAuthentication)
+
+        return authenticationType
+    }
+
+    /**
+     * Initialise the [MultiQueueAuthenticator] [Bean] based on the [MessageQueueSettings.multiQueueType].
+     */
+    @Bean
+    open fun getMultiQueueAuthenticator(): MultiQueueAuthenticator
+    {
+        var authenticator: MultiQueueAuthenticator = InMemoryAuthenticator()
+        when (messageQueueSettings.multiQueueType.uppercase()) {
+            MultiQueueType.REDIS.toString() -> {
+                authenticator = RedisAuthenticator()
+            }
+            MultiQueueType.SQL.toString() -> {
+                authenticator = SqlAuthenticator()
+            }
+            MultiQueueType.MONGO.toString() -> {
+                authenticator = MongoAuthenticator()
+            }
+        }
+
+        LOG.info("Initialising [{}] authenticator as the [{}] is set to [{}].", authenticator::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType)
+
+        return authenticator
     }
 }

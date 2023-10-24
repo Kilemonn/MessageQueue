@@ -1,6 +1,5 @@
 package au.kilemon.messagequeue.queue.nosql.mongo.repository
 
-import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.message.QueueMessageDocument
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.mongodb.repository.Aggregation

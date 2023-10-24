@@ -42,7 +42,7 @@ class CorrelationIdFilter: OncePerRequestFilter(), HasLogger
         }
         finally
         {
-            MDC.clear()
+            MDC.remove(CORRELATION_ID)
         }
     }
 

@@ -17,7 +17,7 @@ import java.util.*
  * @author github.com/Kilemonn
  */
 @Repository
-interface SQLQueueMessageRepository: JpaRepository<QueueMessage, Long>
+interface SqlQueueMessageRepository: JpaRepository<QueueMessage, Long>
 {
     /**
      * Delete a [QueueMessage] by the provided [QueueMessage.type] [String].
