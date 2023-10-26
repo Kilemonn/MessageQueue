@@ -6,4 +6,10 @@ package au.kilemon.messagequeue.authentication.exception
  *
  * @author github.com/Kilemonn
  */
-class MultiQueueAuthenticationException(subQueue: String) : Exception("Unable to access sub-queue [$subQueue].")
+class MultiQueueAuthenticationException(subQueue: String) : Exception(String.format(MESSAGE_FORMAT, subQueue))
+{
+    companion object
+    {
+        const val MESSAGE_FORMAT = "Unable to access sub-queue [%s]."
+    }
+}
