@@ -36,7 +36,7 @@ class RestResponseExceptionHandlerTest
     }
 
     /**
-     * Ensure [RestResponseExceptionHandler#handleResponseStatusException] sets all the properties required to create an
+     * Ensure [RestResponseExceptionHandler.handleResponseStatusException] sets all the properties required to create an
      * [ErrorResponse] are correctly extracted from the [ResponseStatusException].
      */
     @Test
@@ -56,7 +56,7 @@ class RestResponseExceptionHandlerTest
     }
 
     /**
-     * Ensure the [RestResponseExceptionHandler#handleMultiQueueAuthenticationException] returns the appropriate
+     * Ensure the [RestResponseExceptionHandler.handleMultiQueueAuthenticationException] returns the appropriate
      * response code and message on error.
      */
     @Test
