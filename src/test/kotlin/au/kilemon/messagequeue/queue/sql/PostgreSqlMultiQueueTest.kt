@@ -2,7 +2,7 @@ package au.kilemon.messagequeue.queue.sql
 
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
-import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
+import au.kilemon.messagequeue.queue.MultiQueueTest
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -22,7 +22,7 @@ import java.util.*
  * @author github.com/Kilemonn
  */
 @ContextConfiguration(initializers = [PostgreSqlMultiQueueTest.Initializer::class])
-@Import( *[QueueConfiguration::class, LoggingConfiguration::class, AbstractMultiQueueTest.AbstractMultiQueueTestConfiguration::class] )
+@Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class] )
 class PostgreSqlMultiQueueTest: AbstractSqlMultiQueueTest()
 {
     companion object

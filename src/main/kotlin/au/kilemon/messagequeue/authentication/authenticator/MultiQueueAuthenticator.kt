@@ -110,18 +110,29 @@ abstract class MultiQueueAuthenticator: HasLogger
 
 
     /**
-     *
+     * @return `true` if the sub queue identifier was added to the restriction set, otherwise `false` if there was
+     * no underlying change made
      */
-    fun addRestrictedEntry(subQueue: String)
+    fun addRestrictedEntry(subQueue: String): Boolean
     {
         if (isInNoneMode())
         {
-            LOG.debug("Adding restriction level [{}] to sub queue [{}].", getAuthenticationType(), subQueue)
-            addRestrictedEntryInternal(subQueue)
+            LOG.trace("Skipping adding restricted entry for [{}] since the authentication type is set to [{}].", subQueue, getAuthenticationType())
+            return false
         }
         else
         {
-            LOG.trace("Bypassing adding restricted entry for [{}] since the authentication type is set to [{}].", subQueue, getAuthenticationType())
+            return if (isRestricted(subQueue))
+            {
+                LOG.trace("Restriction for sub queue [{}] was not increased as it is already restricted.", subQueue)
+                false
+            }
+            else
+            {
+                LOG.info("Adding restriction to sub queue [{}].", subQueue)
+                addRestrictedEntryInternal(subQueue)
+                true
+            }
         }
     }
 
@@ -131,19 +142,42 @@ abstract class MultiQueueAuthenticator: HasLogger
     abstract fun addRestrictedEntryInternal(subQueue: String)
 
     /**
-     *
+     *  @return `true` if there was a restriction that was removed because of this call, otherwise `false`
      */
     fun removeRestriction(subQueue: String): Boolean
     {
-        if (isInNoneMode())
+        return if (isInNoneMode())
         {
-            return removeRestrictionInternal(subQueue)
+            LOG.trace("Skipping removing restricted entry for [{}] since the authentication type is set to [{}].", subQueue, getAuthenticationType())
+            false
         }
-        return false
+        else
+        {
+            return if (isRestricted(subQueue))
+            {
+                LOG.info("Removing restriction to sub queue [{}].", subQueue)
+                removeRestrictionInternal(subQueue)
+            }
+            else
+            {
+                LOG.trace("Restriction for sub queue [{}] was not removed as it is currently unrestricted.", subQueue)
+                false
+            }
+
+        }
     }
 
     /**
      *
      */
     abstract fun removeRestrictionInternal(subQueue: String): Boolean
+
+    abstract fun getRestrictedSubQueueIdentifiers(): Set<String>
+
+    /**
+     * Clear the underlying restriction storage entries. (This is mainly used for testing).
+     *
+     * @return the amount of sub queue restrictions that were cleared
+     */
+    abstract fun clearRestrictedSubQueues(): Long
 }

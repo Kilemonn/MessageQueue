@@ -3,31 +3,25 @@ package au.kilemon.messagequeue.queue.cache.redis
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
-import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
+import au.kilemon.messagequeue.queue.MultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.test.util.TestPropertyValues
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Lazy
-import org.springframework.data.redis.connection.RedisConnectionFactory
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
-import java.util.*
 
 
 /**
@@ -48,8 +42,8 @@ import java.util.*
 @TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=REDIS", "${MessageQueueSettings.REDIS_PREFIX}=test"])
 @Testcontainers
 @ContextConfiguration(initializers = [RedisStandAloneMultiQueueTest.Initializer::class])
-@Import(*[QueueConfiguration::class, LoggingConfiguration::class, RedisConfiguration::class, AbstractMultiQueueTest.AbstractMultiQueueTestConfiguration::class])
-class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest()
+@Import(*[QueueConfiguration::class, LoggingConfiguration::class, RedisConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class])
+class RedisStandAloneMultiQueueTest: MultiQueueTest()
 {
     companion object
     {

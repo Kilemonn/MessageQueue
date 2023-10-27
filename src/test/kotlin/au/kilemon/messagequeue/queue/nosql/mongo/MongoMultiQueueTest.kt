@@ -2,7 +2,7 @@ package au.kilemon.messagequeue.queue.nosql.mongo
 
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
-import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
+import au.kilemon.messagequeue.queue.MultiQueueTest
 import au.kilemon.messagequeue.queue.nosql.mongo.MongoMultiQueueTest.Companion.MONGO_CONTAINER
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
@@ -31,8 +31,8 @@ import org.testcontainers.utility.DockerImageName
 @DataMongoTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=MONGO"])
 @ContextConfiguration(initializers = [MongoMultiQueueTest.Initializer::class])
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import( *[QueueConfiguration::class, LoggingConfiguration::class, AbstractMultiQueueTest.AbstractMultiQueueTestConfiguration::class] )
-class MongoMultiQueueTest: AbstractMultiQueueTest()
+@Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class] )
+class MongoMultiQueueTest: MultiQueueTest()
 {
     companion object
     {

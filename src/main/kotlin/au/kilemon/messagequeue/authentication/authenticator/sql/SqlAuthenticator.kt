@@ -37,4 +37,16 @@ class SqlAuthenticator: MultiQueueAuthenticator()
 
         return entriesExist
     }
+
+    override fun getRestrictedSubQueueIdentifiers(): Set<String>
+    {
+        TODO("Not yet implemented")
+    }
+
+    override fun clearRestrictedSubQueues(): Long
+    {
+        val existingEntriesCount = authenticationMatrixRepository.count()
+        authenticationMatrixRepository.deleteAll()
+        return existingEntriesCount
+    }
 }

@@ -1,6 +1,5 @@
 package au.kilemon.messagequeue.authentication.authenticator.nosql.mongo
 
-import au.kilemon.messagequeue.authentication.AuthenticationMatrix
 import au.kilemon.messagequeue.authentication.AuthenticationMatrixDocument
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import org.slf4j.Logger
@@ -37,5 +36,17 @@ class MongoAuthenticator: MultiQueueAuthenticator()
         entries.forEach { entry -> authenticationMatrixRepository.delete(entry) }
 
         return entriesExist
+    }
+
+    override fun getRestrictedSubQueueIdentifiers(): Set<String>
+    {
+        TODO("Not yet implemented")
+    }
+
+    override fun clearRestrictedSubQueues(): Long
+    {
+        val existingEntriesCount = authenticationMatrixRepository.count()
+        authenticationMatrixRepository.deleteAll()
+        return existingEntriesCount
     }
 }

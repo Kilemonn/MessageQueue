@@ -1,19 +1,11 @@
 package au.kilemon.messagequeue.queue.sql
 
-import au.kilemon.messagequeue.configuration.QueueConfiguration
-import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
-import au.kilemon.messagequeue.logging.LoggingConfiguration
-import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
+import au.kilemon.messagequeue.queue.MultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Import
-import org.springframework.context.annotation.Lazy
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.testcontainers.junit.jupiter.Testcontainers
 
@@ -35,4 +27,4 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @Testcontainers
 @DataJpaTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=SQL", "spring.jpa.hibernate.ddl-auto=create", "spring.autoconfigure.exclude="])
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-abstract class AbstractSqlMultiQueueTest: AbstractMultiQueueTest()
+abstract class AbstractSqlMultiQueueTest: MultiQueueTest()

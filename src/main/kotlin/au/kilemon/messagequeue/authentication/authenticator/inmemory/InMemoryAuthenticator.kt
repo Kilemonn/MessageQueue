@@ -1,6 +1,5 @@
 package au.kilemon.messagequeue.authentication.authenticator.inmemory
 
-import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import org.slf4j.Logger
 
@@ -13,20 +12,32 @@ class InMemoryAuthenticator: MultiQueueAuthenticator()
 {
     override val LOG: Logger = initialiseLogger()
 
-    private val authMap = HashSet<String>()
+    private val restrictedSubQueues = HashSet<String>()
 
     override fun isRestrictedInternal(subQueue: String): Boolean
     {
-        return authMap.contains(subQueue)
+        return restrictedSubQueues.contains(subQueue)
     }
 
     override fun addRestrictedEntryInternal(subQueue: String)
     {
-        authMap.add(subQueue)
+        restrictedSubQueues.add(subQueue)
     }
 
     override fun removeRestrictionInternal(subQueue: String): Boolean
     {
-        return authMap.remove(subQueue)
+        return restrictedSubQueues.remove(subQueue)
+    }
+
+    override fun getRestrictedSubQueueIdentifiers(): Set<String>
+    {
+        return restrictedSubQueues.toSet()
+    }
+
+    override fun clearRestrictedSubQueues(): Long
+    {
+        val existingEntriesSize = restrictedSubQueues.size.toLong()
+        restrictedSubQueues.clear()
+        return existingEntriesSize
     }
 }

@@ -24,9 +24,14 @@ class RedisAuthenticator: MultiQueueAuthenticator()
     @Autowired
     lateinit var redisTemplate: RedisTemplate<String, AuthenticationMatrix>
 
+    private fun getMembersSet(): Set<AuthenticationMatrix>
+    {
+        return redisTemplate.opsForSet().members(RESTRICTED_KEY) ?: HashSet()
+    }
+
     override fun isRestrictedInternal(subQueue: String): Boolean
     {
-        return redisTemplate.opsForSet().members(RESTRICTED_KEY)?.contains(AuthenticationMatrix(subQueue)) ?: false
+        return getMembersSet().contains(AuthenticationMatrix(subQueue)) ?: false
     }
 
     override fun addRestrictedEntryInternal(subQueue: String)
@@ -37,5 +42,18 @@ class RedisAuthenticator: MultiQueueAuthenticator()
     override fun removeRestrictionInternal(subQueue: String): Boolean
     {
         return redisTemplate.opsForSet().remove(RESTRICTED_KEY, subQueue) != null
+    }
+
+    override fun getRestrictedSubQueueIdentifiers(): Set<String>
+    {
+        return getMembersSet().map { authMatrix -> authMatrix.subQueue }.toList().toSet()
+    }
+
+    override fun clearRestrictedSubQueues(): Long
+    {
+        val members = getMembersSet()
+        val existingMembersSize = members.size.toLong()
+        redisTemplate.opsForSet().remove(RESTRICTED_KEY, members)
+        return existingMembersSize
     }
 }

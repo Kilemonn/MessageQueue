@@ -9,7 +9,10 @@ import au.kilemon.messagequeue.queue.sql.SqlMultiQueue
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
 import au.kilemon.messagequeue.settings.MessageQueueSettings
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -30,7 +33,7 @@ import java.util.stream.Stream
  * @author github.com/Kilemonn
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-abstract class AbstractMultiQueueTest
+abstract class MultiQueueTest
 {
     /**
      * A Spring configuration that is used for this test class.
@@ -38,7 +41,7 @@ abstract class AbstractMultiQueueTest
      * @author github.com/Kilemonn
      */
     @TestConfiguration
-    class AbstractMultiQueueTestConfiguration
+    class MultiQueueTestConfiguration
     {
         /**
          * The bean initialise here will have all its properties overridden by environment variables.
@@ -89,7 +92,7 @@ abstract class AbstractMultiQueueTest
     }
 
     /**
-     * An argument provider for the [AbstractMultiQueueTest.testAdd] method.
+     * An argument provider for the [MultiQueueTest.testAdd] method.
      */
     private fun parameters_testAdd(): Stream<Arguments>
     {
