@@ -18,7 +18,7 @@ abstract class MultiQueueAuthenticator: HasLogger
     abstract override val LOG: Logger
 
     @Autowired
-    protected lateinit var multiQueueAuthenticationType: MultiQueueAuthenticationType
+    private lateinit var multiQueueAuthenticationType: MultiQueueAuthenticationType
 
     /**
      * @return [multiQueueAuthenticationType]
@@ -61,7 +61,7 @@ abstract class MultiQueueAuthenticator: HasLogger
             }
         }
 
-        throw MultiQueueAuthorisationException(subQueue, multiQueueAuthenticationType)
+        throw MultiQueueAuthorisationException(subQueue, getAuthenticationType())
     }
 
     /**
@@ -69,7 +69,7 @@ abstract class MultiQueueAuthenticator: HasLogger
      */
     fun isInNoneMode(): Boolean
     {
-        return multiQueueAuthenticationType == MultiQueueAuthenticationType.NONE
+        return getAuthenticationType() == MultiQueueAuthenticationType.NONE
     }
 
     /**
@@ -77,7 +77,7 @@ abstract class MultiQueueAuthenticator: HasLogger
      */
     fun isInHybridMode(): Boolean
     {
-        return multiQueueAuthenticationType == MultiQueueAuthenticationType.HYBRID
+        return getAuthenticationType() == MultiQueueAuthenticationType.HYBRID
     }
 
     /**
@@ -85,7 +85,7 @@ abstract class MultiQueueAuthenticator: HasLogger
      */
     fun isInRestrictedMode(): Boolean
     {
-        return multiQueueAuthenticationType == MultiQueueAuthenticationType.RESTRICTED
+        return getAuthenticationType() == MultiQueueAuthenticationType.RESTRICTED
     }
 
     /**
@@ -116,12 +116,12 @@ abstract class MultiQueueAuthenticator: HasLogger
     {
         if (isInNoneMode())
         {
-            LOG.debug("Adding restriction level [{}] to sub queue [{}].", multiQueueAuthenticationType, subQueue)
+            LOG.debug("Adding restriction level [{}] to sub queue [{}].", getAuthenticationType(), subQueue)
             addRestrictedEntryInternal(subQueue)
         }
         else
         {
-            LOG.trace("Bypassing adding restricted entry for [{}] since the authentication type is set to [{}].", subQueue, multiQueueAuthenticationType)
+            LOG.trace("Bypassing adding restricted entry for [{}] since the authentication type is set to [{}].", subQueue, getAuthenticationType())
         }
     }
 
