@@ -1,15 +1,15 @@
 package au.kilemon.messagequeue.authentication.exception
 
 /**
- * An authentication exception used when the `MultiQueueAuthenticator` does not allow the caller to perform the
- * requested action on the requested sub-queue.
+ * An authentication exception used when the provided token is invalid when an action is requested to be performed on a
+ * sub-queue.
  *
  * @author github.com/Kilemonn
  */
-class MultiQueueAuthenticationException(subQueue: String) : Exception(String.format(MESSAGE_FORMAT, subQueue))
+class MultiQueueAuthenticationException : Exception(ERROR_MESSAGE)
 {
     companion object
     {
-        const val MESSAGE_FORMAT = "Unable to access sub-queue [%s]."
+        const val ERROR_MESSAGE = "Invalid token provided."
     }
 }

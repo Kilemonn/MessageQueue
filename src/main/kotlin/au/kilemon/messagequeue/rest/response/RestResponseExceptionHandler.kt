@@ -1,6 +1,7 @@
 package au.kilemon.messagequeue.rest.response
 
 import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthenticationException
+import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthorisationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ControllerAdvice
@@ -22,9 +23,15 @@ class RestResponseExceptionHandler: ResponseEntityExceptionHandler()
         return ResponseEntity<ErrorResponse>(ErrorResponse(ex.reason), ex.status)
     }
 
+    @ExceptionHandler(MultiQueueAuthorisationException::class)
+    fun handleMultiQueueAuthorisationException(ex: MultiQueueAuthorisationException): ResponseEntity<ErrorResponse>
+    {
+        return ResponseEntity<ErrorResponse>(ErrorResponse(ex.message), HttpStatus.FORBIDDEN)
+    }
+
     @ExceptionHandler(MultiQueueAuthenticationException::class)
     fun handleMultiQueueAuthenticationException(ex: MultiQueueAuthenticationException): ResponseEntity<ErrorResponse>
     {
-        return ResponseEntity<ErrorResponse>(ErrorResponse(ex.message), HttpStatus.FORBIDDEN)
+        return ResponseEntity<ErrorResponse>(ErrorResponse(ex.message), HttpStatus.UNAUTHORIZED)
     }
 }

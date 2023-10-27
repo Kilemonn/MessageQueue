@@ -1,6 +1,8 @@
 package au.kilemon.messagequeue.rest.response
 
+import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
 import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthenticationException
+import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthorisationException
 import au.kilemon.messagequeue.filter.CorrelationIdFilter
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
@@ -56,6 +58,25 @@ class RestResponseExceptionHandlerTest
     }
 
     /**
+     * Ensure the [RestResponseExceptionHandler.handleMultiQueueAuthorisationException] returns the appropriate
+     * response code and message on error.
+     */
+    @Test
+    fun testHandleMultiQueueAuthorisationException()
+    {
+        val correlationId = UUID.randomUUID().toString()
+        MDC.put(CorrelationIdFilter.CORRELATION_ID, correlationId)
+        val message = "testHandleMultiQueueAuthorisationException"
+        val exception = MultiQueueAuthorisationException(message, MultiQueueAuthenticationType.NONE)
+        val response = responseHandler.handleMultiQueueAuthorisationException(exception)
+
+        Assertions.assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
+        Assertions.assertNotNull(response.body)
+        Assertions.assertEquals(String.format(MultiQueueAuthorisationException.MESSAGE_FORMAT, message, MultiQueueAuthenticationType.NONE), response.body!!.message)
+        Assertions.assertEquals(correlationId, response.body!!.correlationId)
+    }
+
+    /**
      * Ensure the [RestResponseExceptionHandler.handleMultiQueueAuthenticationException] returns the appropriate
      * response code and message on error.
      */
@@ -64,13 +85,12 @@ class RestResponseExceptionHandlerTest
     {
         val correlationId = UUID.randomUUID().toString()
         MDC.put(CorrelationIdFilter.CORRELATION_ID, correlationId)
-        val message = "testHandleMultiQueueAuthenticationException"
-        val exception = MultiQueueAuthenticationException(message)
+        val exception = MultiQueueAuthenticationException()
         val response = responseHandler.handleMultiQueueAuthenticationException(exception)
 
-        Assertions.assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
+        Assertions.assertEquals(HttpStatus.UNAUTHORIZED, response.statusCode)
         Assertions.assertNotNull(response.body)
-        Assertions.assertEquals(String.format(MultiQueueAuthenticationException.MESSAGE_FORMAT, message), response.body!!.message)
+        Assertions.assertEquals(MultiQueueAuthenticationException.ERROR_MESSAGE, response.body!!.message)
         Assertions.assertEquals(correlationId, response.body!!.correlationId)
     }
 }

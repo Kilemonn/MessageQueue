@@ -1,5 +1,8 @@
 package au.kilemon.messagequeue.rest.controller
 
+import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
+import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
+import au.kilemon.messagequeue.authentication.authenticator.inmemory.InMemoryAuthenticator
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import au.kilemon.messagequeue.settings.MultiQueueType
@@ -7,6 +10,7 @@ import com.google.gson.Gson
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.SpringBootTest
@@ -47,6 +51,18 @@ class SettingsControllerTest
         fun getSettings(): MessageQueueSettings
         {
             return MessageQueueSettings()
+        }
+
+        @Bean
+        open fun getMultiQueueAuthenticator(): MultiQueueAuthenticator
+        {
+            return Mockito.spy(InMemoryAuthenticator::class.java)
+        }
+
+        @Bean
+        open fun getMultiQueueAuthenticationType(): MultiQueueAuthenticationType
+        {
+            return MultiQueueAuthenticationType.NONE
         }
     }
 

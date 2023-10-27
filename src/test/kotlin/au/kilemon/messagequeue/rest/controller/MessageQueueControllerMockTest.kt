@@ -1,5 +1,8 @@
 package au.kilemon.messagequeue.rest.controller
 
+import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
+import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
+import au.kilemon.messagequeue.authentication.authenticator.inmemory.InMemoryAuthenticator
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
@@ -45,13 +48,25 @@ class MessageQueueControllerMockTest
         {
             return Mockito.spy(InMemoryMultiQueue::class.java)
         }
+
+        @Bean
+        open fun getMultiQueueAuthenticator(): MultiQueueAuthenticator
+        {
+            return Mockito.spy(InMemoryAuthenticator::class.java)
+        }
+
+        @Bean
+        open fun getMultiQueueAuthenticationType(): MultiQueueAuthenticationType
+        {
+            return MultiQueueAuthenticationType.NONE
+        }
     }
 
     @Autowired
     private lateinit var mockMvc: MockMvc
 
     @Autowired
-    lateinit var multiQueue: MultiQueue
+    private lateinit var multiQueue: MultiQueue
 
     private val gson: Gson = Gson()
 

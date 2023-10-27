@@ -1,16 +1,18 @@
 package au.kilemon.messagequeue.queue
 
+import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import org.slf4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.stream.Collectors
 import kotlin.collections.HashMap
+import kotlin.collections.HashSet
 import kotlin.jvm.Throws
 
 /**
@@ -28,6 +30,9 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
     }
 
     abstract override val LOG: Logger
+
+    @Autowired
+    protected lateinit var multiQueueAuthenticator: MultiQueueAuthenticator
 
     /**
      * Get the underlying size of the [MultiQueue].
@@ -92,7 +97,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
     /**
      * Retrieves or creates a new [Queue] of type [QueueMessage] for the provided [String].
      * If the underlying [Queue] does not exist for the provided [String] then a new [Queue] will
-     * be created and stored in the [ConcurrentHashMap] under the provided [String].
+     * be created.
      *
      * @param queueType the identifier of the sub-queue [Queue]
      * @return the [Queue] matching the provided [String]

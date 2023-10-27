@@ -1,9 +1,9 @@
 package au.kilemon.messagequeue.filter
 
 import au.kilemon.messagequeue.logging.HasLogger
-import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
+import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthenticationException
 import org.slf4j.Logger
 import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
@@ -29,12 +29,18 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
         const val AUTHORIZATION_HEADER = "Authorization"
 
         const val SUB_QUEUE = "Sub-Queue"
+
+        /**
+         * Gets the stored [SUB_QUEUE] from the [MDC].
+         * This can be null if no valid token is provided.
+         */
+        fun getSubQueue(): String?
+        {
+            return MDC.get(SUB_QUEUE)
+        }
     }
 
     override val LOG: Logger = this.initialiseLogger()
-
-    @Autowired
-    lateinit var authenticationType: MultiQueueAuthenticationType
 
     @Autowired
     lateinit var authenticator: MultiQueueAuthenticator
@@ -49,17 +55,17 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
             val subQueue = getSubQueueInToken(request)
             setSubQueue(subQueue)
 
-            if (authenticationType == MultiQueueAuthenticationType.NONE)
+            if (authenticator.isInNoneMode())
             {
                 LOG.trace("Allowed access as authentication is set to [{}].", MultiQueueAuthenticationType.NONE)
                 filterChain.doFilter(request, response)
             }
-            else if (authenticationType == MultiQueueAuthenticationType.HYBRID)
+            else if (authenticator.isInHybridMode())
             {
                 LOG.trace("Allowing request through for lower layer to check as authentication is set to [{}].", MultiQueueAuthenticationType.NONE)
                 filterChain.doFilter(request, response)
             }
-            else if (authenticationType == MultiQueueAuthenticationType.RESTRICTED)
+            else if (authenticator.isInRestrictedMode())
             {
                 if (subQueue.isPresent && authenticator.isRestricted(subQueue.get()))
                 {
@@ -68,8 +74,8 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
                 }
                 else
                 {
-                    LOG.error("Failed to manipulate sub queue [{}] with provided token as the authentication level is set to [{}].", subQueue.get(), authenticationType)
-                    // TODO throw here
+                    LOG.error("Failed to manipulate sub queue [{}] with provided token as the authentication level is set to [{}].", subQueue.get(), authenticator.getAuthenticationType())
+                    throw MultiQueueAuthenticationException()
                 }
             }
         }
@@ -109,6 +115,7 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
     /**
      *
      */
+    @Throws(MultiQueueAuthenticationException::class)
     fun isValidJwtToken(jwtToken: String): Optional<String>
     {
         return Optional.ofNullable(null)

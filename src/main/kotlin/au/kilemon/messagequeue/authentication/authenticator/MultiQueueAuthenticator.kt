@@ -1,9 +1,12 @@
 package au.kilemon.messagequeue.authentication.authenticator
 
 import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
+import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthorisationException
+import au.kilemon.messagequeue.filter.JwtAuthenticationFilter
 import au.kilemon.messagequeue.logging.HasLogger
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
+import kotlin.jvm.Throws
 
 /**
  *
@@ -18,11 +21,79 @@ abstract class MultiQueueAuthenticator: HasLogger
     protected lateinit var multiQueueAuthenticationType: MultiQueueAuthenticationType
 
     /**
+     * @return [multiQueueAuthenticationType]
+     */
+    fun getAuthenticationType(): MultiQueueAuthenticationType
+    {
+        return multiQueueAuthenticationType
+    }
+
+    /**
+     *
+     */
+    @Throws(MultiQueueAuthorisationException::class)
+    fun canAccessSubQueue(subQueue: String)
+    {
+        if (isInNoneMode())
+        {
+            return
+        }
+        else if (isInHybridMode())
+        {
+            if (isRestricted(subQueue))
+            {
+                if (JwtAuthenticationFilter.getSubQueue() == subQueue)
+                {
+                    return
+                }
+            }
+            else
+            {
+                // If we are in hybrid mode and the sub queue is not restricted we should let it pass
+                return
+            }
+        }
+        else if (isInRestrictedMode())
+        {
+            if (isRestricted(subQueue) && JwtAuthenticationFilter.getSubQueue() == subQueue)
+            {
+                return
+            }
+        }
+
+        throw MultiQueueAuthorisationException(subQueue, multiQueueAuthenticationType)
+    }
+
+    /**
+     * Indicates whether [multiQueueAuthenticationType] is set to [MultiQueueAuthenticationType.NONE].
+     */
+    fun isInNoneMode(): Boolean
+    {
+        return multiQueueAuthenticationType == MultiQueueAuthenticationType.NONE
+    }
+
+    /**
+     * Indicates whether [multiQueueAuthenticationType] is set to [MultiQueueAuthenticationType.HYBRID].
+     */
+    fun isInHybridMode(): Boolean
+    {
+        return multiQueueAuthenticationType == MultiQueueAuthenticationType.HYBRID
+    }
+
+    /**
+     * Indicates whether [multiQueueAuthenticationType] is set to [MultiQueueAuthenticationType.RESTRICTED].
+     */
+    fun isInRestrictedMode(): Boolean
+    {
+        return multiQueueAuthenticationType == MultiQueueAuthenticationType.RESTRICTED
+    }
+
+    /**
      *
      */
     fun isRestricted(subQueue: String): Boolean
     {
-        return if (multiQueueAuthenticationType == MultiQueueAuthenticationType.NONE)
+        return if (isInNoneMode())
         {
             false
         }
@@ -43,7 +114,7 @@ abstract class MultiQueueAuthenticator: HasLogger
      */
     fun addRestrictedEntry(subQueue: String)
     {
-        if (multiQueueAuthenticationType != MultiQueueAuthenticationType.NONE)
+        if (isInNoneMode())
         {
             LOG.debug("Adding restriction level [{}] to sub queue [{}].", multiQueueAuthenticationType, subQueue)
             addRestrictedEntryInternal(subQueue)
@@ -64,7 +135,7 @@ abstract class MultiQueueAuthenticator: HasLogger
      */
     fun removeRestriction(subQueue: String): Boolean
     {
-        if (multiQueueAuthenticationType != MultiQueueAuthenticationType.NONE)
+        if (isInNoneMode())
         {
             return removeRestrictionInternal(subQueue)
         }
