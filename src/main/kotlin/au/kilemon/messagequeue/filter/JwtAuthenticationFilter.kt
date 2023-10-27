@@ -52,7 +52,7 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
     {
         try
         {
-            val subQueue = getSubQueueInToken(request)
+            val subQueue = getSubQueueInTokenFromHeaders(request)
             setSubQueue(subQueue)
 
             if (authenticator.isInNoneMode())
@@ -67,7 +67,7 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
             }
             else if (authenticator.isInRestrictedMode())
             {
-                if (subQueue.isPresent && authenticator.isRestricted(subQueue.get()))
+                if (tokenIsPresentAndQueueIsRestricted(subQueue, authenticator))
                 {
                     LOG.trace("Accepted request for sub queue [{}].", subQueue.get())
                     filterChain.doFilter(request, response)
@@ -86,6 +86,14 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
     }
 
     /**
+     *
+     */
+    fun tokenIsPresentAndQueueIsRestricted(subQueue: Optional<String>, multiQueueAuthenticator: MultiQueueAuthenticator): Boolean
+    {
+        return subQueue.isPresent && multiQueueAuthenticator.isRestricted(subQueue.get())
+    }
+
+    /**
      * Set the provided [Optional][String] into the [MDC] as [JwtAuthenticationFilter.SUB_QUEUE] if it is not [Optional.empty].
      *
      * @param subQueue an optional sub queue identifier, if it is not [Optional.empty] it will be placed into the [MDC]
@@ -100,9 +108,12 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
     }
 
     /**
+     * Get the value of the provided [request] for the [AUTHORIZATION_HEADER] header.
      *
+     * @param request the request to retrieve the [AUTHORIZATION_HEADER] from
+     * @return the [AUTHORIZATION_HEADER] header value wrapped as an [Optional], otherwise [Optional.empty]
      */
-    fun getSubQueueInToken(request: HttpServletRequest): Optional<String>
+    fun getSubQueueInTokenFromHeaders(request: HttpServletRequest): Optional<String>
     {
         val authHeader = request.getHeader(AUTHORIZATION_HEADER)
         if (authHeader != null)
@@ -118,6 +129,6 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
     @Throws(MultiQueueAuthenticationException::class)
     fun isValidJwtToken(jwtToken: String): Optional<String>
     {
-        return Optional.ofNullable(null)
+        return Optional.ofNullable(jwtToken)
     }
 }
