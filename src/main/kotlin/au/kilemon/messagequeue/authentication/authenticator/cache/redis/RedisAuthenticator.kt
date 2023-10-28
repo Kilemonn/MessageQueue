@@ -41,7 +41,8 @@ class RedisAuthenticator: MultiQueueAuthenticator()
 
     override fun removeRestrictionInternal(subQueue: String): Boolean
     {
-        return redisTemplate.opsForSet().remove(RESTRICTED_KEY, subQueue) != null
+        val result = redisTemplate.opsForSet().remove(RESTRICTED_KEY, AuthenticationMatrix(subQueue))
+        return result != null && result > 0
     }
 
     override fun getRestrictedSubQueueIdentifiers(): Set<String>
@@ -53,7 +54,7 @@ class RedisAuthenticator: MultiQueueAuthenticator()
     {
         val members = getMembersSet()
         val existingMembersSize = members.size.toLong()
-        redisTemplate.opsForSet().remove(RESTRICTED_KEY, members)
+        redisTemplate.delete(RESTRICTED_KEY)
         return existingMembersSize
     }
 }

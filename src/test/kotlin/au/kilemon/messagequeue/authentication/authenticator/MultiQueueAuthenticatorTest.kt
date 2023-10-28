@@ -24,12 +24,6 @@ abstract class MultiQueueAuthenticatorTest
     @SpyBean
     protected lateinit var multiQueueAuthenticator: MultiQueueAuthenticator
 
-    @BeforeEach
-    fun setUp()
-    {
-        multiQueueAuthenticator.clearRestrictedSubQueues()
-    }
-
     /**
      * Ensure [MultiQueueAuthenticator.addRestrictedEntry] always returns and does not add an entry if the
      * [MultiQueueAuthenticator.getAuthenticationType] is [MultiQueueAuthenticationType.NONE].
@@ -198,7 +192,7 @@ abstract class MultiQueueAuthenticatorTest
         Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
         Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, multiQueueAuthenticator.getAuthenticationType())
 
-        val subQueue = "testCanAccessSubQueue_WithHybridMode_isRestricted_matchesStoredSubQueue"
+        val subQueue = "testCanAccessSubQueue_WithHybridMode_isRestricted_doesNotMatchStoredSubQueue"
         Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(subQueue))
         Assertions.assertTrue(multiQueueAuthenticator.isRestricted(subQueue))
 
@@ -303,6 +297,7 @@ abstract class MultiQueueAuthenticatorTest
         subQueues.forEach { subQueue -> Assertions.assertTrue(multiQueueAuthenticator.isRestricted(subQueue)) }
         multiQueueAuthenticator.clearRestrictedSubQueues()
         subQueues.forEach { subQueue -> Assertions.assertFalse(multiQueueAuthenticator.isRestricted(subQueue)) }
+        Assertions.assertTrue(multiQueueAuthenticator.getRestrictedSubQueueIdentifiers().isEmpty())
     }
 
     /**
@@ -320,9 +315,7 @@ abstract class MultiQueueAuthenticatorTest
             "testGetRestrictedSubQueueIdentifiers5", "testGetRestrictedSubQueueIdentifiers6")
 
         subQueues.forEach { subQueue -> Assertions.assertFalse(multiQueueAuthenticator.isRestricted(subQueue)) }
-        subQueues.forEach { subQueue ->
-            Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(subQueue))
-        }
+        subQueues.forEach { subQueue -> Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(subQueue)) }
         subQueues.forEach { subQueue -> Assertions.assertTrue(multiQueueAuthenticator.isRestricted(subQueue)) }
 
         val restrictedIdentifiers = multiQueueAuthenticator.getRestrictedSubQueueIdentifiers()

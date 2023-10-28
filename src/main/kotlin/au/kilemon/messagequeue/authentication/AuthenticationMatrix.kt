@@ -1,6 +1,7 @@
 package au.kilemon.messagequeue.authentication
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import java.io.Serializable
 import javax.persistence.*
 
 /**
@@ -13,7 +14,7 @@ import javax.persistence.*
  */
 @Entity
 @Table(name = AuthenticationMatrix.TABLE_NAME)
-class AuthenticationMatrix(@Column(name = "subqueue", nullable = false) var subQueue: String)
+class AuthenticationMatrix(@Column(name = "subqueue", nullable = false) var subQueue: String): Serializable
 {
     companion object
     {

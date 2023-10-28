@@ -7,6 +7,7 @@ import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.queue.MultiQueueTest
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
@@ -25,6 +26,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 @Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class] )
 class InMemoryAuthenticatorTest: MultiQueueAuthenticatorTest()
 {
+    @BeforeEach
+    fun setUp()
+    {
+        multiQueueAuthenticator.clearRestrictedSubQueues()
+    }
+
     /**
      * Ensure that [MultiQueueAuthenticator.isInNoneMode] returns the correct value based on the stored
      * [MultiQueueAuthenticationType].
