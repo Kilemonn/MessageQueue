@@ -168,7 +168,7 @@ class MongoMultiQueue : MultiQueue(), HasLogger
         val largestIdMessage = queueMessageRepository.findTopByOrderByIdDesc()
         return if (largestIdMessage.isPresent)
         {
-            Optional.ofNullable(largestIdMessage.get().id?.plus(1) ?: 1)
+            Optional.of(largestIdMessage.get().id?.plus(1) ?: 1)
         }
         else
         {

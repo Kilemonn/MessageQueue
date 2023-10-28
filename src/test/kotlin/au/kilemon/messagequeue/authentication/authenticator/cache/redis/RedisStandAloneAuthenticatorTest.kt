@@ -23,6 +23,11 @@ import org.testcontainers.containers.GenericContainer
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
 
+/**
+ * A test class for [RedisAuthenticator] running in a standalone configuration.
+ *
+ * @author github.com/Kilemonn
+ */
 @ExtendWith(SpringExtension::class)
 @TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=REDIS", "${MessageQueueSettings.REDIS_PREFIX}=test"])
 @Testcontainers

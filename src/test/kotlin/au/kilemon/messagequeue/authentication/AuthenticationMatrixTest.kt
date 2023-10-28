@@ -1,9 +1,7 @@
 package au.kilemon.messagequeue.authentication
 
-import au.kilemon.messagequeue.message.QueueMessage
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.util.*
 
 /**
  * A test class for the [AuthenticationMatrix].
@@ -31,5 +29,26 @@ class AuthenticationMatrixTest
 
         Assertions.assertNotEquals(authMatrix1, authMatrix3)
         Assertions.assertNotEquals(authMatrix2, authMatrix3)
+    }
+
+    /**
+     * Ensure [AuthenticationMatrix.equals] returns `false` when `null` is passed in.
+     */
+    @Test
+    fun testEquals_nullArg()
+    {
+        val authMatrix = AuthenticationMatrix("authMatrix")
+        Assertions.assertNotEquals(authMatrix, null)
+    }
+
+    /**
+     * Ensure [AuthenticationMatrix.equals] returns `false` when a non-[AuthenticationMatrix] object is passed in.
+     */
+    @Test
+    fun testEquals_differentObject()
+    {
+        val authMatrix = AuthenticationMatrix("authMatrix")
+        val string = "test"
+        Assertions.assertNotEquals(authMatrix, string)
     }
 }

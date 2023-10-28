@@ -7,7 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.RedisTemplate
 
 /**
- *
+ * A [MultiQueueAuthenticator] implementation using Redis as the storage mechanism for the restricted
+ * sub-queue identifiers.
  *
  * @author github.com/Kilemonn
  */

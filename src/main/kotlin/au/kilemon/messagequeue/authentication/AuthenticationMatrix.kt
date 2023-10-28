@@ -27,7 +27,7 @@ class AuthenticationMatrix(@Column(name = "subqueue", nullable = false) var subQ
     var id: Long? = null
 
     /**
-     * Required for JSON deserialisation.
+     * Required for MySQL.
      */
     constructor() : this("")
 

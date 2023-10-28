@@ -4,7 +4,8 @@ import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthentica
 import org.slf4j.Logger
 
 /**
- *
+ * A [MultiQueueAuthenticator] implementation using an in-memory set as the storage mechanism for the restricted
+ * sub-queue identifiers.
  *
  * @author github.com/Kilemonn
  */

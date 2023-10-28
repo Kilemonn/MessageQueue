@@ -6,7 +6,8 @@ import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 
 /**
- *
+ * A [MultiQueueAuthenticator] implementation using MongoDB as the storage mechanism for the restricted sub-queue
+ * identifiers.
  *
  * @author github.com/Kilemonn
  */
@@ -23,9 +24,26 @@ class MongoAuthenticator: MultiQueueAuthenticator()
         return entries.isNotEmpty()
     }
 
+    /**
+     * Since mongodb does not manage self generated IDs we need to generate the ID ourselves when creating a new entry.
+     */
+    private fun getNextQueueIndex(): Long
+    {
+        val largestIdMessage = authenticationMatrixRepository.findTopByOrderByIdDesc()
+        return if (largestIdMessage.isPresent)
+        {
+            largestIdMessage.get().id?.plus(1) ?: 1
+        }
+        else
+        {
+            1
+        }
+    }
+
     override fun addRestrictedEntryInternal(subQueue: String)
     {
         val authMatrix = AuthenticationMatrixDocument(subQueue)
+        authMatrix.id = getNextQueueIndex()
         authenticationMatrixRepository.save(authMatrix)
     }
 

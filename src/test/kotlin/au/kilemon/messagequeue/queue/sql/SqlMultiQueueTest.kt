@@ -27,4 +27,4 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @Testcontainers
 @DataJpaTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=SQL", "spring.jpa.hibernate.ddl-auto=create", "spring.autoconfigure.exclude="])
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-abstract class AbstractSqlMultiQueueTest: MultiQueueTest()
+abstract class SqlMultiQueueTest: MultiQueueTest()

@@ -21,15 +21,4 @@ class AuthenticationMatrixDocument(var subQueue: String)
     @JsonIgnore
     @Id
     var id: Long? = null
-
-    /**
-     * Required for JSON deserialisation.
-     */
-    constructor() : this("")
-
-    constructor(authenticationMatrix: AuthenticationMatrix) : this()
-    {
-        this.id = authenticationMatrix.id
-        this.subQueue = authenticationMatrix.subQueue
-    }
 }

@@ -23,7 +23,7 @@ import java.util.*
  */
 @ContextConfiguration(initializers = [PostgreSqlMultiQueueTest.Initializer::class])
 @Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class] )
-class PostgreSqlMultiQueueTest: AbstractSqlMultiQueueTest()
+class PostgreSqlMultiQueueTest: SqlMultiQueueTest()
 {
     companion object
     {

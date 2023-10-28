@@ -22,7 +22,7 @@ import java.util.HashMap
  */
 @ContextConfiguration(initializers = [MySqlMultiQueueTest.Initializer::class])
 @Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class] )
-class MySqlMultiQueueTest : AbstractSqlMultiQueueTest()
+class MySqlMultiQueueTest : SqlMultiQueueTest()
 {
     companion object
     {

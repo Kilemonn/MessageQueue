@@ -6,7 +6,8 @@ import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 
 /**
- *
+ * A [MultiQueueAuthenticator] implementation using SQL as the storage mechanism for the restricted sub-queue
+ * identifiers.
  *
  * @author github.com/Kilemonn
  */
