@@ -40,7 +40,8 @@ class MongoAuthenticator: MultiQueueAuthenticator()
 
     override fun getRestrictedSubQueueIdentifiers(): Set<String>
     {
-        TODO("Not yet implemented")
+        return authenticationMatrixRepository.findAll().stream().map { authMatrix -> authMatrix.subQueue }
+            .toList().toSet()
     }
 
     override fun clearRestrictedSubQueues(): Long

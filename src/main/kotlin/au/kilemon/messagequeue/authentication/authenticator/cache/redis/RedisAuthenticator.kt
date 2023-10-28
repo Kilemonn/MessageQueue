@@ -15,7 +15,6 @@ class RedisAuthenticator: MultiQueueAuthenticator()
 {
     companion object
     {
-        // TODO - Completely black list this key as its used for special purpose for redis
         const val RESTRICTED_KEY = AuthenticationMatrix.TABLE_NAME + "_restricted"
     }
 
@@ -23,6 +22,14 @@ class RedisAuthenticator: MultiQueueAuthenticator()
 
     @Autowired
     lateinit var redisTemplate: RedisTemplate<String, AuthenticationMatrix>
+
+    /**
+     * Overriding to completely remove all access to the [RESTRICTED_KEY].
+     */
+    override fun getReservedSubQueues(): Set<String>
+    {
+        return setOf(RESTRICTED_KEY)
+    }
 
     private fun getMembersSet(): Set<AuthenticationMatrix>
     {

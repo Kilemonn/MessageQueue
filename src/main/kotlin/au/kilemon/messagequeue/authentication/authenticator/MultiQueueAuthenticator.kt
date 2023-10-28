@@ -29,6 +29,17 @@ abstract class MultiQueueAuthenticator: HasLogger
     }
 
     /**
+     * Used to return a list of completed reserved sub-queue identifiers that can never be used. Even when
+     * [MultiQueueAuthenticationType.NONE] is being used.
+     *
+     * @return list of sub-queue identifiers that cannot be used
+     */
+    open fun getReservedSubQueues(): Set<String>
+    {
+        return setOf()
+    }
+
+    /**
      * Determines whether based on the currently set [getAuthenticationType] and the provided [subQueue] and
      * [JwtAuthenticationFilter.getSubQueue] to determine if the user is able to interact with the requested sub queue.
      *
@@ -39,6 +50,11 @@ abstract class MultiQueueAuthenticator: HasLogger
     @Throws(MultiQueueAuthorisationException::class)
     fun canAccessSubQueue(subQueue: String)
     {
+        if (getReservedSubQueues().contains(subQueue))
+        {
+            throw MultiQueueAuthorisationException(subQueue, getAuthenticationType())
+        }
+
         if (isInNoneMode())
         {
             return

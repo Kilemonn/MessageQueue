@@ -1,6 +1,7 @@
 package au.kilemon.messagequeue.authentication.authenticator.cache.redis
 
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticatorTest
+import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthorisationException
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
@@ -9,6 +10,7 @@ import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.boot.test.util.TestPropertyValues
 import org.springframework.context.ApplicationContextInitializer
@@ -76,4 +78,18 @@ class RedisStandAloneAuthenticatorTest: MultiQueueAuthenticatorTest()
         Assertions.assertTrue(redis.isRunning)
         multiQueueAuthenticator.clearRestrictedSubQueues()
     }
+
+    /**
+     * Ensure that the [RedisAuthenticator.getReservedSubQueues] always contains [RedisAuthenticator.RESTRICTED_KEY] and
+     * that calls to [MultiQueueAuthenticator.canAccessSubQueue] will throw a [MultiQueueAuthorisationException].
+     */
+    @Test
+    fun testGetReservedSubQueues()
+    {
+        Assertions.assertTrue(multiQueueAuthenticator.getReservedSubQueues().contains(RedisAuthenticator.RESTRICTED_KEY))
+        Assertions.assertThrows(MultiQueueAuthorisationException::class.java) {
+            multiQueueAuthenticator.canAccessSubQueue(RedisAuthenticator.RESTRICTED_KEY)
+        }
+    }
+
 }
