@@ -6,10 +6,10 @@ import au.kilemon.messagequeue.filter.JwtAuthenticationFilter
 import au.kilemon.messagequeue.logging.HasLogger
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
-import kotlin.jvm.Throws
 
 /**
- *
+ * The base Authenticator class. This is responsible to tracking which sub queues are marked as restricted and
+ * maintaining this underlying collection within the specified storage medium.
  *
  * @author github.com/Kilemonn
  */
@@ -29,7 +29,12 @@ abstract class MultiQueueAuthenticator: HasLogger
     }
 
     /**
+     * Determines whether based on the currently set [getAuthenticationType] and the provided [subQueue] and
+     * [JwtAuthenticationFilter.getSubQueue] to determine if the user is able to interact with the requested sub queue.
      *
+     * @param subQueue the sub-queue identifier that is being requested access to
+     * @throws MultiQueueAuthorisationException if there is a mis-matching token OR no token provided. Or the sub-queue
+     * is not in restricted mode when it should be
      */
     @Throws(MultiQueueAuthorisationException::class)
     fun canAccessSubQueue(subQueue: String)
@@ -89,7 +94,10 @@ abstract class MultiQueueAuthenticator: HasLogger
     }
 
     /**
+     * Will determine if the requested [subQueue] identifier is being treated as a restricted queue or not.
      *
+     * @param subQueue the sub-queue to check whether it is restricted or not
+     * @return if [isInNoneMode] will always return `false`, otherwise delegates to [isRestrictedInternal]
      */
     fun isRestricted(subQueue: String): Boolean
     {
@@ -104,14 +112,22 @@ abstract class MultiQueueAuthenticator: HasLogger
     }
 
     /**
+     * Defers to the child class to implement this. It should look up in the appropriate storage medium to determine
+     * whether the provided [subQueue] is restricted or not.
      *
+     * @param subQueue the sub-queue to check whether it is restricted or not
+     * @return `true` if this sub-queue is in restricted mode, otherwise `false`
      */
     abstract fun isRestrictedInternal(subQueue: String): Boolean
 
 
     /**
+     * Add the provided [subQueue] identifier as a restricted sub-queue.
+     * This will delegate to [addRestrictedEntryInternal].
+     *
+     * @param subQueue the sub-queue identifier to make restricted
      * @return `true` if the sub queue identifier was added to the restriction set, otherwise `false` if there was
-     * no underlying change made
+     * no underlying change made. If [isInNoneMode] is set this will always return `false`.
      */
     fun addRestrictedEntry(subQueue: String): Boolean
     {
@@ -137,12 +153,19 @@ abstract class MultiQueueAuthenticator: HasLogger
     }
 
     /**
+     * Add the provided [subQueue] identifier as a restricted sub-queue.
      *
+     * @param subQueue the sub-queue identifier to make restricted
      */
     abstract fun addRestrictedEntryInternal(subQueue: String)
 
     /**
-     *  @return `true` if there was a restriction that was removed because of this call, otherwise `false`
+     * Remove the provided [subQueue] from being a restricted sub-queue.
+     * This will delegate to [removeRestrictionInternal].
+     *
+     * @param subQueue the sub-queue identifier that will no longer be treated as restricted
+     * @return `true` if there was a restriction that was removed because of this call, otherwise `false`. If
+     * [isInNoneMode] this will always return `false`
      */
     fun removeRestriction(subQueue: String): Boolean
     {
@@ -168,10 +191,16 @@ abstract class MultiQueueAuthenticator: HasLogger
     }
 
     /**
+     * Remove the provided [subQueue] from being a restricted sub-queue.
      *
+     * @param subQueue the sub-queue identifier that will no longer be treated as restricted
+     * @return `true` if the identifier is no longer marked as restricted, otherwise `false`
      */
     abstract fun removeRestrictionInternal(subQueue: String): Boolean
 
+    /**
+     * @return the underlying [Set] of sub-queue identifiers that are marked as restricted
+     */
     abstract fun getRestrictedSubQueueIdentifiers(): Set<String>
 
     /**

@@ -1,11 +1,14 @@
 package au.kilemon.messagequeue.authentication.authenticator
 
 import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
+import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthorisationException
+import au.kilemon.messagequeue.filter.JwtAuthenticationFilter
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.mockito.Mockito
+import org.slf4j.MDC
 import org.springframework.boot.test.mock.mockito.SpyBean
 
 /**
@@ -128,5 +131,212 @@ abstract class MultiQueueAuthenticatorTest
         val subQueue = "testRemoveRestriction_DoesNotExist"
         Assertions.assertFalse(multiQueueAuthenticator.isRestricted(subQueue))
         Assertions.assertFalse(multiQueueAuthenticator.removeRestriction(subQueue))
+    }
+
+    /**
+     * Ensure that [MultiQueueAuthenticator.canAccessSubQueue] never throws when its in
+     * [MultiQueueAuthenticator.isInNoneMode].
+     */
+    @Test
+    fun testCanAccessSubQueue_WithNoneMode()
+    {
+        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, multiQueueAuthenticator.getAuthenticationType())
+        val subQueue = "testCanAccessSubQueue_WithNoneMode"
+        multiQueueAuthenticator.canAccessSubQueue(subQueue)
+    }
+
+    /**
+     * Ensure that [MultiQueueAuthenticator.canAccessSubQueue] never throws when its in
+     * [MultiQueueAuthenticator.isInHybridMode] and the sub-queue identifier is not marked as restricted.
+     */
+    @Test
+    fun testCanAccessSubQueue_WithHybridMode_isNotRestricted()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, multiQueueAuthenticator.getAuthenticationType())
+
+        val subQueue = "testCanAccessSubQueue_WithHybridMode_isNotRestricted"
+        Assertions.assertFalse(multiQueueAuthenticator.isRestricted(subQueue))
+
+        multiQueueAuthenticator.canAccessSubQueue(subQueue)
+    }
+
+    /**
+     * Ensure that [MultiQueueAuthenticator.canAccessSubQueue] never throws when its in
+     * [MultiQueueAuthenticator.isInHybridMode] and the sub-queue identifier is marked as restricted AND matches
+     * the stored sub-queue identifier from the auth token.
+     */
+    @Test
+    fun testCanAccessSubQueue_WithHybridMode_isRestricted_matchesStoredSubQueue()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, multiQueueAuthenticator.getAuthenticationType())
+
+        val subQueue = "testCanAccessSubQueue_WithHybridMode_isRestricted_matchesStoredSubQueue"
+        Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(subQueue))
+        Assertions.assertTrue(multiQueueAuthenticator.isRestricted(subQueue))
+
+        try
+        {
+            MDC.put(JwtAuthenticationFilter.SUB_QUEUE, subQueue)
+            multiQueueAuthenticator.canAccessSubQueue(subQueue)
+        }
+        finally
+        {
+            MDC.clear()
+        }
+    }
+
+    /**
+     * Ensure that [MultiQueueAuthenticator.canAccessSubQueue] DOES throw a [MultiQueueAuthorisationException] when its
+     * in [MultiQueueAuthenticator.isInHybridMode] and the sub-queue identifier is marked as restricted AND does NOT
+     * match the stored sub-queue identifier from the auth token.
+     */
+    @Test
+    fun testCanAccessSubQueue_WithHybridMode_isRestricted_doesNotMatchStoredSubQueue()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, multiQueueAuthenticator.getAuthenticationType())
+
+        val subQueue = "testCanAccessSubQueue_WithHybridMode_isRestricted_matchesStoredSubQueue"
+        Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(subQueue))
+        Assertions.assertTrue(multiQueueAuthenticator.isRestricted(subQueue))
+
+        try
+        {
+            MDC.put(JwtAuthenticationFilter.SUB_QUEUE, "does not match sub-queue")
+            Assertions.assertThrows(MultiQueueAuthorisationException::class.java) {
+                multiQueueAuthenticator.canAccessSubQueue(subQueue)
+            }
+        }
+        finally
+        {
+            MDC.clear()
+        }
+    }
+
+    /**
+     * Ensure that [MultiQueueAuthenticator.canAccessSubQueue] DOES throw a [MultiQueueAuthorisationException] when its
+     * in [MultiQueueAuthenticator.isInRestrictedMode] and the sub-queue identifier is NOT marked as restricted.
+     */
+    @Test
+    fun testCanAccessSubQueue_WithRestrictedMode_isNotRestricted()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.RESTRICTED).`when`(multiQueueAuthenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.RESTRICTED, multiQueueAuthenticator.getAuthenticationType())
+
+        val subQueue = "testCanAccessSubQueue_WithRestrictedMode_isNotRestricted"
+        Assertions.assertFalse(multiQueueAuthenticator.isRestricted(subQueue))
+        Assertions.assertThrows(MultiQueueAuthorisationException::class.java) {
+            multiQueueAuthenticator.canAccessSubQueue(subQueue)
+        }
+    }
+
+    /**
+     * Ensure that [MultiQueueAuthenticator.canAccessSubQueue] does NOT throw when its
+     * in [MultiQueueAuthenticator.isInRestrictedMode] and the sub-queue identifier is marked as restricted AND the
+     * stored sub-queue identifier from the token matches the requested token.
+     */
+    @Test
+    fun testCanAccessSubQueue_WithRestrictedMode_isRestricted_matchesStoredSubQueue()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.RESTRICTED).`when`(multiQueueAuthenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.RESTRICTED, multiQueueAuthenticator.getAuthenticationType())
+
+        val subQueue = "testCanAccessSubQueue_WithRestrictedMode_isRestricted_matchesStoredSubQueue"
+        Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(subQueue))
+        Assertions.assertTrue(multiQueueAuthenticator.isRestricted(subQueue))
+
+        try
+        {
+            MDC.put(JwtAuthenticationFilter.SUB_QUEUE, subQueue)
+            multiQueueAuthenticator.canAccessSubQueue(subQueue)
+        }
+        finally
+        {
+            MDC.clear()
+        }
+    }
+
+    /**
+     * Ensure that [MultiQueueAuthenticator.canAccessSubQueue] DOES throw a [MultiQueueAuthorisationException] when its
+     * in [MultiQueueAuthenticator.isInRestrictedMode] and the sub-queue identifier is marked as restricted and the
+     * provided sub-queue identifier does NOT match the identifier provided in the auth token.
+     */
+    @Test
+    fun testCanAccessSubQueue_WithRestrictedMode_isRestricted_doesNotMatchStoredSubQueue()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.RESTRICTED).`when`(multiQueueAuthenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.RESTRICTED, multiQueueAuthenticator.getAuthenticationType())
+
+        val subQueue = "testCanAccessSubQueue_WithRestrictedMode_isRestricted_doesNotMatchStoredSubQueue"
+        Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(subQueue))
+        Assertions.assertTrue(multiQueueAuthenticator.isRestricted(subQueue))
+
+        try
+        {
+            MDC.put(JwtAuthenticationFilter.SUB_QUEUE, "does not match sub-queue")
+            Assertions.assertThrows(MultiQueueAuthorisationException::class.java) {
+                multiQueueAuthenticator.canAccessSubQueue(subQueue)
+            }
+        }
+        finally
+        {
+            MDC.clear()
+        }
+    }
+
+    /**
+     * Ensure that [MultiQueueAuthenticator.clearRestrictedSubQueues] will clear all sub-queue restrictions.
+     */
+    @Test
+    fun testClearRestrictedSubQueues()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.RESTRICTED).`when`(multiQueueAuthenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.RESTRICTED, multiQueueAuthenticator.getAuthenticationType())
+
+        val subQueues = listOf("testClearRestrictedSubQueues1", "testClearRestrictedSubQueues2", "testClearRestrictedSubQueues3",
+            "testClearRestrictedSubQueues4", "testClearRestrictedSubQueues5", "testClearRestrictedSubQueues6")
+
+        subQueues.forEach { subQueue -> Assertions.assertFalse(multiQueueAuthenticator.isRestricted(subQueue)) }
+        subQueues.forEach { subQueue -> Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(subQueue)) }
+        subQueues.forEach { subQueue -> Assertions.assertTrue(multiQueueAuthenticator.isRestricted(subQueue)) }
+        multiQueueAuthenticator.clearRestrictedSubQueues()
+        subQueues.forEach { subQueue -> Assertions.assertFalse(multiQueueAuthenticator.isRestricted(subQueue)) }
+    }
+
+    /**
+     * Ensure that [MultiQueueAuthenticator.getRestrictedSubQueueIdentifiers] will retrieve the restrict sub-queue
+     * identifiers even when new entries are added/removed and cleared.
+     */
+    @Test
+    fun testGetRestrictedSubQueueIdentifiers()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.RESTRICTED).`when`(multiQueueAuthenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.RESTRICTED, multiQueueAuthenticator.getAuthenticationType())
+
+        val subQueues = listOf("testGetRestrictedSubQueueIdentifiers1", "testGetRestrictedSubQueueIdentifiers2",
+            "testGetRestrictedSubQueueIdentifiers3", "testGetRestrictedSubQueueIdentifiers4",
+            "testGetRestrictedSubQueueIdentifiers5", "testGetRestrictedSubQueueIdentifiers6")
+
+        subQueues.forEach { subQueue -> Assertions.assertFalse(multiQueueAuthenticator.isRestricted(subQueue)) }
+        subQueues.forEach { subQueue ->
+            Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(subQueue))
+        }
+        subQueues.forEach { subQueue -> Assertions.assertTrue(multiQueueAuthenticator.isRestricted(subQueue)) }
+
+        val restrictedIdentifiers = multiQueueAuthenticator.getRestrictedSubQueueIdentifiers()
+        restrictedIdentifiers.forEach { identifier -> Assertions.assertTrue(multiQueueAuthenticator.isRestricted(identifier)) }
+
+        Assertions.assertEquals(subQueues.size, restrictedIdentifiers.size)
+
+        Assertions.assertTrue(multiQueueAuthenticator.removeRestriction(restrictedIdentifiers.elementAt(0)))
+        val updatedIdentifiers = multiQueueAuthenticator.getRestrictedSubQueueIdentifiers()
+        Assertions.assertEquals(restrictedIdentifiers.size - 1, updatedIdentifiers.size)
+        Assertions.assertFalse(updatedIdentifiers.contains(restrictedIdentifiers.elementAt(0)))
+
+        multiQueueAuthenticator.clearRestrictedSubQueues()
+        val emptyIdentifiers = multiQueueAuthenticator.getRestrictedSubQueueIdentifiers()
+        Assertions.assertTrue(emptyIdentifiers.isEmpty())
     }
 }
