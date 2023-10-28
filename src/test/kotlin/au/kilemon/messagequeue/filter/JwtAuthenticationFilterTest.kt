@@ -11,6 +11,7 @@ import java.util.*
 import javax.servlet.http.HttpServletRequest
 
 /**
+ * A test class for the [JwtAuthenticationFilter].
  *
  * @author github.com/Kilemonn
  */
@@ -73,12 +74,27 @@ class JwtAuthenticationFilterTest
     fun testGetSubQueueInTokenFromHeaders_headerExists()
     {
         val request = Mockito.mock(HttpServletRequest::class.java)
-        val authHeaderValue = "testGetSubQueueInTokenFromHeaders_headerExists"
+        val authHeaderValue = "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}testGetSubQueueInTokenFromHeaders_headerExists"
         Mockito.`when`(request.getHeader(JwtAuthenticationFilter.AUTHORIZATION_HEADER)).thenReturn(authHeaderValue)
 
         val subQueue = jwtAuthenticationFilter.getSubQueueInTokenFromHeaders(request)
         Assertions.assertTrue(subQueue.isPresent)
         Assertions.assertEquals(authHeaderValue, subQueue.get())
+    }
+
+    /**
+     * Ensure that [JwtAuthenticationFilter.getSubQueueInTokenFromHeaders] will fail to retrieve and verify the token
+     * when it does not have the [JwtAuthenticationFilter.BEARER_HEADER_VALUE] prefix.
+     */
+    @Test
+    fun testGetSubQueueInTokenFromHeaders_withoutBearerPrefix()
+    {
+        val request = Mockito.mock(HttpServletRequest::class.java)
+        val authHeaderValue = "testGetSubQueueInTokenFromHeaders_withoutBearerPrefix"
+        Mockito.`when`(request.getHeader(JwtAuthenticationFilter.AUTHORIZATION_HEADER)).thenReturn(authHeaderValue)
+
+        val subQueue = jwtAuthenticationFilter.getSubQueueInTokenFromHeaders(request)
+        Assertions.assertTrue(subQueue.isEmpty)
     }
 
     /**

@@ -4,6 +4,7 @@ import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthenticationException
+import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
 import org.slf4j.Logger
 import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
@@ -16,7 +17,7 @@ import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 /**
- *
+ * A filter responsible for verifying provided Jwt tokens when sub-queues are being accessed.
  *
  * @author github.com/Kilemonn
  */
@@ -27,6 +28,7 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
     companion object
     {
         const val AUTHORIZATION_HEADER = "Authorization"
+        const val BEARER_HEADER_VALUE = "Bearer "
 
         const val SUB_QUEUE = "Sub-Queue"
 
@@ -44,6 +46,9 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
 
     @Autowired
     lateinit var authenticator: MultiQueueAuthenticator
+
+    @Autowired
+    lateinit var jwtTokenProvider: JwtTokenProvider
 
     /**
      *
@@ -86,7 +91,10 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
     }
 
     /**
+     * Check if the token is set and it is restricted sub-queue identifier.
      *
+     * @return `true` if the provided [Optional.isPresent] and the call to [MultiQueueAuthenticator.isRestricted] is
+     * `true` using the provided [Optional] value. Otherwise, returns `false`
      */
     fun tokenIsPresentAndQueueIsRestricted(subQueue: Optional<String>, multiQueueAuthenticator: MultiQueueAuthenticator): Boolean
     {
@@ -118,17 +126,39 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
         val authHeader = request.getHeader(AUTHORIZATION_HEADER)
         if (authHeader != null)
         {
-            return isValidJwtToken(authHeader)
+            return if (authHeader.startsWith(BEARER_HEADER_VALUE))
+            {
+                val removeBearer = authHeader.substring(BEARER_HEADER_VALUE.length)
+                isValidJwtToken(removeBearer)
+            }
+            else
+            {
+                LOG.error("Provided [{}] header did not have prefix [{}].", AUTHORIZATION_HEADER, BEARER_HEADER_VALUE)
+                Optional.empty()
+            }
         }
         return Optional.empty()
     }
 
     /**
+     * Delegate to the [JwtTokenProvider] to determine if the provided token is valid.
      *
+     * @param jwtToken the token to verify
+     * @return the [String] for the sub-queue that this token is able to access, otherwise [Optional.empty] if there was
+     * a problem with parsing the claim
+     * @throws [MultiQueueAuthenticationException] if there is an issue verifying the token
      */
     @Throws(MultiQueueAuthenticationException::class)
     fun isValidJwtToken(jwtToken: String): Optional<String>
     {
-        return Optional.ofNullable(jwtToken)
+        val result = jwtTokenProvider.verifyTokenForSubQueue(jwtToken)
+        if (result.isPresent)
+        {
+            return Optional.ofNullable(result.get().getClaim(JwtTokenProvider.SUB_QUEUE_CLAIM).asString())
+        }
+        else
+        {
+            throw MultiQueueAuthenticationException()
+        }
     }
 }

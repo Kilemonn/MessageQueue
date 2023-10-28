@@ -16,6 +16,7 @@ import au.kilemon.messagequeue.authentication.authenticator.cache.redis.RedisAut
 import au.kilemon.messagequeue.authentication.authenticator.inmemory.InMemoryAuthenticator
 import au.kilemon.messagequeue.authentication.authenticator.nosql.mongo.MongoAuthenticator
 import au.kilemon.messagequeue.authentication.authenticator.sql.SqlAuthenticator
+import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
 import au.kilemon.messagequeue.settings.MultiQueueType
 import lombok.Generated
 import org.slf4j.Logger
@@ -128,5 +129,11 @@ class QueueConfiguration : HasLogger
         LOG.info("Initialising [{}] authenticator as the [{}] is set to [{}].", authenticator::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType)
 
         return authenticator
+    }
+
+    @Bean
+    open fun getJwtTokenProvider(): JwtTokenProvider
+    {
+        return JwtTokenProvider()
     }
 }
