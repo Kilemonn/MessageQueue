@@ -56,6 +56,7 @@ class JwtTokenProviderTest
         val subQueue = "testVerifyTokenForSubQueue_withExpiringToken"
         val expiryInMinutes = 60L
         val date = Date()
+        Thread.sleep(1000) // Forcing a sleep here to make sure the token is generated AFTER the current time
         val token = jwtTokenProvider.createTokenForSubQueue(subQueue, expiryInMinutes)
         Assertions.assertNotNull(token)
         Assertions.assertTrue(token.isPresent)
