@@ -157,7 +157,7 @@ open class MessageQueueController : HasLogger
         }
         catch(ex: HealthCheckFailureException)
         {
-            LOG.error("Health check failed.")
+            LOG.error("Health check failed.", ex)
             ResponseEntity.internalServerError().build()
         }
     }
@@ -337,7 +337,7 @@ open class MessageQueueController : HasLogger
     @PutMapping("$ENDPOINT_ASSIGN/{${RestParameters.UUID}}", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "Successfully assigned the message to the provided identifier. The message was not previously assigned."),
-        ApiResponse(responseCode = "202", description = "The message was already assigned to the provided identifier."),
+        ApiResponse(responseCode = "202", description = "The message was already assigned to the provided identifier.", content = [Content()]),
         ApiResponse(responseCode = "204", description = "No queue messages match the provided UUID.", content = [Content()]),
         ApiResponse(responseCode = "409", description = "The message is already assigned to another identifier.", content = [Content()])
     )

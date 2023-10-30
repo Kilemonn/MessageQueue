@@ -19,4 +19,6 @@ object RestParameters
     const val UUID = "uuid"
 
     const val INCLUDE_EMPTY = "includeEmpty"
+
+    const val EXPIRY = "expiry"
 }
