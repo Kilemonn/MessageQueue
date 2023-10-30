@@ -1,12 +1,22 @@
 package au.kilemon.messagequeue.filter
 
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
+import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
+import au.kilemon.messagequeue.configuration.QueueConfiguration
+import au.kilemon.messagequeue.logging.LoggingConfiguration
+import au.kilemon.messagequeue.queue.MultiQueueTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
 import org.slf4j.MDC
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.annotation.Import
+import org.springframework.test.context.ContextConfiguration
+import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.util.*
 import javax.servlet.http.HttpServletRequest
 
@@ -15,9 +25,16 @@ import javax.servlet.http.HttpServletRequest
  *
  * @author github.com/Kilemonn
  */
+@ExtendWith(SpringExtension::class)
+@ContextConfiguration(classes = [JwtAuthenticationFilter::class])
+@Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class] )
 class JwtAuthenticationFilterTest
 {
-    private val jwtAuthenticationFilter = JwtAuthenticationFilter()
+    @Autowired
+    private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
+
+    @Autowired
+    private lateinit var jwtTokenProvider: JwtTokenProvider
 
     @BeforeEach
     fun setUp()
@@ -74,12 +91,15 @@ class JwtAuthenticationFilterTest
     fun testGetSubQueueInTokenFromHeaders_headerExists()
     {
         val request = Mockito.mock(HttpServletRequest::class.java)
-        val authHeaderValue = "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}testGetSubQueueInTokenFromHeaders_headerExists"
+        val initialSubQueue = "testGetSubQueueInTokenFromHeaders_headerExists"
+        val token = jwtTokenProvider.createTokenForSubQueue(initialSubQueue)
+        Assertions.assertTrue(token.isPresent)
+        val authHeaderValue = "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}"
         Mockito.`when`(request.getHeader(JwtAuthenticationFilter.AUTHORIZATION_HEADER)).thenReturn(authHeaderValue)
 
         val subQueue = jwtAuthenticationFilter.getSubQueueInTokenFromHeaders(request)
         Assertions.assertTrue(subQueue.isPresent)
-        Assertions.assertEquals(authHeaderValue, subQueue.get())
+        Assertions.assertEquals(initialSubQueue, subQueue.get())
     }
 
     /**
