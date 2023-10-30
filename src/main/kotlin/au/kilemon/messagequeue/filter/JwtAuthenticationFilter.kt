@@ -51,7 +51,17 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
     lateinit var jwtTokenProvider: JwtTokenProvider
 
     /**
+     * Perform appropriate validation of the [AUTHORIZATION_HEADER] if it is provided.
+     * Depending on the set [MultiQueueAuthenticationType] will determine how this filter handles a request.
+     * - [MultiQueueAuthenticationType.NONE] all requests will be allowed, whether they provide a valid token or not.
+     * - [MultiQueueAuthenticationType.HYBRID] all requests will be allowed and the provided token [SUB_QUEUE] parameter
+     * will be set if a token is provided. It's up to the lower level controllers to determine how they need to react
+     * in accordance with the active [MultiQueueAuthenticator].
+     * - [MultiQueueAuthenticationType.RESTRICTED] a token is required and if not valid the request will be rejected
+     * here and a [MultiQueueAuthenticationException] will be thrown
      *
+     * @throws MultiQueueAuthenticationException if [MultiQueueAuthenticationType] is set to
+     * [MultiQueueAuthenticationType.RESTRICTED] and an invalid token OR NO token is provided
      */
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain)
     {
