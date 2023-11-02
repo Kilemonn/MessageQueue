@@ -52,7 +52,7 @@ open class AuthController : HasLogger
     lateinit var jwtTokenProvider: JwtTokenProvider
 
     @Operation(summary = "Create restriction on sub-queue.", description = "Create restriction a specific sub-queue to require authentication for future interactions and retrieve a token used to interact with this sub-queue.")
-    @PostMapping("${AUTH_PATH}/{${RestParameters.QUEUE_TYPE}}", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @PostMapping("/{${RestParameters.QUEUE_TYPE}}", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "Successfully registered the sub-queue identifier and returns an appropriate token for future access to the sub-queue."),
         ApiResponse(responseCode = "204", description = "The MultiQueue is in a no-auth mode and tokens cannot be generated.", content = [Content()]), // Add empty Content() to remove duplicate responses in swagger docsApiResponse(responseCode = "204", description = "No queue messages match the provided UUID.", content = [Content()])
@@ -77,9 +77,9 @@ open class AuthController : HasLogger
         }
         else
         {
-            multiQueueAuthenticator.addRestrictedEntry(queueType)
+            val wasAdded = multiQueueAuthenticator.addRestrictedEntry(queueType)
             val token = jwtTokenProvider.createTokenForSubQueue(queueType, expiry)
-            return if (token.isEmpty)
+            return if (token.isEmpty || !wasAdded)
             {
                 LOG.error("Failed to generated token for sub-queue [{}].", queueType)
                 ResponseEntity.internalServerError().build()
@@ -93,7 +93,7 @@ open class AuthController : HasLogger
     }
 
     @Operation(summary = "Remove restriction from sub-queue.", description = "Remove restriction from sub-queue so it can be accessed without restriction.")
-    @DeleteMapping("${AUTH_PATH}/{${RestParameters.QUEUE_TYPE}}", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @DeleteMapping("/{${RestParameters.QUEUE_TYPE}}", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "Successfully removed restriction for the sub-queue identifier."),
         ApiResponse(responseCode = "204", description = "The MultiQueue is in a no-auth mode and sub-queue restrictions are disabled.", content = [Content()]), // Add empty Content() to remove duplicate responses in swagger docsApiResponse(responseCode = "204", description = "No queue messages match the provided UUID.", content = [Content()])
@@ -101,7 +101,8 @@ open class AuthController : HasLogger
         ApiResponse(responseCode = "404", description = "The requested sub-queue is not currently restricted.", content = [Content()]),
         ApiResponse(responseCode = "500", description = "There was an error releasing restriction from the sub-queue.", content = [Content()])
     )
-    fun removeRestrictionFromSubQueue(queueType: String, clearQueue: Boolean = false): ResponseEntity<Void>
+    fun removeRestrictionFromSubQueue(@Parameter(`in` = ParameterIn.PATH, required = true, description = "")
+                                      @PathVariable(required = true, name = RestParameters.QUEUE_TYPE) queueType: String, clearQueue: Boolean = false): ResponseEntity<Void>
     {
         if (multiQueueAuthenticator.isInNoneMode())
         {
