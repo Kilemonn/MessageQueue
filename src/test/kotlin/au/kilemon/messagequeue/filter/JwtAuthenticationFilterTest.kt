@@ -1,6 +1,7 @@
 package au.kilemon.messagequeue.filter
 
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
+import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthenticationException
 import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
@@ -213,5 +214,34 @@ class JwtAuthenticationFilterTest
         Mockito.`when`(request.requestURI).thenReturn(uriPath)
 
         Assertions.assertTrue(jwtAuthenticationFilter.urlRequiresAuthentication(request))
+    }
+
+    /**
+     * Ensure that [JwtAuthenticationFilter.isValidJwtToken] returns a valid [Optional] with the correct sub-queue
+     * value when a valid token is provided.
+     */
+    @Test
+    fun testIsValidJwtToken_validToken()
+    {
+        val subQueue = "testIsValidJwtToken_validToken"
+        val token = jwtTokenProvider.createTokenForSubQueue(subQueue)
+        Assertions.assertTrue(token.isPresent)
+
+        val embeddedSubQueue = jwtAuthenticationFilter.isValidJwtToken(token.get())
+        Assertions.assertTrue(embeddedSubQueue.isPresent)
+        Assertions.assertEquals(subQueue, embeddedSubQueue.get())
+    }
+
+    /**
+     * Ensure that [JwtAuthenticationFilter.isValidJwtToken] throws a [MultiQueueAuthenticationException] when the
+     * provided token is invalid.
+     */
+    @Test
+    fun testIsValidJwtToken_throws()
+    {
+        val token = "testIsValidJwtToken_throws"
+        Assertions.assertThrows(MultiQueueAuthenticationException::class.java) {
+            jwtAuthenticationFilter.isValidJwtToken(token)
+        }
     }
 }
