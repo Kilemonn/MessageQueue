@@ -6,6 +6,7 @@ import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
+import lombok.Generated
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import java.util.*
@@ -32,6 +33,8 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
     abstract override val LOG: Logger
 
     @Autowired
+    @get:Generated
+    @set:Generated
     protected lateinit var multiQueueAuthenticator: MultiQueueAuthenticator
 
     /**
