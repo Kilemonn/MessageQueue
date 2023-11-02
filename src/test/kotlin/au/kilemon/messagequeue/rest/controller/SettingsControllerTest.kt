@@ -1,8 +1,7 @@
 package au.kilemon.messagequeue.rest.controller
 
 import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
-import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
-import au.kilemon.messagequeue.authentication.authenticator.inmemory.InMemoryAuthenticator
+import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import au.kilemon.messagequeue.settings.MultiQueueType
@@ -10,15 +9,12 @@ import com.google.gson.Gson
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
-import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.MvcResult
@@ -32,7 +28,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
  */
 @ExtendWith(SpringExtension::class)
 @WebMvcTest(controllers = [SettingsController::class], properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=IN_MEMORY"])
-@Import(LoggingConfiguration::class)
+@Import(*[QueueConfiguration::class, LoggingConfiguration::class])
 class SettingsControllerTest
 {
     /**
@@ -51,18 +47,6 @@ class SettingsControllerTest
         fun getSettings(): MessageQueueSettings
         {
             return MessageQueueSettings()
-        }
-
-        @Bean
-        open fun getMultiQueueAuthenticator(): MultiQueueAuthenticator
-        {
-            return Mockito.spy(InMemoryAuthenticator::class.java)
-        }
-
-        @Bean
-        open fun getMultiQueueAuthenticationType(): MultiQueueAuthenticationType
-        {
-            return MultiQueueAuthenticationType.NONE
         }
     }
 
@@ -84,6 +68,7 @@ class SettingsControllerTest
         val settings = gson.fromJson(mvcResult.response.contentAsString, MessageQueueSettings::class.java)
 
         Assertions.assertEquals(MultiQueueType.IN_MEMORY.toString(), settings.multiQueueType)
+        Assertions.assertEquals(MultiQueueAuthenticationType.NONE.toString(), settings.multiQueueAuthentication)
 
         Assertions.assertTrue(settings.redisPrefix.isEmpty())
         Assertions.assertEquals(MessageQueueSettings.REDIS_ENDPOINT_DEFAULT, settings.redisEndpoint)

@@ -3,6 +3,7 @@ package au.kilemon.messagequeue.rest.controller
 import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import au.kilemon.messagequeue.authentication.authenticator.inmemory.InMemoryAuthenticator
+import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
@@ -59,6 +60,12 @@ class MessageQueueControllerMockTest
         open fun getMultiQueueAuthenticationType(): MultiQueueAuthenticationType
         {
             return MultiQueueAuthenticationType.NONE
+        }
+
+        @Bean
+        open fun getJwtTokenProvider(): JwtTokenProvider
+        {
+            return JwtTokenProvider()
         }
     }
 

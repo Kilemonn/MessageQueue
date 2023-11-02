@@ -73,7 +73,7 @@ class MessageQueueSettings
          * Indicates what authentication mode the `MultiQueue` should be in.
          */
         const val MULTI_QUEUE_AUTHENTICATION: String = "MULTI_QUEUE_AUTHENTICATION"
-        const val MULTI_QUEUE_AUTHENTICATION_DEFAULT: String = ""
+        const val MULTI_QUEUE_AUTHENTICATION_DEFAULT: String = "NONE"
     }
 
     /**
