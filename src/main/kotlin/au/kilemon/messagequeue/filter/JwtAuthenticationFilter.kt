@@ -5,6 +5,7 @@ import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthenticationException
 import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
+import au.kilemon.messagequeue.rest.controller.MessageQueueController
 import org.slf4j.Logger
 import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
@@ -70,6 +71,13 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
             val subQueue = getSubQueueInTokenFromHeaders(request)
             setSubQueue(subQueue)
 
+            if (!urlRequiresAuthentication(request))
+            {
+                LOG.trace("Allowed access to path [{}] as it does not require authentication.", request.requestURI)
+                filterChain.doFilter(request, response)
+                return
+            }
+
             if (authenticator.isInNoneMode())
             {
                 LOG.trace("Allowed access as authentication is set to [{}].", MultiQueueAuthenticationType.NONE)
@@ -98,6 +106,20 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
         {
             MDC.remove(SUB_QUEUE)
         }
+    }
+
+    /**
+     * Verify the requested URI requires authentication or not.
+     *
+     * @param request the incoming request to verify the path of
+     * @return `true` if the provided path starts with an auth required prefix, otherwise `false`
+     */
+    fun urlRequiresAuthentication(request: HttpServletRequest): Boolean
+    {
+        val requestString = request.requestURI
+        val authRequiredUrlPrefixes = listOf(MessageQueueController.MESSAGE_QUEUE_BASE_PATH)
+
+        return authRequiredUrlPrefixes.any { authRequiredUrlPrefix -> requestString.startsWith(authRequiredUrlPrefix) }
     }
 
     /**

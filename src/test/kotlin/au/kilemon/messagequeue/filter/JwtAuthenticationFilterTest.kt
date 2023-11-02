@@ -5,6 +5,7 @@ import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.queue.MultiQueueTest
+import au.kilemon.messagequeue.rest.controller.MessageQueueController
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -184,5 +185,33 @@ class JwtAuthenticationFilterTest
         val authenticator = Mockito.mock(MultiQueueAuthenticator::class.java)
 
         Assertions.assertFalse(jwtAuthenticationFilter.tokenIsPresentAndQueueIsRestricted(subQueue, authenticator))
+    }
+
+    /**
+     * Ensure [JwtAuthenticationFilter.urlRequiresAuthentication] returns `false` when the provided URI does not
+     * start with an authorised path prefix.
+     */
+    @Test
+    fun testUrlRequiresAuthentication_noAuthRequiredURL()
+    {
+        val request = Mockito.mock(HttpServletRequest::class.java)
+        val uriPath = "/another/test/endpoint/${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}"
+        Mockito.`when`(request.requestURI).thenReturn(uriPath)
+
+        Assertions.assertFalse(jwtAuthenticationFilter.urlRequiresAuthentication(request))
+    }
+
+    /**
+     * Ensure [JwtAuthenticationFilter.urlRequiresAuthentication] returns `true` when the provided URI does
+     * start with an authorised path prefix.
+     */
+    @Test
+    fun testUrlRequiresAuthentication_authRequiredURL()
+    {
+        val request = Mockito.mock(HttpServletRequest::class.java)
+        val uriPath = "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}/test/endpoint"
+        Mockito.`when`(request.requestURI).thenReturn(uriPath)
+
+        Assertions.assertTrue(jwtAuthenticationFilter.urlRequiresAuthentication(request))
     }
 }
