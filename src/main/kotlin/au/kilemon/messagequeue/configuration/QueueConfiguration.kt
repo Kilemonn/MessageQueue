@@ -40,20 +40,14 @@ class QueueConfiguration : HasLogger
     override val LOG: Logger = initialiseLogger()
 
     @Autowired
-    @get:Generated
-    @set:Generated
-    lateinit var messageQueueSettings: MessageQueueSettings
+    private lateinit var messageQueueSettings: MessageQueueSettings
 
     @Autowired
-    @get:Generated
-    @set:Generated
-    lateinit var messageSource: ReloadableResourceBundleMessageSource
+    private lateinit var messageSource: ReloadableResourceBundleMessageSource
 
     @Autowired
     @Lazy
-    @get:Generated
-    @set:Generated
-    lateinit var redisTemplate: RedisTemplate<String, QueueMessage>
+    private lateinit var redisTemplate: RedisTemplate<String, QueueMessage>
 
     /**
      * Initialise the [MultiQueue] [Bean] based on the [MessageQueueSettings.multiQueueType].

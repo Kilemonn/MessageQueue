@@ -42,19 +42,13 @@ open class AuthController : HasLogger
     override val LOG: Logger = this.initialiseLogger()
 
     @Autowired
-    @get:Generated
-    @set:Generated
-    lateinit var multiQueueAuthenticator: MultiQueueAuthenticator
+    private lateinit var multiQueueAuthenticator: MultiQueueAuthenticator
 
     @Autowired
-    @get:Generated
-    @set:Generated
-    lateinit var multiQueue: MultiQueue
+    private lateinit var multiQueue: MultiQueue
 
     @Autowired
-    @get:Generated
-    @set:Generated
-    lateinit var jwtTokenProvider: JwtTokenProvider
+    private lateinit var jwtTokenProvider: JwtTokenProvider
 
     @Operation(summary = "Create restriction on sub-queue.", description = "Create restriction a specific sub-queue to require authentication for future interactions and retrieve a token used to interact with this sub-queue.")
     @PostMapping("/{${RestParameters.QUEUE_TYPE}}", produces = [MediaType.APPLICATION_JSON_VALUE])

@@ -95,6 +95,7 @@ class RedisStandAloneAuthenticatorTest: MultiQueueAuthenticatorTest()
         Assertions.assertThrows(MultiQueueAuthorisationException::class.java) {
             multiQueueAuthenticator.canAccessSubQueue(RedisAuthenticator.RESTRICTED_KEY)
         }
+        Assertions.assertFalse(multiQueueAuthenticator.canAccessSubQueue(RedisAuthenticator.RESTRICTED_KEY, false))
     }
 
 }

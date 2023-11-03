@@ -74,6 +74,13 @@ class MessageQueueSettings
          */
         const val MULTI_QUEUE_AUTHENTICATION: String = "MULTI_QUEUE_AUTHENTICATION"
         const val MULTI_QUEUE_AUTHENTICATION_DEFAULT: String = "NONE"
+
+        /**
+         * A property that is passed through to the [au.kilemon.messagequeue.authentication.token.JwtTokenProvider] and
+         * used as the token generation and verification key. If this is not provided, a new key will be generated each
+         * time the application starts.
+         */
+        const val MULTI_QUEUE_TOKEN_KEY: String = "MULTI_QUEUE_TOKEN_KEY"
     }
 
     /**

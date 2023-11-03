@@ -1,12 +1,17 @@
 package au.kilemon.messagequeue.authentication.token
 
+import com.auth0.jwt.exceptions.JWTCreationException
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Mockito
+import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.util.*
 
 /**
  * A test class for [JwtTokenProvider] and different token issuing and verification scenarios.
  */
+@ExtendWith(SpringExtension::class)
 class JwtTokenProviderTest
 {
     private val jwtTokenProvider = JwtTokenProvider()
@@ -22,6 +27,21 @@ class JwtTokenProviderTest
 
         Assertions.assertNotNull(token)
         Assertions.assertTrue(token.isPresent)
+    }
+
+    /**
+     * Ensure [JwtTokenProvider.createTokenForSubQueue] returns an [Optional.empty] when the underlying method
+     * fails to generate the token and throws a [JWTCreationException].
+     */
+    @Test
+    fun testCreateTokenForSubQueue_failsToCreateToken()
+    {
+        val mockJwtTokenProvider = Mockito.spy(JwtTokenProvider::class.java)
+        val subQueue = "testCreateTokenForSubQueue_failsToCreateToken"
+
+        Mockito.doThrow(JWTCreationException("message", Exception())).`when`(mockJwtTokenProvider).createTokenInternal(subQueue)
+        val token = mockJwtTokenProvider.createTokenForSubQueue(subQueue)
+        Assertions.assertTrue(token.isEmpty)
     }
 
     /**

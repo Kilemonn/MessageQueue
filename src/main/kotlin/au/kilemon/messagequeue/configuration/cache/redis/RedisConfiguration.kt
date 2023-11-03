@@ -80,9 +80,7 @@ class RedisConfiguration: HasLogger
     }
 
     @Autowired
-    @get:Generated
-    @set:Generated
-    lateinit var messageQueueSettings: MessageQueueSettings
+    private lateinit var messageQueueSettings: MessageQueueSettings
 
     /**
      * Create the [RedisConnectionFactory] based on the loaded configuration.

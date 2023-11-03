@@ -1,6 +1,7 @@
 package au.kilemon.messagequeue.authentication.token
 
 import au.kilemon.messagequeue.logging.HasLogger
+import au.kilemon.messagequeue.settings.MessageQueueSettings
 import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
@@ -8,6 +9,7 @@ import com.auth0.jwt.exceptions.JWTCreationException
 import com.auth0.jwt.exceptions.JWTVerificationException
 import com.auth0.jwt.interfaces.DecodedJWT
 import org.slf4j.Logger
+import org.springframework.beans.factory.annotation.Value
 import java.security.SecureRandom
 import java.util.*
 
@@ -29,6 +31,9 @@ class JwtTokenProvider: HasLogger
 
     private var algorithm: Algorithm? = null
 
+    @Value("\${${MessageQueueSettings.MULTI_QUEUE_TOKEN_KEY}:\"\"}")
+    private var tokenKey: String = ""
+
     /**
      * Lazily initialise and get the [Algorithm] using [Algorithm.HMAC512] and a random key.
      *
@@ -38,12 +43,32 @@ class JwtTokenProvider: HasLogger
     {
         if (algorithm == null)
         {
+            algorithm = Algorithm.HMAC512(getKey())
+        }
+        return algorithm!!
+    }
+
+    /**
+     * Get the key to be used for Jwt token generation and verification.
+     *
+     * @return If a value is provided via [MessageQueueSettings.MULTI_QUEUE_TOKEN_KEY] then we will use it if it is
+     * not blank. Otherwise, a randomly generated a byte array is returned
+     */
+    private fun getKey(): ByteArray
+    {
+        return if (tokenKey.isNotBlank())
+        {
+            LOG.info("Using provided key in property [{}] as the HMAC512 token generation and verification key.", MessageQueueSettings.MULTI_QUEUE_TOKEN_KEY)
+            tokenKey.toByteArray()
+        }
+        else
+        {
+            LOG.info("No HMAC512 key provided in property [{}] for token generation and verification key. Generating a new random key.", MessageQueueSettings.MULTI_QUEUE_TOKEN_KEY)
             val random = SecureRandom()
             val bytes = ByteArray(128)
             random.nextBytes(bytes)
-            algorithm = Algorithm.HMAC512(bytes)
+            bytes
         }
-        return algorithm!!
     }
 
     /**
@@ -92,12 +117,7 @@ class JwtTokenProvider: HasLogger
     {
         try
         {
-            val builder = JWT.create().withIssuer(ISSUER).withClaim(SUB_QUEUE_CLAIM, subQueue)
-            if (expiryInMinutes != null)
-            {
-                builder.withExpiresAt(Date(Date().time + (expiryInMinutes * 60 * 1000)))
-            }
-            val token = builder.sign(getAlgorithm())
+            val token = createTokenInternal(subQueue, expiryInMinutes)
 
             LOG.info("Creating new token for sub-queue [{}] with expiry of [{}] minutes.", subQueue, expiryInMinutes)
             return Optional.ofNullable(token)
@@ -108,5 +128,25 @@ class JwtTokenProvider: HasLogger
             LOG.error(String.format("Failed to create requested token for sub-queue identifier [%s].", subQueue), ex)
         }
         return Optional.empty()
+    }
+
+    /**
+     * The internal method for creating the token.
+     * This is needed for tests instead of using PowerMock or something.
+     *
+     * @param subQueue will be embedded in the generated token as a claim with key [SUB_QUEUE_CLAIM]
+     * @param expiryInMinutes the generated token expiry in minutes, if `null` this is not added the token will be valid
+     * indefinitely
+     * @return the generated token as a [String]
+     * @throws JWTCreationException if there is a problem creating the token
+     */
+    fun createTokenInternal(subQueue: String, expiryInMinutes: Long? = null): String
+    {
+        val builder = JWT.create().withIssuer(ISSUER).withClaim(SUB_QUEUE_CLAIM, subQueue)
+        if (expiryInMinutes != null)
+        {
+            builder.withExpiresAt(Date(Date().time + (expiryInMinutes * 60 * 1000)))
+        }
+        return builder.sign(getAlgorithm())
     }
 }
