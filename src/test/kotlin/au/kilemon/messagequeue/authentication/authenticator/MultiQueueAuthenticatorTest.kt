@@ -136,7 +136,7 @@ abstract class MultiQueueAuthenticatorTest
     {
         Assertions.assertEquals(MultiQueueAuthenticationType.NONE, multiQueueAuthenticator.getAuthenticationType())
         val subQueue = "testCanAccessSubQueue_WithNoneMode"
-        multiQueueAuthenticator.canAccessSubQueue(subQueue)
+        Assertions.assertTrue(multiQueueAuthenticator.canAccessSubQueue(subQueue))
     }
 
     /**
@@ -152,7 +152,7 @@ abstract class MultiQueueAuthenticatorTest
         val subQueue = "testCanAccessSubQueue_WithHybridMode_isNotRestricted"
         Assertions.assertFalse(multiQueueAuthenticator.isRestricted(subQueue))
 
-        multiQueueAuthenticator.canAccessSubQueue(subQueue)
+        Assertions.assertTrue(multiQueueAuthenticator.canAccessSubQueue(subQueue))
     }
 
     /**
@@ -173,7 +173,7 @@ abstract class MultiQueueAuthenticatorTest
         try
         {
             MDC.put(JwtAuthenticationFilter.SUB_QUEUE, subQueue)
-            multiQueueAuthenticator.canAccessSubQueue(subQueue)
+            Assertions.assertTrue(multiQueueAuthenticator.canAccessSubQueue(subQueue))
         }
         finally
         {
@@ -202,6 +202,7 @@ abstract class MultiQueueAuthenticatorTest
             Assertions.assertThrows(MultiQueueAuthorisationException::class.java) {
                 multiQueueAuthenticator.canAccessSubQueue(subQueue)
             }
+            Assertions.assertFalse(multiQueueAuthenticator.canAccessSubQueue(subQueue, false))
         }
         finally
         {
@@ -224,6 +225,7 @@ abstract class MultiQueueAuthenticatorTest
         Assertions.assertThrows(MultiQueueAuthorisationException::class.java) {
             multiQueueAuthenticator.canAccessSubQueue(subQueue)
         }
+        Assertions.assertFalse(multiQueueAuthenticator.canAccessSubQueue(subQueue, false))
     }
 
     /**
@@ -245,6 +247,7 @@ abstract class MultiQueueAuthenticatorTest
         {
             MDC.put(JwtAuthenticationFilter.SUB_QUEUE, subQueue)
             multiQueueAuthenticator.canAccessSubQueue(subQueue)
+            Assertions.assertTrue(multiQueueAuthenticator.canAccessSubQueue(subQueue))
         }
         finally
         {
@@ -273,6 +276,7 @@ abstract class MultiQueueAuthenticatorTest
             Assertions.assertThrows(MultiQueueAuthorisationException::class.java) {
                 multiQueueAuthenticator.canAccessSubQueue(subQueue)
             }
+            Assertions.assertFalse(multiQueueAuthenticator.canAccessSubQueue(subQueue, false))
         }
         finally
         {

@@ -159,7 +159,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
     fun getOwnersAndKeysMap(queueType: String?): Map<String, HashSet<String>>
     {
         val responseMap = HashMap<String, HashSet<String>>()
-        if (queueType != null)
+        if (queueType != null && multiQueueAuthenticator.canAccessSubQueue(queueType, false))
         {
             LOG.debug("Getting owners map for sub-queue with identifier [{}].", queueType)
             getOwnersAndKeysMapForType(queueType, responseMap)
@@ -168,7 +168,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
         {
             LOG.debug("Getting owners map for all sub-queues.")
             val keys = keys(false)
-            keys.forEach { key ->
+            keys.filter { key -> multiQueueAuthenticator.canAccessSubQueue(key, false) }.forEach { key ->
                 getOwnersAndKeysMapForType(key, responseMap)
             }
         }

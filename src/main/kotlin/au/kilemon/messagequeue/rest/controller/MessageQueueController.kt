@@ -1,9 +1,10 @@
 package au.kilemon.messagequeue.rest.controller
 
-import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
+import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
+import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
 import au.kilemon.messagequeue.rest.response.MessageResponse
 import io.swagger.v3.oas.annotations.Hidden
@@ -14,7 +15,6 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
-import lombok.Generated
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -25,7 +25,6 @@ import org.springframework.web.server.ResponseStatusException
 import java.util.*
 import java.util.stream.Collectors
 import javax.validation.Valid
-import kotlin.collections.HashMap
 
 /**
  * The REST controller for the [MultiQueue]. It exposes endpoints to access and manipulate the queue and the messages inside it.
@@ -104,9 +103,10 @@ open class MessageQueueController : HasLogger
     }
 
     @Autowired
-    @get:Generated
-    @set:Generated
-    lateinit var messageQueue: MultiQueue
+    private lateinit var messageQueue: MultiQueue
+
+    @Autowired
+    private lateinit var authenticator: MultiQueueAuthenticator
 
     /**
      * Retrieve information about the whole [MultiQueue]. Specifically data related information.
@@ -132,6 +132,8 @@ open class MessageQueueController : HasLogger
     fun getQueueTypeInfo(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The queueType to retrieve information about.")
                          @PathVariable(name = RestParameters.QUEUE_TYPE) queueType: String): ResponseEntity<String>
     {
+        authenticator.canAccessSubQueue(queueType)
+
         val queueForType = messageQueue.getQueueForType(queueType)
         LOG.debug("Returning size [{}] for queue with type [{}].", queueForType.size, queueType)
         return ResponseEntity.ok(queueForType.size.toString())
@@ -182,6 +184,7 @@ open class MessageQueueController : HasLogger
         if (entry.isPresent)
         {
             val foundEntry = entry.get()
+            authenticator.canAccessSubQueue(foundEntry.type)
             LOG.debug("Found message with UUID [{}] in queue with type [{}].", foundEntry.uuid, foundEntry.type)
             return ResponseEntity.ok(MessageResponse(foundEntry))
         }
@@ -215,6 +218,9 @@ open class MessageQueueController : HasLogger
             {
                 queueMessage.assignedTo = null
             }
+
+            authenticator.canAccessSubQueue(queueMessage.type)
+
             val wasAdded = messageQueue.add(queueMessage)
             if (wasAdded)
             {
@@ -259,6 +265,7 @@ open class MessageQueueController : HasLogger
     {
         if (queueType != null)
         {
+            authenticator.canAccessSubQueue(queueType)
             messageQueue.clearForType(queueType)
         }
         else
@@ -285,6 +292,7 @@ open class MessageQueueController : HasLogger
         if ( !queueType.isNullOrBlank())
         {
             LOG.debug("Retrieving all entry details from queue with type [{}].", queueType)
+            authenticator.canAccessSubQueue(queueType)
             val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(queueType)
             val queueDetails = queueForType.stream().map { message -> message.removePayload(detailed) }.collect(Collectors.toList())
             responseMap[queueType] = queueDetails
@@ -294,10 +302,13 @@ open class MessageQueueController : HasLogger
             LOG.debug("Retrieving all entry details from all queue types.")
             for (key: String in messageQueue.keys(false))
             {
-                // No need to empty check since we passed `false` to `keys()` above
-                val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(key)
-                val queueDetails = queueForType.stream().map { message -> message.removePayload(detailed) }.collect(Collectors.toList())
-                responseMap[key] = queueDetails
+                if (authenticator.canAccessSubQueue(key, false))
+                {
+                    // No need to empty check since we passed `false` to `keys()` above
+                    val queueForType: Queue<QueueMessage> = messageQueue.getQueueForType(key)
+                    val queueDetails = queueForType.stream().map { message -> message.removePayload(detailed) }.collect(Collectors.toList())
+                    responseMap[key] = queueDetails
+                }
             }
         }
         return ResponseEntity.ok(responseMap)
@@ -316,6 +327,8 @@ open class MessageQueueController : HasLogger
     fun getOwned(@Parameter(`in` = ParameterIn.QUERY, required = true, description = "The identifier that must match the message's `assigned` property in order to be returned.") @RequestParam(required = true, name = RestParameters.ASSIGNED_TO) assignedTo: String,
                  @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The sub queue to search for the assigned messages.") @RequestParam(required = true, name = RestParameters.QUEUE_TYPE) queueType: String): ResponseEntity<List<MessageResponse>>
     {
+        authenticator.canAccessSubQueue(queueType)
+
         val assignedMessages: Queue<QueueMessage> = messageQueue.getAssignedMessagesForType(queueType, assignedTo)
         val ownedMessages = assignedMessages.stream().map { message -> MessageResponse(message) }.collect(Collectors.toList())
         LOG.debug("Found [{}] owned entries within queue with type [{}] for user with identifier [{}].", ownedMessages.size, queueType, assignedTo)
@@ -348,6 +361,8 @@ open class MessageQueueController : HasLogger
         if (message.isPresent)
         {
             val messageToAssign = message.get()
+            authenticator.canAccessSubQueue(messageToAssign.type
+            )
             if (!messageToAssign.assignedTo.isNullOrBlank())
             {
                 if (messageToAssign.assignedTo == assignedTo)
@@ -390,6 +405,8 @@ open class MessageQueueController : HasLogger
     fun getNext(@Parameter(`in` = ParameterIn.QUERY, required = true, description = "The sub queue identifier to query the next available message from.") @RequestParam(required = true, name = RestParameters.QUEUE_TYPE) queueType: String,
                 @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The identifier to assign the next available message to if one exists.") @RequestParam(required = true, name = RestParameters.ASSIGNED_TO) assignedTo: String): ResponseEntity<MessageResponse>
     {
+        authenticator.canAccessSubQueue(queueType)
+
         val queueForType: Queue<QueueMessage> = messageQueue.getUnassignedMessagesForType(queueType)
         return if (queueForType.iterator().hasNext())
         {
@@ -432,6 +449,8 @@ open class MessageQueueController : HasLogger
         if (message.isPresent)
         {
             val messageToRelease = message.get()
+            authenticator.canAccessSubQueue(messageToRelease.type)
+
             if (messageToRelease.assignedTo == null)
             {
                 // The message is already in this state, returning 202 to tell the client that it is accepted but no action was done
@@ -482,6 +501,7 @@ open class MessageQueueController : HasLogger
         if (message.isPresent)
         {
             val messageToRemove = message.get()
+            authenticator.canAccessSubQueue(messageToRemove.type)
             if ( !assignedTo.isNullOrBlank() && messageToRemove.assignedTo != assignedTo)
             {
                 val errorMessage = "Unable to remove message with UUID [$uuid] in Queue [${messageToRemove.type}] because the provided assignee identifier: [$assignedTo] does not match the message's assignee identifier: [${messageToRemove.assignedTo}]"
@@ -514,6 +534,11 @@ open class MessageQueueController : HasLogger
     @ApiResponse(responseCode = "200", description = "Successfully returns the map of owner identifiers mapped to all the sub-queues that they have one or more assigned messages in.")
     fun getOwners(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "The sub queue to search for the owner identifiers.") @RequestParam(required = false, name = RestParameters.QUEUE_TYPE) queueType: String?): ResponseEntity<Map<String, HashSet<String>>>
     {
+        if (queueType != null)
+        {
+            authenticator.canAccessSubQueue(queueType)
+        }
+
         return ResponseEntity.ok(messageQueue.getOwnersAndKeysMap(queueType))
     }
 }

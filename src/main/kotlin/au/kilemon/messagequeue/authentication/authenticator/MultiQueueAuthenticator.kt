@@ -44,20 +44,27 @@ abstract class MultiQueueAuthenticator: HasLogger
      * [JwtAuthenticationFilter.getSubQueue] to determine if the user is able to interact with the requested sub queue.
      *
      * @param subQueue the sub-queue identifier that is being requested access to
+     * @param throwException `true` to throw an exception if the [subQueue] cannot be accessed, otherwise the return
+     * value can be used
+     * @return returns `true` if the [subQueue] can be accessed, otherwise `false`
      * @throws MultiQueueAuthorisationException if there is a mis-matching token OR no token provided. Or the sub-queue
      * is not in restricted mode when it should be
      */
     @Throws(MultiQueueAuthorisationException::class)
-    fun canAccessSubQueue(subQueue: String)
+    fun canAccessSubQueue(subQueue: String, throwException: Boolean = true): Boolean
     {
         if (getReservedSubQueues().contains(subQueue))
         {
-            throw MultiQueueAuthorisationException(subQueue, getAuthenticationType())
+            if (throwException)
+            {
+                throw MultiQueueAuthorisationException(subQueue, getAuthenticationType())
+            }
+            return false
         }
 
         if (isInNoneMode())
         {
-            return
+            return true
         }
         else if (isInHybridMode())
         {
@@ -65,24 +72,28 @@ abstract class MultiQueueAuthenticator: HasLogger
             {
                 if (JwtAuthenticationFilter.getSubQueue() == subQueue)
                 {
-                    return
+                    return true
                 }
             }
             else
             {
                 // If we are in hybrid mode and the sub queue is not restricted we should let it pass
-                return
+                return true
             }
         }
         else if (isInRestrictedMode())
         {
             if (isRestricted(subQueue) && JwtAuthenticationFilter.getSubQueue() == subQueue)
             {
-                return
+                return true
             }
         }
 
-        throw MultiQueueAuthorisationException(subQueue, getAuthenticationType())
+        if (throwException)
+        {
+            throw MultiQueueAuthorisationException(subQueue, getAuthenticationType())
+        }
+        return false
     }
 
     /**
