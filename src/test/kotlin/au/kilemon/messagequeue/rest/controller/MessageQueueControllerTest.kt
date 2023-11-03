@@ -15,9 +15,11 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
@@ -58,7 +60,7 @@ class MessageQueueControllerTest
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @Autowired
+    @SpyBean
     private lateinit var multiQueue: MultiQueue
 
     private val gson: Gson = Gson()
@@ -978,6 +980,40 @@ class MessageQueueControllerTest
 
         Assertions.assertTrue(multiQueue.isEmpty())
         types.forEach { type -> Assertions.assertFalse(multiQueue.keys().contains(type)) }
+    }
+
+    /**
+     * `Mock Test`.
+     *
+     * Perform a health check call on the [MessageQueueController] to ensure a [HttpStatus.INTERNAL_SERVER_ERROR] is returned when the health check fails.
+     */
+    @Test
+    fun testGetPerformHealthCheck_failureResponse()
+    {
+        Mockito.doThrow(RuntimeException("Failed to perform health check.")).`when`(multiQueue).performHealthCheckInternal()
+
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_HEALTH_CHECK)
+                .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isInternalServerError)
+            .andReturn()
+    }
+
+    /**
+     * `Mock Test`.
+     *
+     * Test [MessageQueueController.createMessage] to ensure that an internal server error is returned when [MultiQueue.add] returns `false`.
+     */
+    @Test
+    fun testCreateMessage_addFails()
+    {
+        val message = QueueMessage("payload", "type")
+
+        Mockito.doReturn(false).`when`(multiQueue).add(message)
+
+        mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(gson.toJson(message)))
+            .andExpect(MockMvcResultMatchers.status().isInternalServerError)
     }
 
     /**
