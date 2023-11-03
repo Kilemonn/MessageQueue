@@ -5,13 +5,18 @@ import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthenticationException
 import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
+import au.kilemon.messagequeue.rest.controller.AuthController
 import au.kilemon.messagequeue.rest.controller.MessageQueueController
+import au.kilemon.messagequeue.rest.response.RestResponseExceptionHandler
 import org.slf4j.Logger
 import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.core.annotation.Order
+import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
+import org.springframework.web.servlet.HandlerExceptionResolver
 import java.util.*
 import javax.servlet.FilterChain
 import javax.servlet.http.HttpServletRequest
@@ -46,10 +51,14 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
     override val LOG: Logger = this.initialiseLogger()
 
     @Autowired
-    lateinit var authenticator: MultiQueueAuthenticator
+    private lateinit var authenticator: MultiQueueAuthenticator
 
     @Autowired
-    lateinit var jwtTokenProvider: JwtTokenProvider
+    private lateinit var jwtTokenProvider: JwtTokenProvider
+
+    @Autowired
+    @Lazy
+    private lateinit var handlerExceptionResolver: HandlerExceptionResolver
 
     /**
      * Perform appropriate validation of the [AUTHORIZATION_HEADER] if it is provided.
@@ -97,8 +106,10 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
                 }
                 else
                 {
-                    LOG.error("Failed to manipulate sub queue [{}] with provided token as the authentication level is set to [{}].", subQueue.get(), authenticator.getAuthenticationType())
-                    throw MultiQueueAuthenticationException()
+                    val token = if (subQueue.isPresent) subQueue.get() else "null"
+                    LOG.error("Failed to manipulate sub queue [{}] with provided token as the authentication level is set to [{}].", token, authenticator.getAuthenticationType())
+                    handlerExceptionResolver.resolveException(request, response, null, MultiQueueAuthenticationException())
+                    return
                 }
             }
         }
@@ -117,9 +128,16 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
     fun urlRequiresAuthentication(request: HttpServletRequest): Boolean
     {
         val requestString = request.requestURI
-        val authRequiredUrlPrefixes = listOf(MessageQueueController.MESSAGE_QUEUE_BASE_PATH)
+        val authRequiredUrlPrefixes = listOf(
+            Pair(HttpMethod.GET, MessageQueueController.MESSAGE_QUEUE_BASE_PATH),
+            Pair(HttpMethod.POST, MessageQueueController.MESSAGE_QUEUE_BASE_PATH),
+            Pair(HttpMethod.PUT, MessageQueueController.MESSAGE_QUEUE_BASE_PATH),
+            Pair(HttpMethod.DELETE, MessageQueueController.MESSAGE_QUEUE_BASE_PATH),
+            Pair(HttpMethod.DELETE, AuthController.AUTH_PATH)
+        )
 
-        return authRequiredUrlPrefixes.any { authRequiredUrlPrefix -> requestString.startsWith(authRequiredUrlPrefix) }
+        return authRequiredUrlPrefixes.filter { authRequiredUrlPrefix -> authRequiredUrlPrefix.first.toString() == request.method }
+            .any { authRequiredUrlPrefix -> requestString.startsWith(authRequiredUrlPrefix.second) }
     }
 
     /**

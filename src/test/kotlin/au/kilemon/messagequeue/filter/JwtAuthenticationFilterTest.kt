@@ -15,10 +15,14 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
 import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpMethod
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import org.springframework.web.servlet.HandlerExceptionResolver
+import org.springframework.web.servlet.handler.HandlerExceptionResolverComposite
 import java.util.*
 import javax.servlet.http.HttpServletRequest
 
@@ -32,11 +36,28 @@ import javax.servlet.http.HttpServletRequest
 @Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class] )
 class JwtAuthenticationFilterTest
 {
+    /**
+     * A [TestConfiguration] for the outer class.
+     *
+     * @author github.com/Kilemonn
+     */
+    @TestConfiguration
+    open class TestConfig
+    {
+        @Bean
+        open fun getHandlerExceptionResolver(): HandlerExceptionResolver
+        {
+            return HandlerExceptionResolverComposite()
+        }
+    }
+
     @Autowired
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 
     @Autowired
     private lateinit var jwtTokenProvider: JwtTokenProvider
+
+
 
     @BeforeEach
     fun setUp()
@@ -198,6 +219,7 @@ class JwtAuthenticationFilterTest
         val request = Mockito.mock(HttpServletRequest::class.java)
         val uriPath = "/another/test/endpoint/${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}"
         Mockito.`when`(request.requestURI).thenReturn(uriPath)
+        Mockito.`when`(request.method).thenReturn(HttpMethod.POST.toString())
 
         Assertions.assertFalse(jwtAuthenticationFilter.urlRequiresAuthentication(request))
     }
@@ -212,6 +234,7 @@ class JwtAuthenticationFilterTest
         val request = Mockito.mock(HttpServletRequest::class.java)
         val uriPath = "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}/test/endpoint"
         Mockito.`when`(request.requestURI).thenReturn(uriPath)
+        Mockito.`when`(request.method).thenReturn(HttpMethod.GET.toString())
 
         Assertions.assertTrue(jwtAuthenticationFilter.urlRequiresAuthentication(request))
     }

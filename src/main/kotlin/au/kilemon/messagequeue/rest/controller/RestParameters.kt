@@ -21,4 +21,6 @@ object RestParameters
     const val INCLUDE_EMPTY = "includeEmpty"
 
     const val EXPIRY = "expiry"
+
+    const val CLEAR_QUEUE = "clearQueue"
 }

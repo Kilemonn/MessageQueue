@@ -4,6 +4,7 @@ import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthentica
 import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
 import au.kilemon.messagequeue.filter.JwtAuthenticationFilter
 import au.kilemon.messagequeue.logging.HasLogger
+import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.rest.response.AuthResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -14,7 +15,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import lombok.Generated
 import org.slf4j.Logger
-import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -45,6 +45,11 @@ open class AuthController : HasLogger
     @get:Generated
     @set:Generated
     lateinit var multiQueueAuthenticator: MultiQueueAuthenticator
+
+    @Autowired
+    @get:Generated
+    @set:Generated
+    lateinit var multiQueue: MultiQueue
 
     @Autowired
     @get:Generated
@@ -101,8 +106,8 @@ open class AuthController : HasLogger
         ApiResponse(responseCode = "404", description = "The requested sub-queue is not currently restricted.", content = [Content()]),
         ApiResponse(responseCode = "500", description = "There was an error releasing restriction from the sub-queue.", content = [Content()])
     )
-    fun removeRestrictionFromSubQueue(@Parameter(`in` = ParameterIn.PATH, required = true, description = "")
-                                      @PathVariable(required = true, name = RestParameters.QUEUE_TYPE) queueType: String, clearQueue: Boolean = false): ResponseEntity<Void>
+    fun removeRestrictionFromSubQueue(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The sub-queue identifier to remove restriction for.") @PathVariable(required = true, name = RestParameters.QUEUE_TYPE) queueType: String,
+                                      @Parameter(`in` = ParameterIn.QUERY, required = false, description = "If restriction is removed successfully indicate whether the sub-queue should be cleared now that it is accessible without a token.") @RequestParam(required = false, name = RestParameters.CLEAR_QUEUE) clearQueue: Boolean?): ResponseEntity<Void>
     {
         if (multiQueueAuthenticator.isInNoneMode())
         {
@@ -118,7 +123,15 @@ open class AuthController : HasLogger
             {
                 return if (multiQueueAuthenticator.removeRestriction(queueType))
                 {
-                    LOG.info("Removed restriction from sub-queue [{}].", queueType)
+                    if (clearQueue == true)
+                    {
+                        LOG.info("Restriction removed and clearing sub-queue [{}].", queueType)
+                        multiQueue.clearForType(queueType)
+                    }
+                    else
+                    {
+                        LOG.info("Removed restriction from sub-queue [{}] without clearing stored messages.", queueType)
+                    }
                     ResponseEntity.ok().build()
                 }
                 else
@@ -138,10 +151,5 @@ open class AuthController : HasLogger
             LOG.error("Failed to release authentication for sub-queue [{}] since provided token [{}] is not for the requested sub-queue.", queueType, authedToken)
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
         }
-    }
-
-    fun refreshToken()
-    {
-
     }
 }
