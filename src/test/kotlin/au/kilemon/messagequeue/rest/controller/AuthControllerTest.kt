@@ -226,7 +226,7 @@ class AuthControllerTest
         mockMvc.perform(
             MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${queueType}")
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().isForbidden)
+            .andExpect(MockMvcResultMatchers.status().isUnauthorized)
     }
 
     @Test

@@ -122,6 +122,7 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
 
     /**
      * Verify the requested URI requires authentication or not.
+     * If the URL is not in the no auth list, then it will require authentication.
      *
      * @param request the incoming request to verify the path of
      * @return `true` if the provided path starts with an auth required prefix, otherwise `false`
@@ -135,7 +136,7 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
             Pair(HttpMethod.GET, SettingsController.SETTINGS_PATH)
         )
 
-        return authNotRequiredEndpoints
+        return !authNotRequiredEndpoints
             .filter { authRequiredUrlPrefix -> authRequiredUrlPrefix.first.toString() == request.method }
             .any { authRequiredUrlPrefix -> requestString.startsWith(authRequiredUrlPrefix.second) }
     }

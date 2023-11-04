@@ -210,23 +210,23 @@ class JwtAuthenticationFilterTest
     }
 
     /**
-     * Ensure [JwtAuthenticationFilter.urlRequiresAuthentication] returns `false` when the provided URI does not
-     * start with an authorised path prefix.
+     * Ensure [JwtAuthenticationFilter.urlRequiresAuthentication] returns `true` when the provided URI does not
+     * match the "no auth required" list.
      */
     @Test
-    fun testUrlRequiresAuthentication_noAuthRequiredURL()
+    fun testUrlRequiresAuthentication_notInWhitelist()
     {
         val request = Mockito.mock(HttpServletRequest::class.java)
         val uriPath = "/another/test/endpoint${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}"
         Mockito.`when`(request.requestURI).thenReturn(uriPath)
         Mockito.`when`(request.method).thenReturn(HttpMethod.POST.toString())
 
-        Assertions.assertFalse(jwtAuthenticationFilter.urlRequiresAuthentication(request))
+        Assertions.assertTrue(jwtAuthenticationFilter.urlRequiresAuthentication(request))
     }
 
     /**
-     * Ensure [JwtAuthenticationFilter.urlRequiresAuthentication] returns `true` when the provided URI does
-     * start with an authorised path prefix.
+     * Ensure [JwtAuthenticationFilter.urlRequiresAuthentication] returns `false` when the provided URI does
+     * start with an un-authorised path prefix.
      */
     @Test
     fun testUrlRequiresAuthentication_authRequiredURL()
@@ -235,6 +235,21 @@ class JwtAuthenticationFilterTest
         val uriPath = "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}${MessageQueueController.ENDPOINT_HEALTH_CHECK}"
         Mockito.`when`(request.requestURI).thenReturn(uriPath)
         Mockito.`when`(request.method).thenReturn(HttpMethod.GET.toString())
+
+        Assertions.assertFalse(jwtAuthenticationFilter.urlRequiresAuthentication(request))
+    }
+
+    /**
+     * Ensure [JwtAuthenticationFilter.urlRequiresAuthentication] returns `true` when the provided HTTP method is
+     * not in the whitelist.
+     */
+    @Test
+    fun testUrlRequiresAuthentication_nonMatchingMethod()
+    {
+        val request = Mockito.mock(HttpServletRequest::class.java)
+        val uriPath = "/a/path"
+        Mockito.`when`(request.requestURI).thenReturn(uriPath)
+        Mockito.`when`(request.method).thenReturn(HttpMethod.OPTIONS.toString())
 
         Assertions.assertTrue(jwtAuthenticationFilter.urlRequiresAuthentication(request))
     }
