@@ -38,7 +38,6 @@ import java.util.*
  * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
-@DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
 @WebMvcTest(controllers = [AuthController::class], properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=IN_MEMORY"])
 @Import(*[QueueConfiguration::class, LoggingConfiguration::class])
 class AuthControllerTest

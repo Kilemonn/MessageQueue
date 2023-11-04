@@ -217,7 +217,7 @@ class JwtAuthenticationFilterTest
     fun testUrlRequiresAuthentication_noAuthRequiredURL()
     {
         val request = Mockito.mock(HttpServletRequest::class.java)
-        val uriPath = "/another/test/endpoint/${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}"
+        val uriPath = "/another/test/endpoint${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}"
         Mockito.`when`(request.requestURI).thenReturn(uriPath)
         Mockito.`when`(request.method).thenReturn(HttpMethod.POST.toString())
 
@@ -232,7 +232,7 @@ class JwtAuthenticationFilterTest
     fun testUrlRequiresAuthentication_authRequiredURL()
     {
         val request = Mockito.mock(HttpServletRequest::class.java)
-        val uriPath = "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}/test/endpoint"
+        val uriPath = "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}${MessageQueueController.ENDPOINT_HEALTH_CHECK}"
         Mockito.`when`(request.requestURI).thenReturn(uriPath)
         Mockito.`when`(request.method).thenReturn(HttpMethod.GET.toString())
 

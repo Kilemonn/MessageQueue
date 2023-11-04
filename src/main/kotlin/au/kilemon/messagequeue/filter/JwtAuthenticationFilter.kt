@@ -7,6 +7,7 @@ import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthentication
 import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
 import au.kilemon.messagequeue.rest.controller.AuthController
 import au.kilemon.messagequeue.rest.controller.MessageQueueController
+import au.kilemon.messagequeue.rest.controller.SettingsController
 import au.kilemon.messagequeue.rest.response.RestResponseExceptionHandler
 import org.slf4j.Logger
 import org.slf4j.MDC
@@ -128,15 +129,14 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
     fun urlRequiresAuthentication(request: HttpServletRequest): Boolean
     {
         val requestString = request.requestURI
-        val authRequiredUrlPrefixes = listOf(
-            Pair(HttpMethod.GET, MessageQueueController.MESSAGE_QUEUE_BASE_PATH),
-            Pair(HttpMethod.POST, MessageQueueController.MESSAGE_QUEUE_BASE_PATH),
-            Pair(HttpMethod.PUT, MessageQueueController.MESSAGE_QUEUE_BASE_PATH),
-            Pair(HttpMethod.DELETE, MessageQueueController.MESSAGE_QUEUE_BASE_PATH),
-            Pair(HttpMethod.DELETE, AuthController.AUTH_PATH)
+        val authNotRequiredEndpoints = listOf(
+            Pair(HttpMethod.GET, "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}${MessageQueueController.ENDPOINT_HEALTH_CHECK}"),
+            Pair(HttpMethod.POST, AuthController.AUTH_PATH),
+            Pair(HttpMethod.GET, SettingsController.SETTINGS_PATH)
         )
 
-        return authRequiredUrlPrefixes.filter { authRequiredUrlPrefix -> authRequiredUrlPrefix.first.toString() == request.method }
+        return authNotRequiredEndpoints
+            .filter { authRequiredUrlPrefix -> authRequiredUrlPrefix.first.toString() == request.method }
             .any { authRequiredUrlPrefix -> requestString.startsWith(authRequiredUrlPrefix.second) }
     }
 
