@@ -178,6 +178,31 @@ class AuthControllerTest
     }
 
     /**
+     * Ensure that even in [MultiQueueAuthenticationType.RESTRICTED] mode we can call the
+     * [AuthController.restrictSubQueue] this is important, without this being accessible new sub-queues can never
+     * be restricted meaning the queue would be completely inaccessible.
+     */
+    @Test
+    fun testRestrictSubQueue_inRestrictedMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.RESTRICTED).`when`(multiQueueAuthenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.RESTRICTED, multiQueueAuthenticator.getAuthenticationType())
+
+        val queueType = "testRestrictSubQueue_inRestrictedMode"
+
+        val mvcResult: MvcResult = mockMvc.perform(
+            MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${queueType}")
+                .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val authResponse = gson.fromJson(mvcResult.response.contentAsString, AuthResponse::class.java)
+        Assertions.assertNotNull(authResponse.token)
+        Assertions.assertNotNull(authResponse.correlationId)
+        Assertions.assertEquals(queueType, authResponse.subQueue)
+    }
+
+    /**
      * Ensure [AuthController.removeRestrictionFromSubQueue] returns [org.springframework.http.HttpStatus.NO_CONTENT]
      * when the [MultiQueueAuthenticationType] is set to [MultiQueueAuthenticationType.NONE].
      */

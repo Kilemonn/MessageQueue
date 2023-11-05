@@ -1,6 +1,7 @@
 package au.kilemon.messagequeue.rest.controller
 
 import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
+import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.settings.MessageQueueSettings
@@ -9,9 +10,11 @@ import com.google.gson.Gson
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
@@ -53,14 +56,18 @@ class SettingsControllerTest
     @Autowired
     private lateinit var mockMvc: MockMvc
 
+    @SpyBean
+    private lateinit var multiQueueAuthenticator: MultiQueueAuthenticator
+
     private val gson: Gson = Gson()
 
     /**
-     * Test [SettingsController.getSettings] and verify the response payload and default values.
+     * A helper method to call [SettingsController.getSettings] and verify the response default values.
      */
-    @Test
-    fun testGetSettings_defaultValues()
+    private fun testGetSettings_defaultValues(authenticationType: MultiQueueAuthenticationType)
     {
+        Assertions.assertEquals(authenticationType, multiQueueAuthenticator.getAuthenticationType())
+
         val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(SettingsController.SETTINGS_PATH)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -83,5 +90,38 @@ class SettingsControllerTest
         Assertions.assertTrue(settings.mongoDatabase.isEmpty())
         Assertions.assertTrue(settings.mongoUsername.isEmpty())
         Assertions.assertTrue(settings.mongoUri.isEmpty())
+    }
+
+    /**
+     * Ensure calls to [SettingsController.getSettings] is still available even then the [MultiQueueAuthenticationType]
+     * is set to [MultiQueueAuthenticationType.NONE].
+     */
+    @Test
+    fun testGetSettings_noneMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.NONE).`when`(multiQueueAuthenticator).getAuthenticationType()
+        testGetSettings_defaultValues(MultiQueueAuthenticationType.NONE)
+    }
+
+    /**
+     * Ensure calls to [SettingsController.getSettings] is still available even then the [MultiQueueAuthenticationType]
+     * is set to [MultiQueueAuthenticationType.HYBRID].
+     */
+    @Test
+    fun testGetSettings_hybridMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
+        testGetSettings_defaultValues(MultiQueueAuthenticationType.HYBRID)
+    }
+
+    /**
+     * Ensure calls to [SettingsController.getSettings] is still available even then the [MultiQueueAuthenticationType]
+     * is set to [MultiQueueAuthenticationType.RESTRICTED].
+     */
+    @Test
+    fun testGetSettings_restrictedMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.RESTRICTED).`when`(multiQueueAuthenticator).getAuthenticationType()
+        testGetSettings_defaultValues(MultiQueueAuthenticationType.RESTRICTED)
     }
 }
