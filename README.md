@@ -26,7 +26,7 @@ Once the image is running you can reach the Swagger documentation from the follo
 The `In-Memory` configuration is the default and requires no further configuration.
 Steps to run the In-Memory Multi Queue is as follows:
 - `docker run -p8080:8080 kilemon/message-queue`
-- Once running the best endpoint to call at the moment is probably: `http://localhost:8080/queue/keys`
+- Once running the best endpoint to call at the moment is probably: `http://localhost:8080/queue/healthcheck`
 
 If you really like you can provide an environment variable to the application to explicitly set the application into `In-Memory` mode: `MULTI_QUEUE_TYPE=IN_MEMORY`.
 
