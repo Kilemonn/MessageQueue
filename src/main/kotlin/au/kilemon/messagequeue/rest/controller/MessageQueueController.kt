@@ -214,12 +214,12 @@ open class MessageQueueController : HasLogger
     {
         try
         {
+            authenticator.canAccessSubQueue(queueMessage.type)
+
             if (queueMessage.assignedTo != null && queueMessage.assignedTo!!.isBlank())
             {
                 queueMessage.assignedTo = null
             }
-
-            authenticator.canAccessSubQueue(queueMessage.type)
 
             val wasAdded = messageQueue.add(queueMessage)
             if (wasAdded)
@@ -259,7 +259,10 @@ open class MessageQueueController : HasLogger
 
     @Operation(summary = "Delete a keys or all keys, in turn clearing that sub queue.", description = "Delete the sub queue that matches the provided key. If no key is provided, all sub queues will be cleared.")
     @DeleteMapping(ENDPOINT_KEYS, produces = [MediaType.APPLICATION_JSON_VALUE])
-    @ApiResponse(responseCode = "204", description = "Successfully cleared the sub queue(s) with the provided key, or all sub queues if the key is null.")
+    @ApiResponses(
+        ApiResponse(responseCode = "204", description = "Successfully cleared the sub queue(s) with the provided key, or all sub queues if the key is null."),
+        ApiResponse(responseCode = "206", description = "Successfully cleared the sub-queues that are unrestricted. Restricted sub-queues needs to be created with a valid token.")
+    )
     fun deleteKeys(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "The queue type to clear the sub queue of. If it is not provided, all sub queues will be cleared.")
                 @RequestParam(required = false, name = RestParameters.QUEUE_TYPE) queueType: String?): ResponseEntity<Void>
     {
@@ -267,12 +270,32 @@ open class MessageQueueController : HasLogger
         {
             authenticator.canAccessSubQueue(queueType)
             messageQueue.clearForType(queueType)
+            return ResponseEntity.noContent().build()
         }
         else
         {
-            messageQueue.clear()
+            var anyAreNotCleared = false
+            for (key in messageQueue.keys())
+            {
+                if (authenticator.canAccessSubQueue(key, false))
+                {
+                    messageQueue.clearForType(key)
+                }
+                else
+                {
+                    anyAreNotCleared = true
+                }
+            }
+
+            return if (anyAreNotCleared)
+            {
+                ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).build()
+            }
+            else
+            {
+                ResponseEntity.noContent().build()
+            }
         }
-        return ResponseEntity.noContent().build()
     }
 
     /**

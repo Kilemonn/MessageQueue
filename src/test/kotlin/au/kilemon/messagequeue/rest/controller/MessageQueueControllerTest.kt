@@ -28,7 +28,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
-import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.MvcResult
@@ -77,7 +76,8 @@ class MessageQueueControllerTest
     private val gson: Gson = Gson()
 
     /**
-     * [BeforeEach] method to run [MultiQueue.clear] and ensure that [MultiQueue.isEmpty] returns `true` at the beginning of each test.
+     * [BeforeEach] method to run [MultiQueue.clear] and ensure that [MultiQueue.isEmpty] returns `true` at the
+     * beginning of each test.
      */
     @BeforeEach
     fun setUp()
@@ -90,7 +90,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getQueueTypeInfo] to ensure the correct information is returned for the specified `queueType`.
+     * Test [MessageQueueController.getQueueTypeInfo] to ensure the correct information is returned for the specified
+     * `queueType`.
      */
     @Test
     fun testGetQueueTypeInfo()
@@ -115,7 +116,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getAllQueueTypeInfo] to ensure that information for all `queue type`s is returned when no `queue type` is specified.
+     * Test [MessageQueueController.getAllQueueTypeInfo] to ensure that information for all `queue type`s is returned
+     * when no `queue type` is specified.
      */
     @Test
     fun testGetAllQueueTypeInfo()
@@ -144,7 +146,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getEntry] to ensure that [HttpStatus.OK] and the correct [QueueMessage] is returned as the response.
+     * Test [MessageQueueController.getEntry] to ensure that [HttpStatus.OK] and the correct [QueueMessage] is returned
+     * as the response.
      */
     @Test
     fun testGetEntry()
@@ -171,7 +174,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getEntry] to ensure that [HttpStatus.NO_CONTENT] is returned when a [UUID] that does not exist is provided.
+     * Test [MessageQueueController.getEntry] to ensure that [HttpStatus.NO_CONTENT] is returned when a [UUID] that
+     * does not exist is provided.
      */
     @Test
     fun testGetEntry_ResponseBody_NotExists()
@@ -182,6 +186,67 @@ class MessageQueueControllerTest
         mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
+    }
+
+    /**
+     * Ensure that in [MultiQueueAuthenticationType.HYBRID] mode, when we restrict the sub-queue that we can no longer
+     * get entries from that specific sub-queue, other sub-queues are still accessible without a token.
+     */
+    @Test
+    fun testGetEntry_usingHybridMode_withRestrictedSubQueue()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+
+        val entries = initialiseMapWithEntries()
+
+        val type1 = entries.second[0]
+        val message1 = entries.first[0]
+        val type1Token = jwtTokenProvider.createTokenForSubQueue(type1)
+        Assertions.assertTrue(type1Token.isPresent)
+        Assertions.assertTrue(authenticator.addRestrictedEntry(type1))
+        Assertions.assertTrue(authenticator.isRestricted(type1))
+
+        // Make sure we cannot access without a token
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message1.uuid)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+
+        // Checking entry is retrieve with provided token
+        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message1.uuid)
+            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER,  "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${type1Token.get()}")
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+
+        val deserialisedPayload = gson.fromJson(gson.toJson(messageResponse.message.payload), Payload::class.java)
+        Assertions.assertEquals(message1.payload, deserialisedPayload)
+        Assertions.assertNull(messageResponse.message.assignedTo)
+        Assertions.assertEquals(message1.type, messageResponse.message.type)
+        Assertions.assertEquals(message1.type, messageResponse.queueType)
+        Assertions.assertNotNull(messageResponse.message.uuid)
+
+        val type2 = entries.second[1]
+        val message2 = entries.first[1]
+        Assertions.assertFalse(authenticator.isRestricted(type2))
+
+        // Check un-restricted entry is still accessible without a token
+        val mvcResult2: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message2.uuid)
+            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER,  "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${type1Token.get()}")
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val messageResponse2 = gson.fromJson(mvcResult2.response.contentAsString, MessageResponse::class.java)
+
+        val deserialisedPayload2 = gson.fromJson(gson.toJson(messageResponse2.message.payload), Payload::class.java)
+        Assertions.assertEquals(message2.payload, deserialisedPayload2)
+        Assertions.assertNull(messageResponse2.message.assignedTo)
+        Assertions.assertEquals(message2.type, messageResponse2.message.type)
+        Assertions.assertEquals(message2.type, messageResponse2.queueType)
+        Assertions.assertNotNull(messageResponse2.message.uuid)
     }
 
     /**
@@ -249,7 +314,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.createMessage] to ensure that [HttpStatus.CONFLICT] is returned if a message with the same [UUID] already exists in the queue.
+     * Test [MessageQueueController.createMessage] to ensure that [HttpStatus.CONFLICT] is returned if a message with
+     * the same [UUID] already exists in the queue.
      */
     @Test
     fun testCreateEntry_Conflict()
@@ -267,7 +333,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Calling create with a blank [QueueMessage.assignedTo] to make sure that [QueueMessage.assignedTo] is provided as `null` in the response.
+     * Calling create with a blank [QueueMessage.assignedTo] to make sure that [QueueMessage.assignedTo] is provided as
+     * `null` in the response.
      */
     @Test
     fun testCreateQueueEntry_withBlankAssignedTo()
@@ -288,7 +355,46 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getKeys] to ensure that all keys for existing entries are provided and exist within the [MultiQueue].
+     * Ensure that in [MultiQueueAuthenticationType.HYBRID] mode, when we restrict the sub-queue that we can no longer
+     * create entries for that specific sub-queue, other sub-queues can still have messages created without a token.
+     */
+    @Test
+    fun testCreateEntry_inHybridMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+
+        val message = createQueueMessage(type = "testCreateEntry_inHybridMode")
+
+        Assertions.assertTrue(authenticator.addRestrictedEntry(message.type))
+        Assertions.assertTrue(authenticator.isRestricted(message.type))
+
+        val token = jwtTokenProvider.createTokenForSubQueue(message.type)
+        Assertions.assertTrue(token.isPresent)
+
+        mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .content(gson.toJson(message)))
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+
+        mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .content(gson.toJson(message)))
+            .andExpect(MockMvcResultMatchers.status().isCreated)
+
+        val message2 = createQueueMessage(type = "testCreateEntry_inHybridMode2")
+        Assertions.assertFalse(authenticator.isRestricted(message2.type))
+
+        mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .content(gson.toJson(message2)))
+            .andExpect(MockMvcResultMatchers.status().isCreated)
+    }
+
+    /**
+     * Test [MessageQueueController.getKeys] to ensure that all keys for existing entries are provided and exist within
+     * the [MultiQueue].
      */
     @Test
     fun testGetKeys()
@@ -314,7 +420,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getKeys] to ensure that all keys are returned. Specifically when entries are added and [RestParameters.INCLUDE_EMPTY] is set to `false`.
+     * Test [MessageQueueController.getKeys] to ensure that all keys are returned. Specifically when entries are added
+     * and [RestParameters.INCLUDE_EMPTY] is set to `false`.
      */
     @Test
     fun testGetKeys_excludeEmpty()
@@ -343,8 +450,10 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getAll] to ensure that all entries are returned from all `queueTypes` when no explicit `queueType` is provided.
-     * This also checks the returned object has a `non-null` value in the payload since the `detailed` flag is set to `true`.
+     * Test [MessageQueueController.getAll] to ensure that all entries are returned from all `queueTypes` when no
+     * explicit `queueType` is provided.
+     * This also checks the returned object has a `non-null` value in the payload since the `detailed` flag is set to
+     * `true`.
      */
     @Test
     fun testGetAll()
@@ -376,7 +485,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getAll] to ensure that all entries are returned from the `queueType` when an explicit `queueType` is provided.
+     * Test [MessageQueueController.getAll] to ensure that all entries are returned from the `queueType` when an
+     * explicit `queueType` is provided.
      * This also checks the returned object has `null` in the payload since the `detailed` flag is not provided.
      */
     @Test
@@ -399,14 +509,110 @@ class MessageQueueControllerTest
         Assertions.assertTrue(keys.keys.contains(type))
         keys.values.forEach { detailList -> Assertions.assertEquals(1, detailList.size) }
         Assertions.assertEquals(entries.first[0].removePayload(false).uuid, keys[type]!![0].uuid)
-        // Since we did not pass a detailed flag value, ensure the payload is null
+        // Since we did not pass a detailed flag value, ensure the payload is a placeholder value
         Assertions.assertEquals("***", entries.first[0].removePayload(false).payload)
         Assertions.assertEquals(entries.first[0].removePayload(false).assignedTo, keys[type]!![0].assignedTo)
         Assertions.assertEquals(entries.first[0].removePayload(false).type, keys[type]!![0].type)
     }
 
     /**
-     * Test [MessageQueueController.getOwned] to ensure that no entries are returned when no [QueueMessage] are assigned by the provided `assignedTo` parameter.
+     * Ensure then when in [MultiQueueAuthenticationType.HYBRID] and [MessageQueueController.getAll] is called
+     * that restricted queues are not included until a valid token is provided.
+     */
+    @Test
+    fun testGetAll_inHybridMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+
+        val queueType = "testGetAll_inHybridMode"
+        val messages = listOf(createQueueMessage(queueType), createQueueMessage(queueType))
+        messages.forEach { message -> Assertions.assertTrue(multiQueue.add(message)) }
+
+        Assertions.assertTrue(authenticator.addRestrictedEntry(queueType))
+        Assertions.assertTrue(authenticator.isRestricted(queueType))
+
+        val token = jwtTokenProvider.createTokenForSubQueue(queueType)
+        Assertions.assertTrue(token.isPresent)
+
+        val entries = initialiseMapWithEntries()
+        entries.second.forEach { type -> Assertions.assertFalse(authenticator.isRestricted(type)) }
+        val detailed = true
+
+        // Ensure the message in the restricted queue type are not returned
+        var mvcResult: MvcResult = mockMvc.perform(get("${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}/${MessageQueueController.ENDPOINT_ALL}?${RestParameters.DETAILED}=$detailed")
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val mapType = object : TypeToken<Map<String, List<QueueMessage>>>() {}.type
+        var keys = gson.fromJson<Map<String, List<QueueMessage>>>(mvcResult.response.contentAsString, mapType)
+        Assertions.assertNotNull(keys)
+        Assertions.assertEquals(entries.second.size, keys.keys.size)
+
+        Assertions.assertFalse(keys.keys.contains(queueType))
+        Assertions.assertNull(keys[queueType])
+
+        // After providing the token we should see the messages for the restricted queue
+        mvcResult = mockMvc.perform(get("${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}/${MessageQueueController.ENDPOINT_ALL}?${RestParameters.DETAILED}=$detailed")
+            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        keys = gson.fromJson(mvcResult.response.contentAsString, mapType)
+        Assertions.assertNotNull(keys)
+        Assertions.assertEquals(entries.second.size + 1, keys.keys.size)
+
+        Assertions.assertTrue(keys.keys.contains(queueType))
+        Assertions.assertNotNull(keys[queueType])
+    }
+
+    /**
+     * Ensure then when in [MultiQueueAuthenticationType.HYBRID] and [MessageQueueController.getAll] is called
+     * and all messages are requested for a restricted queue are not accessible unless a token is provided.
+     */
+    @Test
+    fun testGetAll_SpecificQueueType_inHybridMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+
+        val queueType = "testGetAll_SpecificQueueType_inHybridMode"
+        val messages = listOf(createQueueMessage(queueType), createQueueMessage(queueType))
+        messages.forEach { message -> Assertions.assertTrue(multiQueue.add(message)) }
+
+        Assertions.assertTrue(authenticator.addRestrictedEntry(queueType))
+        Assertions.assertTrue(authenticator.isRestricted(queueType))
+
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param(RestParameters.QUEUE_TYPE, queueType))
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+
+        val token = jwtTokenProvider.createTokenForSubQueue(queueType)
+        Assertions.assertTrue(token.isPresent)
+
+        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL)
+            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param(RestParameters.QUEUE_TYPE, queueType))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val mapType = object : TypeToken<Map<String, List<QueueMessage>>>() {}.type
+        val keys = gson.fromJson<Map<String, List<QueueMessage>>>(mvcResult.response.contentAsString, mapType)
+        Assertions.assertNotNull(keys)
+        Assertions.assertEquals(1, keys.keys.size)
+
+        Assertions.assertTrue(keys.keys.contains(queueType))
+        Assertions.assertNotNull(keys[queueType])
+        Assertions.assertEquals(2, keys[queueType]!!.size)
+    }
+
+    /**
+     * Test [MessageQueueController.getOwned] to ensure that no entries are returned when no [QueueMessage] are
+     * assigned by the provided `assignedTo` parameter.
      */
     @Test
     fun testGetOwned_NoneOwned()
@@ -429,7 +635,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getOwned] to ensure that all appropriate [QueueMessage] entries are returned when the provided `assignedTo` parameter owns the existing [QueueMessage].
+     * Test [MessageQueueController.getOwned] to ensure that all appropriate [QueueMessage] entries are returned when
+     * the provided `assignedTo` parameter owns the existing [QueueMessage].
      */
     @Test
     fun testGetOwned_SomeOwned()
@@ -463,7 +670,57 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.assignMessage] to ensure that [HttpStatus.NO_CONTENT] is returned when a [QueueMessage] with the provided [UUID] does not exist.
+     * Ensure when [MessageQueueController.getOwned] is called on a restricted sub-queue that no entries are returned
+     * unless a valid token is provided.
+     */
+    @Test
+    fun testGetOwned_SomeOwned_inHybridMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+
+        val assignedTo = "my-assigned-to-identifier"
+        val type = "testGetOwned_SomeOwned_inHybridMode"
+        val message1 = createQueueMessage(assignedTo = assignedTo, type = type)
+        val message2 = createQueueMessage(assignedTo = assignedTo, type = type)
+
+        Assertions.assertTrue(multiQueue.add(message1))
+        Assertions.assertTrue(multiQueue.add(message2))
+
+        Assertions.assertTrue(authenticator.addRestrictedEntry(type))
+        Assertions.assertTrue(authenticator.isRestricted(type))
+
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param(RestParameters.ASSIGNED_TO, assignedTo)
+            .param(RestParameters.QUEUE_TYPE, type))
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+
+        val token = jwtTokenProvider.createTokenForSubQueue(type)
+        Assertions.assertTrue(token.isPresent)
+
+        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
+            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param(RestParameters.ASSIGNED_TO, assignedTo)
+            .param(RestParameters.QUEUE_TYPE, type))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val listType = object : TypeToken<List<MessageResponse>>() {}.type
+        val owned = gson.fromJson<List<MessageResponse>>(mvcResult.response.contentAsString, listType)
+        Assertions.assertTrue(owned.isNotEmpty())
+        owned.forEach { message ->
+            Assertions.assertTrue(message.message.uuid == message1.uuid || message.message.uuid == message2.uuid)
+            Assertions.assertEquals(type, message.queueType)
+            Assertions.assertEquals(type, message.message.type)
+            Assertions.assertEquals(assignedTo, message.message.assignedTo)
+        }
+    }
+
+    /**
+     * Test [MessageQueueController.assignMessage] to ensure that [HttpStatus.NO_CONTENT] is returned when a
+     * [QueueMessage] with the provided [UUID] does not exist.
      */
     @Test
     fun testAssignMessage_doesNotExist()
@@ -479,7 +736,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.assignMessage] to ensure that the message is assigned correctly and [HttpStatus.OK] is returned when the [QueueMessage] was initially not assigned.
+     * Test [MessageQueueController.assignMessage] to ensure that the message is assigned correctly and [HttpStatus.OK]
+     * is returned when the [QueueMessage] was initially not assigned.
      */
     @Test
     fun testAssignMessage_messageIsAssigned()
@@ -507,7 +765,51 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.assignMessage] to ensure that the message is assigned correctly and [HttpStatus.ACCEPTED] is returned when the [QueueMessage] is already assigned by the provided `assignTo` identifier.
+     * Ensure when [MessageQueueController.assignMessage] is called in [MultiQueueAuthenticationType.HYBRID] mode
+     * that the message is not assigned or changed if the sub-queue is restricted and a valid token is not provided.
+     */
+    @Test
+    fun testAssignMessage_messageIsAssigned_inHybridMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+
+        val assignedTo = "assigned"
+        val message = createQueueMessage(type = "testAssignMessage_messageIsAssigned_inHybridMode")
+        Assertions.assertNull(message.assignedTo)
+        Assertions.assertTrue(multiQueue.add(message))
+
+        Assertions.assertTrue(authenticator.addRestrictedEntry(message.type))
+        Assertions.assertTrue(authenticator.isRestricted(message.type))
+
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + message.uuid)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param(RestParameters.ASSIGNED_TO, assignedTo))
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+
+        val token = jwtTokenProvider.createTokenForSubQueue(message.type)
+        Assertions.assertTrue(token.isPresent)
+
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + message.uuid)
+            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param(RestParameters.ASSIGNED_TO, assignedTo))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+        Assertions.assertEquals(assignedTo, messageResponse.message.assignedTo)
+        Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
+
+        val assignedMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertEquals(assignedTo, assignedMessage.assignedTo)
+        Assertions.assertEquals(message.uuid, assignedMessage.uuid)
+    }
+
+    /**
+     * Test [MessageQueueController.assignMessage] to ensure that the message is assigned correctly and
+     * [HttpStatus.ACCEPTED] is returned when the [QueueMessage] is already assigned by the provided `assignTo`
+     * identifier.
      */
     @Test
     fun testAssignMessage_alreadyAssignedToSameID()
@@ -536,7 +838,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.assignMessage] to ensure that [HttpStatus.CONFLICT] is returned when the [QueueMessage] is already assigned to another identifier.
+     * Test [MessageQueueController.assignMessage] to ensure that [HttpStatus.CONFLICT] is returned when the
+     * [QueueMessage] is already assigned to another identifier.
      */
     @Test
     fun testAssignMessage_alreadyAssignedToOtherID()
@@ -567,7 +870,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getNext] to ensure [HttpStatus.NO_CONTENT] is returned when there are no [QueueMessage]s available for the provided `queueType`.
+     * Test [MessageQueueController.getNext] to ensure [HttpStatus.NO_CONTENT] is returned when there are no
+     * [QueueMessage]s available for the provided `queueType`.
      */
     @Test
     fun testGetNext_noNewMessages()
@@ -586,7 +890,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getNext] to ensure that [HttpStatus.NO_CONTENT] is returned if there are no `assigned` [QueueMessage]s available.
+     * Test [MessageQueueController.getNext] to ensure that [HttpStatus.NO_CONTENT] is returned if there are no
+     * `assigned` [QueueMessage]s available.
      */
     @Test
     fun testGetNext_noNewUnAssignedMessages()
@@ -611,7 +916,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getNext] to ensure that the correct next message is returned if it exists in the [MultiQueue].
+     * Test [MessageQueueController.getNext] to ensure that the correct next message is returned if it exists in
+     * the [MultiQueue].
      */
     @Test
     fun testGetNext()
@@ -647,7 +953,59 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.releaseMessage] to ensure that [HttpStatus.NO_CONTENT] is returned when a [QueueMessage] with the provided [UUID] does not exist.
+     * Ensure that when in [MultiQueueAuthenticationType.HYBRID] mode that the next message for a restricted sub-queue
+     * cannot be retrieved without a valid token being provided.
+     */
+    @Test
+    fun testGetNext_inHybridMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+
+        val assignedTo = "assignee"
+        val type = "testGetNext_inHybridMode"
+        val message = createQueueMessage(type = type, assignedTo = assignedTo)
+        val message2 = createQueueMessage(type = type)
+
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertTrue(multiQueue.add(message2))
+
+        Assertions.assertTrue(authenticator.addRestrictedEntry(type))
+        Assertions.assertTrue(authenticator.isRestricted(type))
+
+        val storedMessage2 = multiQueue.getQueueForType(type).stream().filter{ m -> m.uuid == message2.uuid }.findFirst().get()
+        Assertions.assertNull(storedMessage2.assignedTo)
+        Assertions.assertEquals(message2.uuid, storedMessage2.uuid)
+
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param(RestParameters.QUEUE_TYPE, type)
+            .param(RestParameters.ASSIGNED_TO, assignedTo))
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+
+        val token = jwtTokenProvider.createTokenForSubQueue(type)
+        Assertions.assertTrue(token.isPresent)
+
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
+            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param(RestParameters.QUEUE_TYPE, type)
+            .param(RestParameters.ASSIGNED_TO, assignedTo))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+        Assertions.assertEquals(assignedTo, messageResponse.message.assignedTo)
+        Assertions.assertEquals(message2.uuid, messageResponse.message.uuid)
+
+        val assignedMessage2 = multiQueue.getQueueForType(type).stream().filter{ m -> m.uuid == message2.uuid }.findFirst().get()
+        Assertions.assertEquals(assignedTo, assignedMessage2.assignedTo)
+        Assertions.assertEquals(message2.uuid, assignedMessage2.uuid)
+    }
+
+    /**
+     * Test [MessageQueueController.releaseMessage] to ensure that [HttpStatus.NO_CONTENT] is returned when a
+     * [QueueMessage] with the provided [UUID] does not exist.
      */
     @Test
     fun testReleaseMessage_doesNotExist()
@@ -661,7 +1019,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.releaseMessage] to ensure that the [QueueMessage] is released if it is currently assigned.
+     * Test [MessageQueueController.releaseMessage] to ensure that the [QueueMessage] is released if it is currently
+     * assigned.
      */
     @Test
     fun testReleaseMessage_messageIsReleased()
@@ -690,7 +1049,52 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.releaseMessage] to ensure that the [QueueMessage] is released if it is currently assigned. Even when the `assignedTo` is not provided.
+     * Ensure that when in [MultiQueueAuthenticationType.HYBRID] mode that a restricted sub-queue cannot have its
+     * message released without a valid token being provided.
+     */
+    @Test
+    fun testReleaseMessage_messageIsReleased_inHybridMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+
+        val assignedTo = "assignee"
+        val message = createQueueMessage(type = "testReleaseMessage_messageIsReleased_inHybridMode", assignedTo = assignedTo)
+
+        Assertions.assertEquals(assignedTo, message.assignedTo)
+        Assertions.assertTrue(multiQueue.add(message))
+
+        Assertions.assertTrue(authenticator.addRestrictedEntry(message.type))
+        Assertions.assertTrue(authenticator.isRestricted(message.type))
+
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param(RestParameters.ASSIGNED_TO, assignedTo))
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+
+
+        val token = jwtTokenProvider.createTokenForSubQueue(message.type)
+        Assertions.assertTrue(token.isPresent)
+
+        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + message.uuid)
+            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param(RestParameters.ASSIGNED_TO, assignedTo))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
+        Assertions.assertNull(messageResponse.message.assignedTo)
+        Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
+
+        val updatedMessage = multiQueue.peekForType(message.type).get()
+        Assertions.assertNull(updatedMessage.assignedTo)
+        Assertions.assertEquals(message.uuid, updatedMessage.uuid)
+    }
+
+    /**
+     * Test [MessageQueueController.releaseMessage] to ensure that the [QueueMessage] is released if it is currently
+     * assigned. Even when the `assignedTo` is not provided.
      */
     @Test
     fun testReleaseMessage_messageIsReleased_withoutAssignedToInQuery()
@@ -718,7 +1122,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.releaseMessage] to ensure that [HttpStatus.ACCEPTED] is returned if the message is already released and not owned by anyone.
+     * Test [MessageQueueController.releaseMessage] to ensure that [HttpStatus.ACCEPTED] is returned if the message
+     * is already released and not owned by anyone.
      */
     @Test
     fun testReleaseMessage_alreadyReleased()
@@ -745,7 +1150,9 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.releaseMessage] to ensure that [HttpStatus.CONFLICT] is returned if `assignedTo` is provided and does not match the [QueueMessage.assignedTo], meaning the user cannot `release` the [QueueMessage] if it's not the current [QueueMessage.assignedTo] of the [QueueMessage].
+     * Test [MessageQueueController.releaseMessage] to ensure that [HttpStatus.CONFLICT] is returned if `assignedTo`
+     * is provided and does not match the [QueueMessage.assignedTo], meaning the user cannot `release` the
+     * [QueueMessage] if it's not the current [QueueMessage.assignedTo] of the [QueueMessage].
      */
     @Test
     fun testReleaseMessage_cannotBeReleasedWithMisMatchingID()
@@ -769,7 +1176,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.removeMessage] to ensure that [HttpStatus.NO_CONTENT] is returned when a [QueueMessage] with the provided [UUID] does not exist.
+     * Test [MessageQueueController.removeMessage] to ensure that [HttpStatus.NO_CONTENT] is returned when a
+     * [QueueMessage] with the provided [UUID] does not exist.
      */
     @Test
     fun testRemoveMessage_notFound()
@@ -784,7 +1192,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.removeMessage] to ensure that a [HttpStatus.OK] is returned when the message is correctly removed.
+     * Test [MessageQueueController.removeMessage] to ensure that a [HttpStatus.OK] is returned when the message is
+     * correctly removed.
      */
     @Test
     fun testRemoveMessage_removeExistingEntry()
@@ -804,7 +1213,41 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.removeMessage] to ensure that a [HttpStatus.NO_CONTENT] is returned when the matching message does not exist.
+     * Ensure when in [MultiQueueAuthenticationType.HYBRID] mode that messages cannot be removed unless a valid
+     * token is provided on a restricted sub-queue.
+     */
+    @Test
+    fun testRemoveMessage_removeExistingEntry_inHybridMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+
+        val message = createQueueMessage(type = "testRemoveMessage_removeExistingEntry_inHybridMode")
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertTrue(multiQueue.containsUUID(message.uuid).isPresent)
+
+        Assertions.assertTrue(authenticator.addRestrictedEntry(message.type))
+        Assertions.assertTrue(authenticator.isRestricted(message.type))
+
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+
+        val token = jwtTokenProvider.createTokenForSubQueue(message.type)
+        Assertions.assertTrue(token.isPresent)
+
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+
+        Assertions.assertFalse(multiQueue.containsUUID(message.uuid).isPresent)
+        Assertions.assertTrue(multiQueue.getQueueForType(message.type).isEmpty())
+    }
+
+    /**
+     * Test [MessageQueueController.removeMessage] to ensure that a [HttpStatus.NO_CONTENT] is returned when the
+     * matching message does not exist.
      */
     @Test
     fun testRemoveMessage_doesNotExist()
@@ -822,7 +1265,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.removeMessage] to ensure that [HttpStatus.FORBIDDEN] is returned if the message is attempting to be removed while another user is consuming it.
+     * Test [MessageQueueController.removeMessage] to ensure that [HttpStatus.FORBIDDEN] is returned if the message is
+     * attempting to be removed while another user is consuming it.
      */
     @Test
     fun testRemoveMessage_assignedToAnotherID()
@@ -844,7 +1288,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getOwners] with a provided `queueType` parameter to ensure the appropriate map is provided in the response and [HttpStatus.OK] is returned.
+     * Test [MessageQueueController.getOwners] with a provided `queueType` parameter to ensure the appropriate map is
+     * provided in the response and [HttpStatus.OK] is returned.
      */
     @Test
     fun testGetOwners_withQueueType()
@@ -886,7 +1331,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Test [MessageQueueController.getOwners] without a provided `queueType` parameter to ensure the appropriate map is provided in the response and [HttpStatus.OK] is returned.
+     * Test [MessageQueueController.getOwners] without a provided `queueType` parameter to ensure the appropriate map
+     * is provided in the response and [HttpStatus.OK] is returned.
      */
     @Test
     fun testGetOwners_withoutQueueType()
@@ -929,7 +1375,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Perform a health check call on the [MessageQueueController] to ensure a [HttpStatus.OK] is returned when the application is running ok.
+     * Ensure a call to the [MessageQueueController.getHealthCheck] to ensure a [HttpStatus.OK] is returned when the
+     * application is running ok.
      */
     @Test
     fun testGetPerformHealthCheck()
@@ -943,7 +1390,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure that the [CorrelationIdFilter] will generate a random Correlation ID when one is not provided and that it is returned in the [MessageResponse].
+     * Ensure that the [CorrelationIdFilter] will generate a random Correlation ID when one is not provided and that
+     * it is returned in the [MessageResponse].
      */
     @Test
     fun testCorrelationId_randomIdOnSuccess()
@@ -964,7 +1412,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure that the [CorrelationIdFilter] will use the same correlationID that is provided is used and returned in the [MessageResponse].
+     * Ensure that the [CorrelationIdFilter] will use the same correlationID that is provided is used and returned in
+     * the [MessageResponse].
      */
     @Test
     fun testCorrelationId_providedId()
@@ -986,7 +1435,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure that the [CorrelationIdFilter] will generate a random Correlation ID is generated on error and returned in the response.
+     * Ensure that the [CorrelationIdFilter] will generate a random Correlation ID is generated on error and returned
+     * in the response.
      */
     @Test
     fun testCorrelationId_randomIdOnError()
@@ -1013,7 +1463,8 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure that [MessageQueueController.deleteKeys] will only delete keys by the specified [RestParameters.QUEUE_TYPE] when it is provided and that other sub queues are not cleared.
+     * Ensure that [MessageQueueController.deleteKeys] will only delete keys by the specified
+     * [RestParameters.QUEUE_TYPE] when it is provided and that other sub queues are not cleared.
      */
     @Test
     fun testDeleteKeys_singleKey()
@@ -1021,20 +1472,14 @@ class MessageQueueControllerTest
         Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
 
         val subQueue1 = "testDeleteKeys_singleKey1"
-        var message = createQueueMessage(subQueue1)
-        Assertions.assertTrue(multiQueue.add(message))
-        message = createQueueMessage(subQueue1)
-        Assertions.assertTrue(multiQueue.add(message))
-        message = createQueueMessage(subQueue1)
-        Assertions.assertTrue(multiQueue.add(message))
+        var messages = listOf(createQueueMessage(subQueue1), createQueueMessage(subQueue1), createQueueMessage(subQueue1))
+        messages.forEach { message -> Assertions.assertTrue(multiQueue.add(message)) }
 
         Assertions.assertEquals(3, multiQueue.size)
 
         val subQueue2 = "testDeleteKeys_singleKey2"
-        message = createQueueMessage(subQueue2)
-        Assertions.assertTrue(multiQueue.add(message))
-        message = createQueueMessage(subQueue2)
-        Assertions.assertTrue(multiQueue.add(message))
+        messages = listOf(createQueueMessage(subQueue2), createQueueMessage(subQueue2))
+        messages.forEach { message -> Assertions.assertTrue(multiQueue.add(message)) }
 
         Assertions.assertEquals(5, multiQueue.size)
 
@@ -1052,7 +1497,64 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure that [MessageQueueController.deleteKeys] will only delete all keys/queues when the provided [RestParameters.QUEUE_TYPE] is `null`.
+     * Ensure that when in [MultiQueueAuthenticationType.HYBRID] mode any restricted sub-queues cannot be deleted
+     * unless a valid token is provided.
+     */
+    @Test
+    fun testDeleteKeys_singleKey_inHybridMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+
+        val subQueue1 = "testDeleteKeys_singleKey_inHybridMode1"
+        var messages = listOf(createQueueMessage(subQueue1), createQueueMessage(subQueue1), createQueueMessage(subQueue1))
+        messages.forEach { message -> Assertions.assertTrue(multiQueue.add(message)) }
+
+        Assertions.assertEquals(3, multiQueue.size)
+
+        val subQueue2 = "testDeleteKeys_singleKey_inHybridMode2"
+        messages = listOf(createQueueMessage(subQueue2), createQueueMessage(subQueue2))
+        messages.forEach { message -> Assertions.assertTrue(multiQueue.add(message)) }
+
+        Assertions.assertEquals(5, multiQueue.size)
+
+        Assertions.assertTrue(multiQueue.keys().contains(subQueue1))
+        Assertions.assertTrue(multiQueue.keys().contains(subQueue2))
+
+        Assertions.assertTrue(authenticator.addRestrictedEntry(subQueue2))
+        Assertions.assertTrue(authenticator.isRestricted(subQueue2))
+
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param(RestParameters.QUEUE_TYPE, subQueue1))
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
+
+        Assertions.assertEquals(2, multiQueue.size)
+        Assertions.assertFalse(multiQueue.keys().contains(subQueue1))
+        Assertions.assertTrue(multiQueue.keys().contains(subQueue2))
+
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param(RestParameters.QUEUE_TYPE, subQueue2))
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+
+        val token = jwtTokenProvider.createTokenForSubQueue(subQueue2)
+        Assertions.assertTrue(token.isPresent)
+
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+            .param(RestParameters.QUEUE_TYPE, subQueue2))
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
+
+        Assertions.assertEquals(0, multiQueue.size)
+        Assertions.assertFalse(multiQueue.keys().contains(subQueue1))
+        Assertions.assertFalse(multiQueue.keys().contains(subQueue2))
+    }
+
+    /**
+     * Ensure that [MessageQueueController.deleteKeys] will only delete all keys/queues when the provided
+     * [RestParameters.QUEUE_TYPE] is `null`.
      */
     @Test
     fun testDeleteKeys_allKeys()
@@ -1072,9 +1574,47 @@ class MessageQueueControllerTest
     }
 
     /**
+     * Ensure that when in [MultiQueueAuthenticationType.HYBRID] mode any restricted sub-queues cannot be deleted
+     * unless a valid token is provided.
+     */
+    @Test
+    fun testDeleteKeys_allKeys_inHybridMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+
+        val (messages, types) = initialiseMapWithEntries()
+        Assertions.assertEquals(messages.size, multiQueue.size)
+        types.forEach { type -> Assertions.assertTrue(multiQueue.keys().contains(type)) }
+
+        Assertions.assertTrue(authenticator.addRestrictedEntry(types[0]))
+        Assertions.assertTrue(authenticator.isRestricted(types[0]))
+
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isPartialContent)
+
+        Assertions.assertEquals(1, multiQueue.size)
+        Assertions.assertTrue(multiQueue.keys().contains(types[0]))
+        types.subList(1, types.size - 1).forEach { type -> Assertions.assertFalse(multiQueue.keys().contains(type)) }
+
+        val token = jwtTokenProvider.createTokenForSubQueue(types[0])
+        Assertions.assertTrue(token.isPresent)
+
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
+
+        Assertions.assertTrue(multiQueue.isEmpty())
+        types.forEach { type -> Assertions.assertFalse(multiQueue.keys().contains(type)) }
+    }
+
+    /**
      * `Mock Test`.
      *
-     * Perform a health check call on the [MessageQueueController] to ensure a [HttpStatus.INTERNAL_SERVER_ERROR] is returned when the health check fails.
+     * Perform a health check call to the [MessageQueueController.getHealthCheck] to ensure a
+     * [HttpStatus.INTERNAL_SERVER_ERROR] is returned when the health check fails.
      */
     @Test
     fun testGetPerformHealthCheck_failureResponse()
@@ -1110,66 +1650,11 @@ class MessageQueueControllerTest
     }
 
     /**
-     *
+     * Ensure that when [MultiQueueAuthenticationType] is set to [MultiQueueAuthenticationType.RESTRICTED] that any
+     * of the endpoints not in the [JwtAuthenticationFilter.urlRequiresAuthentication] whitelist will be inaccessible.
      */
     @Test
-    fun testGetEntry_usingHybridMode_withRestrictedSubQueue()
-    {
-        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
-        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
-
-        val entries = initialiseMapWithEntries()
-
-        val type1 = entries.second[0]
-        val message1 = entries.first[0]
-        val type1Token = jwtTokenProvider.createTokenForSubQueue(type1)
-        Assertions.assertTrue(type1Token.isPresent)
-        Assertions.assertTrue(authenticator.addRestrictedEntry(type1))
-        Assertions.assertTrue(authenticator.isRestricted(type1))
-
-        // Checking 403 is returned without a token
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message1.uuid)
-            .contentType(MediaType.APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().isForbidden)
-
-        // Checking entry is retrieve with provided token
-        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message1.uuid)
-            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER,  "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${type1Token.get()}")
-            .contentType(MediaType.APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andReturn()
-
-        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-
-        val deserialisedPayload = gson.fromJson(gson.toJson(messageResponse.message.payload), Payload::class.java)
-        Assertions.assertEquals(message1.payload, deserialisedPayload)
-        Assertions.assertNull(messageResponse.message.assignedTo)
-        Assertions.assertEquals(message1.type, messageResponse.message.type)
-        Assertions.assertEquals(message1.type, messageResponse.queueType)
-        Assertions.assertNotNull(messageResponse.message.uuid)
-
-        val type2 = entries.second[1]
-        val message2 = entries.first[1]
-        Assertions.assertFalse(authenticator.isRestricted(type2))
-
-        val mvcResult2: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message2.uuid)
-            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER,  "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${type1Token.get()}")
-            .contentType(MediaType.APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andReturn()
-
-        val messageResponse2 = gson.fromJson(mvcResult2.response.contentAsString, MessageResponse::class.java)
-
-        val deserialisedPayload2 = gson.fromJson(gson.toJson(messageResponse2.message.payload), Payload::class.java)
-        Assertions.assertEquals(message2.payload, deserialisedPayload2)
-        Assertions.assertNull(messageResponse2.message.assignedTo)
-        Assertions.assertEquals(message2.type, messageResponse2.message.type)
-        Assertions.assertEquals(message2.type, messageResponse2.queueType)
-        Assertions.assertNotNull(messageResponse2.message.uuid)
-    }
-
-    @Test
-    fun testRestrictedModeMakesAllEndpointsInaccessible()
+    fun testRestrictedModeMakesAllEndpointsInaccessibleWithoutAToken()
     {
         Mockito.doReturn(MultiQueueAuthenticationType.RESTRICTED).`when`(authenticator).getAuthenticationType()
         Assertions.assertEquals(MultiQueueAuthenticationType.RESTRICTED, authenticator.getAuthenticationType())
@@ -1177,6 +1662,72 @@ class MessageQueueControllerTest
         mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + UUID.randomUUID().toString())
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isUnauthorized)
+
+        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + UUID.randomUUID().toString())
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isUnauthorized)
+
+        val message = QueueMessage("", "testRestrictedModeMakesAllEndpointsInaccessible")
+        mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+            .content(gson.toJson(message))
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isUnauthorized)
+
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_RELEASE + "/" + UUID.randomUUID().toString())
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isUnauthorized)
+
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ASSIGN + "/" + UUID.randomUUID().toString())
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isUnauthorized)
+
+        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT + "?" + RestParameters.QUEUE_TYPE +"=someType&" + RestParameters.ASSIGNED_TO + "=me")
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isUnauthorized)
+
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isUnauthorized)
+
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED + "?" + RestParameters.QUEUE_TYPE +"=someType&" + RestParameters.ASSIGNED_TO + "=me")
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isUnauthorized)
+    }
+
+    /**
+     * Ensure that the [JwtAuthenticationFilter] will respond with [HttpStatus.UNAUTHORIZED] when no token is provided,
+     * and it is in [MultiQueueAuthenticationType.RESTRICTED] mode.
+     */
+    @Test
+    fun testGetEntry_inRestrictedMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.RESTRICTED).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.RESTRICTED, authenticator.getAuthenticationType())
+
+        val type = "testRestrictedMode_getByUUID"
+        val message = createQueueMessage(type)
+
+        Assertions.assertTrue(multiQueue.add(message))
+
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isUnauthorized)
+
+        val token = jwtTokenProvider.createTokenForSubQueue(type)
+        Assertions.assertTrue(token.isPresent)
+
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isUnauthorized)
+
+        Assertions.assertTrue(authenticator.addRestrictedEntry(type))
+        Assertions.assertTrue(authenticator.isRestricted(type))
+
+        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
     }
 
     /**
