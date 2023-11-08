@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired
  */
 class SqlAuthenticator: MultiQueueAuthenticator()
 {
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     @Autowired
     lateinit var authenticationMatrixRepository: SqlAuthenticationMatrixRepository

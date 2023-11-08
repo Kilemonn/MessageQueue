@@ -19,7 +19,7 @@ class RedisAuthenticator: MultiQueueAuthenticator()
         const val RESTRICTED_KEY = AuthenticationMatrix.TABLE_NAME + "_restricted"
     }
 
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     @Autowired
     lateinit var redisTemplate: RedisTemplate<String, AuthenticationMatrix>

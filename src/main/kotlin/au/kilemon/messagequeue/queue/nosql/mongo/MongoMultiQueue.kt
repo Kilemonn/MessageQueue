@@ -26,7 +26,7 @@ class MongoMultiQueue : MultiQueue(), HasLogger
         const val INDEX_ID = "index_id"
     }
 
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     @Lazy
     @Autowired

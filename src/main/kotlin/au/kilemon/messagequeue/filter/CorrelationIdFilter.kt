@@ -30,7 +30,7 @@ class CorrelationIdFilter: OncePerRequestFilter(), HasLogger
         const val CORRELATION_ID = "correlationId"
     }
 
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain)
     {

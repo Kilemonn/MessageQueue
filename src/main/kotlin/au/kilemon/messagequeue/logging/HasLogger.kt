@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
  * ```
  * class ALogger: HasLogger
  * {
- *      override val LOG: Logger = initialiseLogger()
+ *      override val LOG: Logger = this.initialiseLogger()
  *      ...
  *      fun function()
  *      {

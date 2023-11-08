@@ -23,7 +23,7 @@ import kotlin.collections.HashMap
  */
 class RedisMultiQueue(private val prefix: String = "", private val redisTemplate: RedisTemplate<String, QueueMessage>) : MultiQueue(), HasLogger
 {
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     /**
      * Append the [MessageQueueSettings.redisPrefix] to the provided [queueType] [String].

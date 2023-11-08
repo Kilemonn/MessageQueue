@@ -14,7 +14,7 @@ import java.util.*
 @Configuration
 class LoggingConfiguration : HasLogger
 {
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     companion object
     {

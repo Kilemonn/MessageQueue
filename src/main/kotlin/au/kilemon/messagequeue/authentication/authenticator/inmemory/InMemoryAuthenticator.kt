@@ -11,7 +11,7 @@ import org.slf4j.Logger
  */
 class InMemoryAuthenticator: MultiQueueAuthenticator()
 {
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     private val restrictedSubQueues = HashSet<String>()
 

@@ -37,7 +37,7 @@ import java.util.*
 @Configuration
 class QueueConfiguration : HasLogger
 {
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     @Autowired
     private lateinit var messageQueueSettings: MessageQueueSettings
