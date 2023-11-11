@@ -38,7 +38,7 @@ class MySqlAuthenticatorTest: MultiQueueAuthenticatorTest()
     {
         lateinit var database: GenericContainer<*>
 
-        private const val MYSQL_CONTAINER = "mysql:8.0.31"
+        private const val MYSQL_CONTAINER = "mysql:8.0.35"
         private const val MYSQL_PORT = 3306
 
         /**

@@ -29,7 +29,7 @@ class PostgreSqlMultiQueueTest: SqlMultiQueueTest()
     {
         lateinit var database: GenericContainer<*>
 
-        private const val POSTGRES_CONTAINER = "postgres:14.5"
+        private const val POSTGRES_CONTAINER = "postgres:14.9-alpine"
         private const val POSTGRES_PORT = 5432
 
         /**

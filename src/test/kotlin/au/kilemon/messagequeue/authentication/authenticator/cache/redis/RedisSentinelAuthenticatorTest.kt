@@ -35,7 +35,7 @@ class RedisSentinelAuthenticatorTest: MultiQueueAuthenticatorTest()
 {
     companion object
     {
-        private const val REDIS_CONTAINER: String = "redis:7.0.5-alpine"
+        private const val REDIS_CONTAINER: String = "redis:7.2.3-alpine"
         private const val REDIS_SENTINEL_CONTAINER: String = "s7anley/redis-sentinel-docker:3.2.12"
 
         lateinit var redis: GenericContainer<*>

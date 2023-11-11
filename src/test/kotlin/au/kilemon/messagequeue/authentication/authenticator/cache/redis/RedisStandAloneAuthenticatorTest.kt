@@ -38,7 +38,7 @@ class RedisStandAloneAuthenticatorTest: MultiQueueAuthenticatorTest()
     companion object
     {
         private const val REDIS_PORT: Int = 6379
-        private const val REDIS_CONTAINER: String = "redis:7.0.5-alpine"
+        private const val REDIS_CONTAINER: String = "redis:7.2.3-alpine"
 
         lateinit var redis: GenericContainer<*>
 
