@@ -25,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException
 import java.util.*
 import java.util.stream.Collectors
 import javax.validation.Valid
+import kotlin.collections.HashSet
 
 /**
  * The REST controller for the [MultiQueue]. It exposes endpoints to access and manipulate the queue and the messages inside it.
@@ -270,25 +271,34 @@ open class MessageQueueController : HasLogger
         {
             authenticator.canAccessSubQueue(queueType)
             messageQueue.clearForType(queueType)
+            LOG.info("Cleared queue with key [{}]", queueType)
             return ResponseEntity.noContent().build()
         }
         else
         {
+            val clearedKeys = HashSet<String>()
+            val retainedKeys = HashSet<String>()
             var anyAreNotCleared = false
+
             for (key in messageQueue.keys())
             {
                 if (authenticator.canAccessSubQueue(key, false))
                 {
                     messageQueue.clearForType(key)
+                    clearedKeys.add(key)
                 }
                 else
                 {
                     anyAreNotCleared = true
+                    retainedKeys.add(key)
                 }
             }
 
+            LOG.info("Cleared queue with keys: [{}]", clearedKeys)
+
             return if (anyAreNotCleared)
             {
+                LOG.info("Retained queues with keys: [{}]", retainedKeys)
                 ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).build()
             }
             else
