@@ -64,7 +64,15 @@ class SqlMultiQueue : MultiQueue(), HasLogger
 
     override fun getMessageByUUID(uuid: String): Optional<QueueMessage>
     {
-        return queueMessageRepository.findByUuid(uuid)
+        val message = queueMessageRepository.findByUuid(uuid)
+        return if (message.isPresent)
+        {
+            Optional.of(message.get().resolvePayloadObject())
+        }
+        else
+        {
+            Optional.empty()
+        }
     }
 
     override fun clearForTypeInternal(queueType: String): Int

@@ -894,7 +894,10 @@ abstract class MultiQueueTest
         val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), type)
         Assertions.assertTrue(multiQueue.add(message))
 
-        Assertions.assertEquals(message, multiQueue.getMessageByUUID(message.uuid).get())
+        val retrievedMessage = multiQueue.getMessageByUUID(message.uuid)
+        Assertions.assertTrue(retrievedMessage.isPresent)
+        Assertions.assertEquals(message, retrievedMessage.get())
+        Assertions.assertEquals(message.payload, retrievedMessage.get().payload)
     }
 
     /**
