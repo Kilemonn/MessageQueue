@@ -380,7 +380,7 @@ open class MessageQueueController : HasLogger
      * @return the [QueueMessage] object after it has been marked as `assigned`. Returns [HttpStatus.ACCEPTED] if the [QueueMessage] is already assigned to the current user, otherwise [HttpStatus.OK] if it was not `assigned` previously.
      */
     @Operation(summary = "Assign an existing queue message to the provided identifier.", description = "Assign an existing queue message to the provided identifier. The message must already exist and not be assigned already to another identifier in order to be successfully assigned to the provided identifier.")
-    @PutMapping("$ENDPOINT_ASSIGN/{${RestParameters.UUID}}", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @PutMapping("$ENDPOINT_ENTRY/{${RestParameters.UUID}}$ENDPOINT_ASSIGN", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "Successfully assigned the message to the provided identifier. The message was not previously assigned."),
         ApiResponse(responseCode = "202", description = "The message was already assigned to the provided identifier.", content = [Content()]),
@@ -468,7 +468,7 @@ open class MessageQueueController : HasLogger
      * @return the [QueueMessage] object after it has been `released`. Returns [HttpStatus.ACCEPTED] if the [QueueMessage] is already `released`, otherwise [HttpStatus.OK] if it was `released` successfully.
      */
     @Operation(summary = "Release the message assigned to the provided identifier.", description = "Release an assigned message so it can be assigned to another identifier.")
-    @PutMapping("$ENDPOINT_RELEASE/{${RestParameters.UUID}}", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @PutMapping("$ENDPOINT_ENTRY/{${RestParameters.UUID}}$ENDPOINT_RELEASE", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "Successfully released the message. The message was previously assigned."),
         ApiResponse(responseCode = "202", description = "The message is not currently assigned."),
