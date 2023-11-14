@@ -11,6 +11,7 @@ import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.rest.response.AuthResponse
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -385,5 +386,49 @@ class AuthControllerTest
         {
             multiQueue.clear()
         }
+    }
+
+    /**
+     * Ensure [AuthController.getRestrictedSubQueueIdentifiers] returns [org.springframework.http.HttpStatus.NO_CONTENT]
+     * when the [MultiQueueAuthenticationType] is [MultiQueueAuthenticationType.NONE].
+     */
+    @Test
+    fun testGetRestrictedSubQueueIdentifiers_inNoneMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.NONE).`when`(multiQueueAuthenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, multiQueueAuthenticator.getAuthenticationType())
+
+        mockMvc.perform(MockMvcRequestBuilders.get(AuthController.AUTH_PATH)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isNoContent)
+    }
+
+    /**
+     * Ensure [AuthController.getRestrictedSubQueueIdentifiers] returns [org.springframework.http.HttpStatus.OK]
+     * when the [MultiQueueAuthenticationType] is not in [MultiQueueAuthenticationType.NONE].
+     * And the response set matches the entries that are restricted.
+     */
+    @Test
+    fun testGetRestrictedSubQueueIdentifiers_notInNoneMode()
+    {
+        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
+        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, multiQueueAuthenticator.getAuthenticationType())
+
+        val restrictedIdentifiers = setOf("testGetRestrictedSubQueueIdentifiers_inNoneMode1", "testGetRestrictedSubQueueIdentifiers_inNoneMode2",
+            "testGetRestrictedSubQueueIdentifiers_inNoneMode3", "testGetRestrictedSubQueueIdentifiers_inNoneMode4", "testGetRestrictedSubQueueIdentifiers_inNoneMode5")
+
+        restrictedIdentifiers.forEach { identifier -> Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(identifier)) }
+        restrictedIdentifiers.forEach { identifier -> Assertions.assertTrue(multiQueueAuthenticator.isRestricted(identifier)) }
+
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(AuthController.AUTH_PATH)
+            .contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andReturn()
+
+        val stringSetType = object : TypeToken<Set<String>>() {}.type
+        val identifiers = gson.fromJson<Set<String>>(mvcResult.response.contentAsString, stringSetType)
+
+        Assertions.assertEquals(restrictedIdentifiers.size, identifiers.size)
+        identifiers.forEach { identifier -> Assertions.assertTrue(restrictedIdentifiers.contains(identifier)) }
     }
 }

@@ -50,6 +50,23 @@ open class AuthController : HasLogger
     @Autowired
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
+    @Operation(summary = "Get restricted sub-queue identifiers", description = "Get a list of the restricted sub-queue identifiers.")
+    @GetMapping("", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "Returns a list of sub-queues marked as restricted that require a token to interact with."),
+        ApiResponse(responseCode = "204", description = "The MultiQueue is in a no-auth mode and no sub-queues are marked as restricted.", content = [Content()])
+    )
+    fun getRestrictedSubQueueIdentifiers(): ResponseEntity<Set<String>>
+    {
+        if (multiQueueAuthenticator.isInNoneMode())
+        {
+            LOG.trace("Returning no restricted identifiers since the authentication type is set to [{}].", multiQueueAuthenticator.getAuthenticationType())
+            return ResponseEntity.noContent().build()
+        }
+
+        return ResponseEntity.ok(multiQueueAuthenticator.getRestrictedSubQueueIdentifiers())
+    }
+
     @Operation(summary = "Create restriction on sub-queue.", description = "Create restriction a specific sub-queue to require authentication for future interactions and retrieve a token used to interact with this sub-queue.")
     @PostMapping("/{${RestParameters.QUEUE_TYPE}}", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponses(

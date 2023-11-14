@@ -134,6 +134,7 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
             Pair(HttpMethod.GET, "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}${MessageQueueController.ENDPOINT_HEALTH_CHECK}"),
             Pair(HttpMethod.GET, "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}${MessageQueueController.ENDPOINT_KEYS}"),
             Pair(HttpMethod.GET, "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}${MessageQueueController.ENDPOINT_OWNERS}"),
+            Pair(HttpMethod.GET, AuthController.AUTH_PATH),
             Pair(HttpMethod.POST, AuthController.AUTH_PATH),
             Pair(HttpMethod.GET, SettingsController.SETTINGS_PATH)
         )
