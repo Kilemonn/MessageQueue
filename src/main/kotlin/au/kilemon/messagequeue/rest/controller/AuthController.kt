@@ -70,7 +70,7 @@ open class AuthController : HasLogger
     @Operation(summary = "Create restriction on sub-queue.", description = "Create restriction a specific sub-queue to require authentication for future interactions and retrieve a token used to interact with this sub-queue.")
     @PostMapping("/{${RestParameters.QUEUE_TYPE}}", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponses(
-        ApiResponse(responseCode = "200", description = "Successfully registered the sub-queue identifier and returns an appropriate token for future access to the sub-queue."),
+        ApiResponse(responseCode = "201", description = "Successfully registered the sub-queue identifier and returns an appropriate token for future access to the sub-queue."),
         ApiResponse(responseCode = "204", description = "The MultiQueue is in a no-auth mode and tokens cannot be generated.", content = [Content()]), // Add empty Content() to remove duplicate responses in swagger docsApiResponse(responseCode = "204", description = "No queue messages match the provided UUID.", content = [Content()])
         ApiResponse(responseCode = "409", description = "A sub-queue with the provided identifier is already authorised.", content = [Content()]),
         ApiResponse(responseCode = "500", description = "There was an error generating the auth token for the sub-queue.", content = [Content()])
@@ -103,7 +103,7 @@ open class AuthController : HasLogger
             else
             {
                 LOG.info("Successfully generated token for sub-queue [{}] with expiry [{}] minutes.", queueType, expiry)
-                ResponseEntity.ok(AuthResponse(token.get(), queueType))
+                ResponseEntity.status(HttpStatus.CREATED).body(AuthResponse(token.get(), queueType))
             }
         }
     }

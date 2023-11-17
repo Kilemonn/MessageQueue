@@ -169,7 +169,7 @@ class AuthControllerTest
         val mvcResult: MvcResult = mockMvc.perform(
             MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${queueType}")
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.status().isCreated)
             .andReturn()
 
         val authResponse = gson.fromJson(mvcResult.response.contentAsString, AuthResponse::class.java)
@@ -194,7 +194,7 @@ class AuthControllerTest
         val mvcResult: MvcResult = mockMvc.perform(
             MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${queueType}")
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.status().isCreated)
             .andReturn()
 
         val authResponse = gson.fromJson(mvcResult.response.contentAsString, AuthResponse::class.java)
