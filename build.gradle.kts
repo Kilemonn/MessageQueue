@@ -55,7 +55,7 @@ dependencies {
     // Required to mock MultiQueue objects since they apparently override a final 'remove(Object)' method.
     testImplementation("org.mockito:mockito-inline:5.1.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
-    testImplementation("org.testcontainers:testcontainers:1.17.5")
+    testImplementation("org.testcontainers:testcontainers:1.19.2")
     testImplementation("org.testcontainers:junit-jupiter:1.17.5")
     testImplementation(kotlin("test"))
 }
