@@ -1,7 +1,10 @@
 package au.kilemon.messagequeue.queue
 
+import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
+import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
+import au.kilemon.messagequeue.queue.exception.IllegalSubQueueIdentifierException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
 import au.kilemon.messagequeue.queue.nosql.mongo.MongoMultiQueue
@@ -23,6 +26,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Lazy
 import java.io.Serializable
 import java.util.*
+import java.util.function.Supplier
 import java.util.stream.Stream
 
 /**
@@ -57,6 +61,9 @@ abstract class MultiQueueTest
 
     @Autowired
     protected lateinit var multiQueue: MultiQueue
+
+    @Autowired
+    private lateinit var authenticator: MultiQueueAuthenticator
 
     /**
      * Ensure that when a new entry is added, that the [MultiQueue] is no longer empty and reports the correct size.
@@ -382,6 +389,22 @@ abstract class MultiQueueTest
             else
             {
                 Assertions.assertTrue(previousIndex!! < pair.second.id!!)
+            }
+        }
+    }
+
+    /**
+     * Ensure that calls to [MultiQueue.getQueueForType] with a [MultiQueueAuthenticator.getReservedSubQueues] as an
+     * argument will throw [IllegalSubQueueIdentifierException].
+     */
+    @Test
+    fun testGetQueueForType_reservedSubQueue()
+    {
+        doWithAuthType(MultiQueueAuthenticationType.HYBRID) {
+            authenticator.getReservedSubQueues().forEach { reservedSubQueueIdentifier ->
+                Assertions.assertThrows(IllegalSubQueueIdentifierException::class.java) {
+                    multiQueue.getQueueForType(reservedSubQueueIdentifier)
+                }
             }
         }
     }
@@ -918,6 +941,71 @@ abstract class MultiQueueTest
     fun testPerformHealthCheck_successfulCheck()
     {
         multiQueue.performHealthCheck()
+    }
+
+    /**
+     * Ensure that we cannot add a new [QueueMessage] with [QueueMessage.type] set to any of the [MultiQueueAuthenticator.getReservedSubQueues] entries.
+     */
+    @Test
+    fun testAddReservedSubQueue()
+    {
+        doWithAuthType(MultiQueueAuthenticationType.RESTRICTED) {
+            authenticator.getReservedSubQueues().forEach { reservedSubQueueIdentifier ->
+                val message = QueueMessage("Data", reservedSubQueueIdentifier)
+                Assertions.assertThrows(IllegalSubQueueIdentifierException::class.java) {
+                    multiQueue.add(message)
+                }
+            }
+        }
+    }
+
+    /**
+     * Ensure that even we have a restricted queue entry registered, when [MultiQueue.keys] is called, the entry
+     * is removed and not returned.
+     */
+    @Test
+    fun testKeysWithReservedSubQueueUsage()
+    {
+        doWithAuthType(MultiQueueAuthenticationType.HYBRID) {
+            var keys = multiQueue.keys()
+            authenticator.getReservedSubQueues().forEach { reservedSubQueueIdentifier ->
+                Assertions.assertFalse(keys.contains(reservedSubQueueIdentifier))
+            }
+
+            val restrictedSubQueue = "testKeysWithReservedSubQueueUsage"
+            authenticator.addRestrictedEntry(restrictedSubQueue)
+
+            keys = multiQueue.keys()
+            authenticator.getReservedSubQueues().forEach { reservedSubQueueIdentifier ->
+                Assertions.assertFalse(keys.contains(reservedSubQueueIdentifier))
+            }
+
+            // Need to clear the restricted queue otherwise it affects other redis tests if they are not in a "non-None" auth state
+            authenticator.clearRestrictedSubQueues()
+        }
+    }
+
+    /**
+     * Perform the provided [function] with the [MultiQueueAuthenticationType] set to [authenticationType].
+     * Once completed the [MultiQueueAuthenticationType] will be set back to its initial value.
+     *
+     * @param authenticationType the [MultiQueueAuthenticationType] to be set while the [function] is being called
+     * @param function the function to call with the provided [MultiQueueAuthenticationType] being active
+     * @return `T` the result of the [function]
+     */
+    private fun <T> doWithAuthType(authenticationType: MultiQueueAuthenticationType, function: Supplier<T>): T
+    {
+        val previousAuthType = authenticator.getAuthenticationType()
+        authenticator.setAuthenticationType(authenticationType)
+
+        try
+        {
+            return function.get()
+        }
+        finally
+        {
+            authenticator.setAuthenticationType(previousAuthType)
+        }
     }
 
     /**

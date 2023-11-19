@@ -1,6 +1,13 @@
 package au.kilemon.messagequeue.configuration
 
 import au.kilemon.messagequeue.MessageQueueApplication
+import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
+import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
+import au.kilemon.messagequeue.authentication.authenticator.cache.redis.RedisAuthenticator
+import au.kilemon.messagequeue.authentication.authenticator.inmemory.InMemoryAuthenticator
+import au.kilemon.messagequeue.authentication.authenticator.nosql.mongo.MongoAuthenticator
+import au.kilemon.messagequeue.authentication.authenticator.sql.SqlAuthenticator
+import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.logging.Messages
 import au.kilemon.messagequeue.message.QueueMessage
@@ -10,15 +17,7 @@ import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
 import au.kilemon.messagequeue.queue.nosql.mongo.MongoMultiQueue
 import au.kilemon.messagequeue.queue.sql.SqlMultiQueue
 import au.kilemon.messagequeue.settings.MessageQueueSettings
-import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
-import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
-import au.kilemon.messagequeue.authentication.authenticator.cache.redis.RedisAuthenticator
-import au.kilemon.messagequeue.authentication.authenticator.inmemory.InMemoryAuthenticator
-import au.kilemon.messagequeue.authentication.authenticator.nosql.mongo.MongoAuthenticator
-import au.kilemon.messagequeue.authentication.authenticator.sql.SqlAuthenticator
-import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
 import au.kilemon.messagequeue.settings.MultiQueueType
-import lombok.Generated
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean

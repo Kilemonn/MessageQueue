@@ -29,6 +29,16 @@ abstract class MultiQueueAuthenticator: HasLogger
     }
 
     /**
+     * Used only for tests to update the set [MultiQueueAuthenticationType].
+     *
+     * @param authenticationType the new [MultiQueueAuthenticationType] to set
+     */
+    fun setAuthenticationType(authenticationType: MultiQueueAuthenticationType)
+    {
+        multiQueueAuthenticationType = authenticationType
+    }
+
+    /**
      * Used to return a list of completed reserved sub-queue identifiers that can never be used. Even when
      * [MultiQueueAuthenticationType.NONE] is being used.
      *

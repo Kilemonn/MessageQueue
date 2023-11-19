@@ -120,7 +120,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
     @Throws(IllegalSubQueueIdentifierException::class)
     fun getQueueForType(queueType: String): Queue<QueueMessage>
     {
-        if (multiQueueAuthenticator.getReservedSubQueues().contains(queueType))
+        if (!multiQueueAuthenticator.isInNoneMode() && multiQueueAuthenticator.getReservedSubQueues().contains(queueType))
         {
             throw IllegalSubQueueIdentifierException(queueType)
         }
