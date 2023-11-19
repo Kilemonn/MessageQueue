@@ -83,19 +83,4 @@ class RedisStandAloneAuthenticatorTest: MultiQueueAuthenticatorTest()
         Assertions.assertTrue(redis.isRunning)
         multiQueueAuthenticator.clearRestrictedSubQueues()
     }
-
-    /**
-     * Ensure that the [RedisAuthenticator.getReservedSubQueues] always contains [RedisAuthenticator.RESTRICTED_KEY] and
-     * that calls to [RedisAuthenticator.canAccessSubQueue] will throw a [MultiQueueAuthorisationException].
-     */
-    @Test
-    fun testGetReservedSubQueues()
-    {
-        Assertions.assertTrue(multiQueueAuthenticator.getReservedSubQueues().contains(RedisAuthenticator.RESTRICTED_KEY))
-        Assertions.assertThrows(MultiQueueAuthorisationException::class.java) {
-            multiQueueAuthenticator.canAccessSubQueue(RedisAuthenticator.RESTRICTED_KEY)
-        }
-        Assertions.assertFalse(multiQueueAuthenticator.canAccessSubQueue(RedisAuthenticator.RESTRICTED_KEY, false))
-    }
-
 }

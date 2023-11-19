@@ -150,7 +150,7 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
         return Optional.empty()
     }
 
-    override fun keys(includeEmpty: Boolean): Set<String>
+    override fun keysInternal(includeEmpty: Boolean): HashSet<String>
     {
         val scanOptions = ScanOptions.scanOptions().match(appendPrefix("*")).build()
         val cursor = redisTemplate.scan(scanOptions)
