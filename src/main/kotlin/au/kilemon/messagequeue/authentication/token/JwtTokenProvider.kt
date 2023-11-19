@@ -32,7 +32,8 @@ class JwtTokenProvider: HasLogger
     private var algorithm: Algorithm? = null
 
     @Value("\${${MessageQueueSettings.MULTI_QUEUE_TOKEN_KEY}:\"\"}")
-    private var tokenKey: String = ""
+    var tokenKey: String = ""
+        private set
 
     /**
      * Lazily initialise and get the [Algorithm] using [Algorithm.HMAC512] and a random key.
@@ -43,7 +44,7 @@ class JwtTokenProvider: HasLogger
     {
         if (algorithm == null)
         {
-            algorithm = Algorithm.HMAC512(getKey())
+            algorithm = Algorithm.HMAC512(getOrGenerateKey(tokenKey))
         }
         return algorithm!!
     }
@@ -54,12 +55,12 @@ class JwtTokenProvider: HasLogger
      * @return If a value is provided via [MessageQueueSettings.MULTI_QUEUE_TOKEN_KEY] then we will use it if it is
      * not blank. Otherwise, a randomly generated a byte array is returned
      */
-    private fun getKey(): ByteArray
+    fun getOrGenerateKey(key: String): ByteArray
     {
-        return if (tokenKey.isNotBlank())
+        return if (key.isNotBlank())
         {
             LOG.info("Using provided key in property [{}] as the HMAC512 token generation and verification key.", MessageQueueSettings.MULTI_QUEUE_TOKEN_KEY)
-            tokenKey.toByteArray()
+            key.toByteArray()
         }
         else
         {
