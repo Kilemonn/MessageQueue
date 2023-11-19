@@ -26,10 +26,15 @@ class RedisAuthenticator: MultiQueueAuthenticator()
 
     /**
      * Overriding to completely remove all access to the [RESTRICTED_KEY].
+     * Only if [isInNoneMode] returns `false`.
      */
     override fun getReservedSubQueues(): Set<String>
     {
-        return setOf(RESTRICTED_KEY)
+        if (!isInNoneMode())
+        {
+            return setOf(RESTRICTED_KEY)
+        }
+        return setOf()
     }
 
     private fun getMembersSet(): Set<AuthenticationMatrix>

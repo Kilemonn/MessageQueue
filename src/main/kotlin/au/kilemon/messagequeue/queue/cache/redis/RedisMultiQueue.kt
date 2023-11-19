@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.queue.cache.redis
 
+import au.kilemon.messagequeue.authentication.authenticator.cache.redis.RedisAuthenticator
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
@@ -13,6 +14,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicLong
 import java.util.stream.Collectors
 import kotlin.collections.HashMap
+import kotlin.collections.HashSet
 
 /**
  * A `Redis` specific implementation of the [MultiQueue].
@@ -43,7 +45,7 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
     /**
      * Attempts to append the prefix before requesting the underlying redis entry if the provided [queueType] is not prefixed with [MessageQueueSettings.redisPrefix].
      */
-    override fun getQueueForType(queueType: String): Queue<QueueMessage>
+    override fun getQueueForTypeInternal(queueType: String): Queue<QueueMessage>
     {
         val queue = ConcurrentLinkedQueue<QueueMessage>()
         val set = redisTemplate.opsForSet().members(appendPrefix(queueType))

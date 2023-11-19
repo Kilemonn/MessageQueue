@@ -4,12 +4,15 @@ import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
 import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthenticationException
 import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthorisationException
 import au.kilemon.messagequeue.filter.CorrelationIdFilter
+import au.kilemon.messagequeue.queue.exception.IllegalSubQueueIdentifierException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.slf4j.MDC
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.server.ResponseStatusException
 import java.util.*
 
@@ -91,6 +94,25 @@ class RestResponseExceptionHandlerTest
         Assertions.assertEquals(HttpStatus.UNAUTHORIZED, response.statusCode)
         Assertions.assertNotNull(response.body)
         Assertions.assertEquals(MultiQueueAuthenticationException.ERROR_MESSAGE, response.body!!.message)
+        Assertions.assertEquals(correlationId, response.body!!.correlationId)
+    }
+
+    /**
+     * Ensure the [RestResponseExceptionHandler.handleIllegalSubQueueIdentifierException] returns the appropriate reponse
+     * and error message.
+     */
+    @Test
+    fun testHandleIllegalSubQueueIdentifierException()
+    {
+        val correlationId = UUID.randomUUID().toString()
+        MDC.put(CorrelationIdFilter.CORRELATION_ID, correlationId)
+        val type = "testHandleIllegalSubQueueIdentifierException"
+        val exception = IllegalSubQueueIdentifierException(type)
+        val response = responseHandler.handleIllegalSubQueueIdentifierException(exception)
+
+        Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+        Assertions.assertNotNull(response.body)
+        Assertions.assertTrue(response.body!!.message!!.contains(type))
         Assertions.assertEquals(correlationId, response.body!!.correlationId)
     }
 }

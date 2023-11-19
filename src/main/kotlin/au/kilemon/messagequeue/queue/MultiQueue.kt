@@ -1,10 +1,11 @@
 package au.kilemon.messagequeue.queue
 
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
-import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
+import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
+import au.kilemon.messagequeue.queue.exception.IllegalSubQueueIdentifierException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import lombok.Generated
 import org.slf4j.Logger
@@ -12,9 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.stream.Collectors
-import kotlin.collections.HashMap
 import kotlin.collections.HashSet
-import kotlin.jvm.Throws
 
 /**
  * A [MultiQueue] base class, which extends [Queue].
@@ -102,10 +101,32 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      * If the underlying [Queue] does not exist for the provided [String] then a new [Queue] will
      * be created.
      *
+     * **This method should not be called directly, please use [getQueueForType]**
+     *
      * @param queueType the identifier of the sub-queue [Queue]
      * @return the [Queue] matching the provided [String]
      */
-    abstract fun getQueueForType(queueType: String): Queue<QueueMessage>
+    abstract fun getQueueForTypeInternal(queueType: String): Queue<QueueMessage>
+
+    /**
+     * Retrieves or creates a new [Queue] of type [QueueMessage] for the provided [String].
+     * If the underlying [Queue] does not exist for the provided [String] then a new [Queue] will
+     * be created.
+     *
+     * @param queueType the identifier of the sub-queue [Queue]
+     * @return the [Queue] matching the provided [String]
+     * @throws IllegalSubQueueIdentifierException If the provided [queueType] is part of the [MultiQueueAuthenticator.getReservedSubQueues]
+     */
+    @Throws(IllegalSubQueueIdentifierException::class)
+    fun getQueueForType(queueType: String): Queue<QueueMessage>
+    {
+        if (multiQueueAuthenticator.getReservedSubQueues().contains(queueType))
+        {
+            throw IllegalSubQueueIdentifierException(queueType)
+        }
+
+        return getQueueForTypeInternal(queueType)
+    }
 
     /**
      * Retrieves only assigned messages in the sub-queue for the provided [queueType].
@@ -323,11 +344,27 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
 
     /**
      * Retrieves the underlying key list as a set.
+     * **Should be called directly, please using [keys].**
+     *
+     * @param includeEmpty *true* to include any empty queues which one had elements in them, otherwise *false* to only include keys from queues which have elements.
+     * @return a [HashSet] of the available `QueueTypes` that have entries in the [MultiQueue].
+     */
+    abstract fun keysInternal(includeEmpty: Boolean = true): HashSet<String>
+
+    /**
+     * Delegates to [keysInternal] and removes any keys that match in the [MultiQueueAuthenticator.getReservedSubQueues].
      *
      * @param includeEmpty *true* to include any empty queues which one had elements in them, otherwise *false* to only include keys from queues which have elements.
      * @return a [Set] of the available `QueueTypes` that have entries in the [MultiQueue].
      */
-    abstract fun keys(includeEmpty: Boolean = true): Set<String>
+    fun keys(includeEmpty: Boolean = true): Set<String>
+    {
+        val keysSet = keysInternal(includeEmpty)
+
+        // Remove the restricted key(s)
+        multiQueueAuthenticator.getReservedSubQueues().forEach { reservedSubQueue -> keysSet.remove(reservedSubQueue) }
+        return keysSet
+    }
 
     /**
      * Returns the `queueType` that the [QueueMessage] with the provided [UUID] exists in.
@@ -347,11 +384,17 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      * not force it to be auto incremented or unusable by another thread.
      *
      * @throws [DuplicateMessageException] if a message already exists with the same [QueueMessage.uuid] in `any` other queue.
+     * @throws [IllegalSubQueueIdentifierException] if the [QueueMessage.type] is invalid or reserved
      */
-    @Throws(DuplicateMessageException::class)
+    @Throws(DuplicateMessageException::class, IllegalSubQueueIdentifierException::class)
     @Synchronized
     override fun add(element: QueueMessage): Boolean
     {
+        if (multiQueueAuthenticator.getReservedSubQueues().contains(element.type))
+        {
+            throw IllegalSubQueueIdentifierException(element.type)
+        }
+
         val elementIsMappedToType = containsUUID(element.uuid)
         if ( !elementIsMappedToType.isPresent)
         {

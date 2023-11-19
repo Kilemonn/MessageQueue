@@ -71,7 +71,7 @@ class MongoMultiQueue : MultiQueue(), HasLogger
         return ConcurrentLinkedQueue(entries.map { entry -> QueueMessage(entry) })
     }
 
-    override fun getQueueForType(queueType: String): Queue<QueueMessage>
+    override fun getQueueForTypeInternal(queueType: String): Queue<QueueMessage>
     {
         val entries = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
         return ConcurrentLinkedQueue(entries.map { entry -> QueueMessage(entry) })
@@ -123,9 +123,9 @@ class MongoMultiQueue : MultiQueue(), HasLogger
     /**
      * The [includeEmpty] value makes no difference it is always effectively `false`.
      */
-    override fun keys(includeEmpty: Boolean): Set<String>
+    override fun keysInternal(includeEmpty: Boolean): HashSet<String>
     {
-        val keySet = queueMessageRepository.getDistinctTypes().toSet()
+        val keySet = HashSet(queueMessageRepository.getDistinctTypes())
         LOG.debug("Total amount of queue keys [{}].", keySet.size)
         return keySet
     }

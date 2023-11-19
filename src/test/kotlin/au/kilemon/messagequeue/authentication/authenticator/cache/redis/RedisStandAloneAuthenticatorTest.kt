@@ -86,7 +86,7 @@ class RedisStandAloneAuthenticatorTest: MultiQueueAuthenticatorTest()
 
     /**
      * Ensure that the [RedisAuthenticator.getReservedSubQueues] always contains [RedisAuthenticator.RESTRICTED_KEY] and
-     * that calls to [MultiQueueAuthenticator.canAccessSubQueue] will throw a [MultiQueueAuthorisationException].
+     * that calls to [RedisAuthenticator.canAccessSubQueue] will throw a [MultiQueueAuthorisationException].
      */
     @Test
     fun testGetReservedSubQueues()

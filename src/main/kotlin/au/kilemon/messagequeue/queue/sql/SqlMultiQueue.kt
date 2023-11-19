@@ -25,7 +25,7 @@ class SqlMultiQueue : MultiQueue(), HasLogger
     @Autowired
     private lateinit var queueMessageRepository: SqlQueueMessageRepository
 
-    override fun getQueueForType(queueType: String): Queue<QueueMessage>
+    override fun getQueueForTypeInternal(queueType: String): Queue<QueueMessage>
     {
         val entries = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
         return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
@@ -103,9 +103,9 @@ class SqlMultiQueue : MultiQueue(), HasLogger
     /**
      * The [includeEmpty] value makes no difference it is always effectively `false`.
      */
-    override fun keys(includeEmpty: Boolean): Set<String>
+    override fun keysInternal(includeEmpty: Boolean): HashSet<String>
     {
-        val keySet = queueMessageRepository.findDistinctType().toSet()
+        val keySet = HashSet(queueMessageRepository.findDistinctType())
         LOG.debug("Total amount of queue keys [{}].", keySet.size)
         return keySet
     }

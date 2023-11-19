@@ -50,7 +50,7 @@ open class InMemoryMultiQueue : MultiQueue(), HasLogger
         return Optional.of(index.getAndIncrement())
     }
 
-    override fun getQueueForType(queueType: String): Queue<QueueMessage>
+    override fun getQueueForTypeInternal(queueType: String): Queue<QueueMessage>
     {
         var queueForType: Queue<QueueMessage>? = messageQueue[queueType]
         if (queueForType == null)
@@ -153,12 +153,12 @@ open class InMemoryMultiQueue : MultiQueue(), HasLogger
         return queueForType.isEmpty()
     }
 
-    override fun keys(includeEmpty: Boolean): Set<String>
+    override fun keysInternal(includeEmpty: Boolean): HashSet<String>
     {
         if (includeEmpty)
         {
             LOG.debug("Including all empty queue keys in call to keys(). Total queue keys [{}].", messageQueue.keys.size)
-            return messageQueue.keys.toSet()
+            return HashSet(messageQueue.keys)
         }
         else
         {
