@@ -210,7 +210,7 @@ class JwtAuthenticationFilterTest
     }
 
     /**
-     * Ensure [JwtAuthenticationFilter.urlRequiresAuthentication] returns `true` when the provided URI does not
+     * Ensure [JwtAuthenticationFilter.canSkipTokenVerification] returns `true` when the provided URI does not
      * match the "no auth required" list.
      */
     @Test
@@ -221,11 +221,11 @@ class JwtAuthenticationFilterTest
         Mockito.`when`(request.requestURI).thenReturn(uriPath)
         Mockito.`when`(request.method).thenReturn(HttpMethod.POST.toString())
 
-        Assertions.assertTrue(jwtAuthenticationFilter.urlRequiresAuthentication(request))
+        Assertions.assertFalse(jwtAuthenticationFilter.canSkipTokenVerification(request))
     }
 
     /**
-     * Ensure [JwtAuthenticationFilter.urlRequiresAuthentication] returns `false` when the provided URI does
+     * Ensure [JwtAuthenticationFilter.canSkipTokenVerification] returns `false` when the provided URI does
      * start with an un-authorised path prefix.
      */
     @Test
@@ -236,11 +236,11 @@ class JwtAuthenticationFilterTest
         Mockito.`when`(request.requestURI).thenReturn(uriPath)
         Mockito.`when`(request.method).thenReturn(HttpMethod.GET.toString())
 
-        Assertions.assertFalse(jwtAuthenticationFilter.urlRequiresAuthentication(request))
+        Assertions.assertTrue(jwtAuthenticationFilter.canSkipTokenVerification(request))
     }
 
     /**
-     * Ensure [JwtAuthenticationFilter.urlRequiresAuthentication] returns `true` when the provided HTTP method is
+     * Ensure [JwtAuthenticationFilter.canSkipTokenVerification] returns `true` when the provided HTTP method is
      * not in the whitelist.
      */
     @Test
@@ -251,7 +251,7 @@ class JwtAuthenticationFilterTest
         Mockito.`when`(request.requestURI).thenReturn(uriPath)
         Mockito.`when`(request.method).thenReturn(HttpMethod.OPTIONS.toString())
 
-        Assertions.assertTrue(jwtAuthenticationFilter.urlRequiresAuthentication(request))
+        Assertions.assertFalse(jwtAuthenticationFilter.canSkipTokenVerification(request))
     }
 
     /**

@@ -1651,7 +1651,7 @@ class MessageQueueControllerTest
 
     /**
      * Ensure that when [MultiQueueAuthenticationType] is set to [MultiQueueAuthenticationType.RESTRICTED] that any
-     * of the endpoints not in the [JwtAuthenticationFilter.urlRequiresAuthentication] whitelist will be inaccessible.
+     * of the endpoints failing the [JwtAuthenticationFilter.canSkipTokenVerification] will be inaccessible.
      */
     @Test
     fun testRestrictedModeMakesAllEndpointsInaccessibleWithoutAToken()

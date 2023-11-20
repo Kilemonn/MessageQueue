@@ -8,7 +8,6 @@ import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
 import au.kilemon.messagequeue.rest.controller.AuthController
 import au.kilemon.messagequeue.rest.controller.MessageQueueController
 import au.kilemon.messagequeue.rest.controller.SettingsController
-import au.kilemon.messagequeue.rest.response.RestResponseExceptionHandler
 import org.slf4j.Logger
 import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
@@ -81,7 +80,7 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
             val subQueue = getSubQueueInTokenFromHeaders(request)
             setSubQueue(subQueue)
 
-            if (!urlRequiresAuthentication(request))
+            if (canSkipTokenVerification(request))
             {
                 LOG.trace("Allowed access to path [{}] as it does not require authentication.", request.requestURI)
                 filterChain.doFilter(request, response)
@@ -127,10 +126,10 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
      * @param request the incoming request to verify the path of
      * @return `true` if the provided path starts with an auth required prefix, otherwise `false`
      */
-    fun urlRequiresAuthentication(request: HttpServletRequest): Boolean
+    fun canSkipTokenVerification(request: HttpServletRequest): Boolean
     {
         val requestString = request.requestURI
-        val authNotRequiredEndpoints = listOf(
+        val noTokenCheckEndpoints = listOf(
             Pair(HttpMethod.GET, "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}${MessageQueueController.ENDPOINT_HEALTH_CHECK}"),
             Pair(HttpMethod.GET, "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}${MessageQueueController.ENDPOINT_KEYS}"),
             Pair(HttpMethod.GET, "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}${MessageQueueController.ENDPOINT_OWNERS}"),
@@ -139,7 +138,7 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
             Pair(HttpMethod.GET, SettingsController.SETTINGS_PATH)
         )
 
-        return !authNotRequiredEndpoints
+        return noTokenCheckEndpoints
             .filter { authRequiredUrlPrefix -> authRequiredUrlPrefix.first.toString() == request.method }
             .any { authRequiredUrlPrefix -> requestString.startsWith(authRequiredUrlPrefix.second) }
     }
