@@ -93,11 +93,17 @@ open class AuthController : HasLogger
         }
         else
         {
-            val wasAdded = multiQueueAuthenticator.addRestrictedEntry(queueType)
+            // Generating the token first, so we don't need to roll back restriction add later if there is a problem
             val token = jwtTokenProvider.createTokenForSubQueue(queueType, expiry)
-            return if (token.isEmpty || !wasAdded)
+            if (token.isEmpty)
             {
                 LOG.error("Failed to generated token for sub-queue [{}].", queueType)
+                return ResponseEntity.internalServerError().build()
+            }
+
+            return if (!multiQueueAuthenticator.addRestrictedEntry(queueType))
+            {
+                LOG.error("Failed to add restriction for sub-queue [{}].", queueType)
                 ResponseEntity.internalServerError().build()
             }
             else
