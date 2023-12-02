@@ -394,8 +394,7 @@ open class MessageQueueController : HasLogger
         if (message.isPresent)
         {
             val messageToAssign = message.get()
-            authenticator.canAccessSubQueue(messageToAssign.type
-            )
+            authenticator.canAccessSubQueue(messageToAssign.type)
             if (!messageToAssign.assignedTo.isNullOrBlank())
             {
                 if (messageToAssign.assignedTo == assignedTo)
@@ -567,11 +566,6 @@ open class MessageQueueController : HasLogger
     @ApiResponse(responseCode = "200", description = "Successfully returns the map of owner identifiers mapped to all the sub-queues that they have one or more assigned messages in.")
     fun getOwners(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "The sub queue to search for the owner identifiers.") @RequestParam(required = false, name = RestParameters.QUEUE_TYPE) queueType: String?): ResponseEntity<Map<String, HashSet<String>>>
     {
-        if (queueType != null)
-        {
-            authenticator.canAccessSubQueue(queueType)
-        }
-
         return ResponseEntity.ok(messageQueue.getOwnersAndKeysMap(queueType))
     }
 }

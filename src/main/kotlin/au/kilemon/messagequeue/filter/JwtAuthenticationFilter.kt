@@ -128,7 +128,6 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
      */
     fun canSkipTokenVerification(request: HttpServletRequest): Boolean
     {
-        val requestString = request.requestURI
         val noTokenCheckEndpoints = listOf(
             Pair(HttpMethod.GET, "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}${MessageQueueController.ENDPOINT_HEALTH_CHECK}"),
             Pair(HttpMethod.GET, "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}${MessageQueueController.ENDPOINT_KEYS}"),
@@ -140,7 +139,7 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
 
         return noTokenCheckEndpoints
             .filter { authRequiredUrlPrefix -> authRequiredUrlPrefix.first.toString() == request.method }
-            .any { authRequiredUrlPrefix -> requestString.startsWith(authRequiredUrlPrefix.second) }
+            .any { authRequiredUrlPrefix -> request.requestURI.startsWith(authRequiredUrlPrefix.second) }
     }
 
     /**
