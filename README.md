@@ -18,11 +18,8 @@ To start the application you can use the following command to pull and run the l
 
 Once running the best endpoint to call at the moment is probably: `http://localhost:8080/queue/healthcheck`
 
-The application provides a REST API to interact with the messages queued within the Multi Queue.
-REST Documentation is provided as Swagger docs from the running application. 
-You can simply run the docker image:
-> docker run -p8080:8080 kilemon/message-queue
+The application provides REST APIs to interact with the messages queued within the MultiQueue.
 
 ## Rest API Documentation
 
-Once the image is running you can reach the Swagger documentation from the following endpoint: `http://localhost:8080/swagger-ui/index.html`.
+REST Documentation is provided as Swagger docs from the running application. Once the image is running you can reach the Swagger documentation from the following endpoint: `http://localhost:8080/swagger-ui/index.html`.
