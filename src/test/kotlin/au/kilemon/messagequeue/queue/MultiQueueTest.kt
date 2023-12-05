@@ -1,6 +1,6 @@
 package au.kilemon.messagequeue.queue
 
-import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
+import au.kilemon.messagequeue.authentication.RestrictionMode
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
@@ -400,7 +400,7 @@ abstract class MultiQueueTest
     @Test
     fun testGetQueueForType_reservedSubQueue()
     {
-        doWithAuthType(MultiQueueAuthenticationType.HYBRID) {
+        doWithAuthType(RestrictionMode.HYBRID) {
             authenticator.getReservedSubQueues().forEach { reservedSubQueueIdentifier ->
                 Assertions.assertThrows(IllegalSubQueueIdentifierException::class.java) {
                     multiQueue.getQueueForType(reservedSubQueueIdentifier)
@@ -949,7 +949,7 @@ abstract class MultiQueueTest
     @Test
     fun testAddReservedSubQueue()
     {
-        doWithAuthType(MultiQueueAuthenticationType.RESTRICTED) {
+        doWithAuthType(RestrictionMode.RESTRICTED) {
             authenticator.getReservedSubQueues().forEach { reservedSubQueueIdentifier ->
                 val message = QueueMessage("Data", reservedSubQueueIdentifier)
                 Assertions.assertThrows(IllegalSubQueueIdentifierException::class.java) {
@@ -966,7 +966,7 @@ abstract class MultiQueueTest
     @Test
     fun testKeysWithReservedSubQueueUsage()
     {
-        doWithAuthType(MultiQueueAuthenticationType.HYBRID) {
+        doWithAuthType(RestrictionMode.HYBRID) {
             var keys = multiQueue.keys()
             authenticator.getReservedSubQueues().forEach { reservedSubQueueIdentifier ->
                 Assertions.assertFalse(keys.contains(reservedSubQueueIdentifier))
@@ -986,14 +986,14 @@ abstract class MultiQueueTest
     }
 
     /**
-     * Perform the provided [function] with the [MultiQueueAuthenticationType] set to [authenticationType].
-     * Once completed the [MultiQueueAuthenticationType] will be set back to its initial value.
+     * Perform the provided [function] with the [RestrictionMode] set to [authenticationType].
+     * Once completed the [RestrictionMode] will be set back to its initial value.
      *
-     * @param authenticationType the [MultiQueueAuthenticationType] to be set while the [function] is being called
-     * @param function the function to call with the provided [MultiQueueAuthenticationType] being active
+     * @param authenticationType the [RestrictionMode] to be set while the [function] is being called
+     * @param function the function to call with the provided [RestrictionMode] being active
      * @return `T` the result of the [function]
      */
-    private fun <T> doWithAuthType(authenticationType: MultiQueueAuthenticationType, function: Supplier<T>): T
+    private fun <T> doWithAuthType(authenticationType: RestrictionMode, function: Supplier<T>): T
     {
         val previousAuthType = authenticator.getAuthenticationType()
         authenticator.setAuthenticationType(authenticationType)

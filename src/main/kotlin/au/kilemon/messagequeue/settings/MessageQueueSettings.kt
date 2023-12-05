@@ -85,8 +85,8 @@ class MessageQueueSettings
 
     /**
      * `Optional` uses the [STORAGE_MEDIUM] environment variable to determine where
-     * the underlying multi queue is persisted. It can be any value of [MultiQueueType].
-     * Defaults to [MultiQueueType.IN_MEMORY] ([STORAGE_MEDIUM_DEFAULT]).
+     * the underlying multi queue is persisted. It can be any value of [StorageMedium].
+     * Defaults to [StorageMedium.IN_MEMORY] ([STORAGE_MEDIUM_DEFAULT]).
      */
     @SerializedName(STORAGE_MEDIUM)
     @JsonProperty(STORAGE_MEDIUM)
@@ -97,8 +97,8 @@ class MessageQueueSettings
 
     /**
      * `Optional` uses the [RESTRICTION_MODE] environment variable to determine whether specific sub-queues
-     * will require authentication or not to create or access. It can be any value of [MultiQueueType].
-     * Defaults to [MultiQueueType.IN_MEMORY] ([RESTRICTION_MODE_DEFAULT]).
+     * will require authentication or not to create or access. It can be any value of [StorageMedium].
+     * Defaults to [StorageMedium.IN_MEMORY] ([RESTRICTION_MODE_DEFAULT]).
      */
     @SerializedName(RESTRICTION_MODE)
     @JsonProperty(RESTRICTION_MODE)
@@ -109,7 +109,7 @@ class MessageQueueSettings
 
 
     /**
-     * `Optional` when [STORAGE_MEDIUM] is set to [MultiQueueType.REDIS].
+     * `Optional` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
      * Uses the [REDIS_PREFIX] to set a prefix used for all redis entry keys.
      *
      * E.g. if the initial value for the redis entry is "my-key" and no prefix is defined the entries would be stored under "my-key".
@@ -123,7 +123,7 @@ class MessageQueueSettings
     lateinit var redisPrefix: String
 
     /**
-     * `Required` when [STORAGE_MEDIUM] is set to [MultiQueueType.REDIS].
+     * `Required` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
      * The input endpoint string which is used for both standalone and the sentinel redis configurations.
      * This supports a comma separated list or single definition of a redis endpoint in the following formats:
      * `<endpoint>:<port>,<endpoint2>:<port2>,<endpoint3>`
@@ -138,7 +138,7 @@ class MessageQueueSettings
     lateinit var redisEndpoint: String
 
     /**
-     * `Optional` when [STORAGE_MEDIUM] is set to [MultiQueueType.REDIS].
+     * `Optional` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
      * Indicates whether the `MultiQueue` should connect directly to the redis instance or connect via one or more sentinel instances.
      * If set to `true` the `MultiQueue` will create a sentinel pool connection instead of a direct connection which is what would occur if this is left as `false`.
      * By default, this is `false`.
@@ -151,7 +151,7 @@ class MessageQueueSettings
     lateinit var redisUseSentinels: String
 
     /**
-     * `Optional` when [STORAGE_MEDIUM] is set to [MultiQueueType.REDIS].
+     * `Optional` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
      * `Required` when [redisUseSentinels] is set to `true`. Is used to indicate the name of the redis master instance.
      * By default, this is [REDIS_MASTER_NAME_DEFAULT].
      */
@@ -163,7 +163,7 @@ class MessageQueueSettings
     lateinit var redisMasterName: String
 
     /**
-     * `Required` when [STORAGE_MEDIUM] is set to [MultiQueueType.SQL].
+     * `Required` when [STORAGE_MEDIUM] is set to [StorageMedium.SQL].
      * This defines the database connection string e.g:
      * `"jdbc:mysql://localhost:3306/message-queue"`
      */
@@ -175,7 +175,7 @@ class MessageQueueSettings
     lateinit var sqlEndpoint: String
 
     /**
-     * `Required` when [STORAGE_MEDIUM] is set to [MultiQueueType.SQL].
+     * `Required` when [STORAGE_MEDIUM] is set to [StorageMedium.SQL].
      * This is the username/account name used to access the database defined in [SQL_ENDPOINT].
      */
     @SerializedName(SQL_USERNAME)
@@ -186,7 +186,7 @@ class MessageQueueSettings
     lateinit var sqlUsername: String
 
     /**
-     * `Required` when [STORAGE_MEDIUM] is set to [MultiQueueType.SQL].
+     * `Required` when [STORAGE_MEDIUM] is set to [StorageMedium.SQL].
      * This is the password used to access the database defined in [SQL_ENDPOINT].
      */
     // TODO: Commenting out since it is unused and returned in the settings endpoint without masking
@@ -197,7 +197,7 @@ class MessageQueueSettings
     // lateinit var sqlPassword: String
 
     /**
-     * Required when [MultiQueueType.MONGO] is used and [mongoUri] is empty.
+     * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
      * It specifies the host name that the mongo db is available at.
      */
     @SerializedName(MONGO_HOST)
@@ -208,7 +208,7 @@ class MessageQueueSettings
     lateinit var mongoHost: String
 
     /**
-     * Required when [MultiQueueType.MONGO] is used and [mongoUri] is empty.
+     * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
      * It specifies the port that the mongo db is available on.
      */
     @SerializedName(MONGO_PORT)
@@ -219,7 +219,7 @@ class MessageQueueSettings
     lateinit var mongoPort: String
 
     /**
-     * Required when [MultiQueueType.MONGO] is used and [mongoUri] is empty.
+     * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
      * It specifies the database you wish to connect to.
      */
     @SerializedName(MONGO_DATABASE)
@@ -230,7 +230,7 @@ class MessageQueueSettings
     lateinit var mongoDatabase: String
 
     /**
-     * Required when [MultiQueueType.MONGO] is used and [mongoUri] is empty.
+     * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
      * It specifies the username that you wish to connect with.
      */
     @SerializedName(MONGO_USERNAME)
@@ -241,7 +241,7 @@ class MessageQueueSettings
     lateinit var mongoUsername: String
 
     /**
-     * Required when [MultiQueueType.MONGO] is used and [mongoUri] is empty.
+     * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
      * It specifies the password for the user that you wish to connect with.
      */
     // TODO: Commenting out since it is unused and returned in the settings endpoint without masking
@@ -252,7 +252,7 @@ class MessageQueueSettings
     // lateinit var mongoPassword: String
 
     /**
-     * Required when [MultiQueueType.MONGO] is used and the above mongo properties are empty.
+     * Required when [StorageMedium.MONGO] is used and the above mongo properties are empty.
      * It specifies all properties of the mongo connection in the format of `mongodb://<username>:<password>@<host>:<port>/<database>`.
      */
     @SerializedName(MONGO_URI)

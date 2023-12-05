@@ -1,6 +1,6 @@
 package au.kilemon.messagequeue.rest.controller
 
-import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
+import au.kilemon.messagequeue.authentication.RestrictionMode
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
 import au.kilemon.messagequeue.configuration.QueueConfiguration
@@ -96,7 +96,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetQueueTypeInfo()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val queueType = "testGetQueueTypeInfo"
         Assertions.assertEquals(0, multiQueue.getQueueForType(queueType).size)
@@ -122,7 +122,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetAllQueueTypeInfo()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
@@ -152,7 +152,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetEntry()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val message = createQueueMessage(type = "testGetEntry")
 
@@ -180,7 +180,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetEntry_ResponseBody_NotExists()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val uuid = "invalid-not-found-uuid"
         mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid)
@@ -189,14 +189,14 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure that in [MultiQueueAuthenticationType.HYBRID] mode, when we restrict the sub-queue that we can no longer
+     * Ensure that in [RestrictionMode.HYBRID] mode, when we restrict the sub-queue that we can no longer
      * get entries from that specific sub-queue, other sub-queues are still accessible without a token.
      */
     @Test
     fun testGetEntry_usingHybridMode_withRestrictedSubQueue()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
-        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getAuthenticationType())
 
         val entries = initialiseMapWithEntries()
 
@@ -256,7 +256,7 @@ class MessageQueueControllerTest
     @Test
     fun testCreateQueueEntry_withProvidedDefaults()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val message = createQueueMessage(type = "testCreateQueueEntry_withProvidedDefaults", assignedTo = "user-1")
 
@@ -288,7 +288,7 @@ class MessageQueueControllerTest
     @Test
     fun testCreateQueueEntry_withOutDefaults()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val message = createQueueMessage(type = "testCreateQueueEntry_withOutDefaults")
 
@@ -320,7 +320,7 @@ class MessageQueueControllerTest
     @Test
     fun testCreateEntry_Conflict()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val message = createQueueMessage(type = "testCreateEntry_Conflict")
 
@@ -339,7 +339,7 @@ class MessageQueueControllerTest
     @Test
     fun testCreateQueueEntry_withBlankAssignedTo()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val message = createQueueMessage(type = "testCreateQueueEntry_withAssignedButNoAssignedTo")
         message.assignedTo = " "
@@ -355,14 +355,14 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure that in [MultiQueueAuthenticationType.HYBRID] mode, when we restrict the sub-queue that we can no longer
+     * Ensure that in [RestrictionMode.HYBRID] mode, when we restrict the sub-queue that we can no longer
      * create entries for that specific sub-queue, other sub-queues can still have messages created without a token.
      */
     @Test
     fun testCreateEntry_inHybridMode()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
-        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getAuthenticationType())
 
         val message = createQueueMessage(type = "testCreateEntry_inHybridMode")
 
@@ -399,7 +399,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetKeys()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val entries = initialiseMapWithEntries()
 
@@ -426,7 +426,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetKeys_excludeEmpty()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val entries = initialiseMapWithEntries()
         Assertions.assertTrue(multiQueue.remove(entries.first[0]))
@@ -458,7 +458,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetAll()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val entries = initialiseMapWithEntries()
         val type = entries.first[0].type
@@ -492,7 +492,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetAll_SpecificQueueType()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val entries = initialiseMapWithEntries()
         val type = entries.first[0].type
@@ -516,14 +516,14 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure then when in [MultiQueueAuthenticationType.HYBRID] and [MessageQueueController.getAll] is called
+     * Ensure then when in [RestrictionMode.HYBRID] and [MessageQueueController.getAll] is called
      * that restricted queues are not included until a valid token is provided.
      */
     @Test
     fun testGetAll_inHybridMode()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
-        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getAuthenticationType())
 
         val queueType = "testGetAll_inHybridMode"
         val messages = listOf(createQueueMessage(queueType), createQueueMessage(queueType))
@@ -569,14 +569,14 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure then when in [MultiQueueAuthenticationType.HYBRID] and [MessageQueueController.getAll] is called
+     * Ensure then when in [RestrictionMode.HYBRID] and [MessageQueueController.getAll] is called
      * and all messages are requested for a restricted queue are not accessible unless a token is provided.
      */
     @Test
     fun testGetAll_SpecificQueueType_inHybridMode()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
-        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getAuthenticationType())
 
         val queueType = "testGetAll_SpecificQueueType_inHybridMode"
         val messages = listOf(createQueueMessage(queueType), createQueueMessage(queueType))
@@ -617,7 +617,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetOwned_NoneOwned()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val entries = initialiseMapWithEntries()
         val assignedTo = "my-assigned-to-identifier"
@@ -641,7 +641,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetOwned_SomeOwned()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val assignedTo = "my-assigned-to-identifier"
         val type = "testGetOwned_SomeOwned"
@@ -676,8 +676,8 @@ class MessageQueueControllerTest
     @Test
     fun testGetOwned_SomeOwned_inHybridMode()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
-        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getAuthenticationType())
 
         val assignedTo = "my-assigned-to-identifier"
         val type = "testGetOwned_SomeOwned_inHybridMode"
@@ -725,7 +725,7 @@ class MessageQueueControllerTest
     @Test
     fun testAssignMessage_doesNotExist()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val uuid = UUID.randomUUID().toString()
         val assignedTo = "assigned"
@@ -742,7 +742,7 @@ class MessageQueueControllerTest
     @Test
     fun testAssignMessage_messageIsAssigned()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val assignedTo = "assigned"
         val message = createQueueMessage(type = "testAssignMessage_messageIsAssigned")
@@ -765,14 +765,14 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure when [MessageQueueController.assignMessage] is called in [MultiQueueAuthenticationType.HYBRID] mode
+     * Ensure when [MessageQueueController.assignMessage] is called in [RestrictionMode.HYBRID] mode
      * that the message is not assigned or changed if the sub-queue is restricted and a valid token is not provided.
      */
     @Test
     fun testAssignMessage_messageIsAssigned_inHybridMode()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
-        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getAuthenticationType())
 
         val assignedTo = "assigned"
         val message = createQueueMessage(type = "testAssignMessage_messageIsAssigned_inHybridMode")
@@ -814,7 +814,7 @@ class MessageQueueControllerTest
     @Test
     fun testAssignMessage_alreadyAssignedToSameID()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val assignedTo = "assigned"
         val message = createQueueMessage(type = "testAssignMessage_alreadyAssignedToSameID", assignedTo = assignedTo)
@@ -844,7 +844,7 @@ class MessageQueueControllerTest
     @Test
     fun testAssignMessage_alreadyAssignedToOtherID()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val assignedTo = "assignee"
         val message = createQueueMessage(type = "testAssignMessage_alreadyAssignedToOtherID", assignedTo = assignedTo)
@@ -876,7 +876,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetNext_noNewMessages()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val assignedTo = "assignee"
         val type = "testGetNext_noNewMessages"
@@ -896,7 +896,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetNext_noNewUnAssignedMessages()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val assignedTo = "assignee"
         val type = "testGetNext_noNewUnAssignedMessages"
@@ -922,7 +922,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetNext()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val assignedTo = "assignee"
         val type = "testGetNext"
@@ -953,14 +953,14 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure that when in [MultiQueueAuthenticationType.HYBRID] mode that the next message for a restricted sub-queue
+     * Ensure that when in [RestrictionMode.HYBRID] mode that the next message for a restricted sub-queue
      * cannot be retrieved without a valid token being provided.
      */
     @Test
     fun testGetNext_inHybridMode()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
-        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getAuthenticationType())
 
         val assignedTo = "assignee"
         val type = "testGetNext_inHybridMode"
@@ -1010,7 +1010,7 @@ class MessageQueueControllerTest
     @Test
     fun testReleaseMessage_doesNotExist()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val uuid = UUID.randomUUID().toString()
         mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid + MessageQueueController.ENDPOINT_RELEASE)
@@ -1025,7 +1025,7 @@ class MessageQueueControllerTest
     @Test
     fun testReleaseMessage_messageIsReleased()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val assignedTo = "assignee"
         val message = createQueueMessage(type = "testReleaseMessage_messageIsReleased", assignedTo = assignedTo)
@@ -1049,14 +1049,14 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure that when in [MultiQueueAuthenticationType.HYBRID] mode that a restricted sub-queue cannot have its
+     * Ensure that when in [RestrictionMode.HYBRID] mode that a restricted sub-queue cannot have its
      * message released without a valid token being provided.
      */
     @Test
     fun testReleaseMessage_messageIsReleased_inHybridMode()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
-        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getAuthenticationType())
 
         val assignedTo = "assignee"
         val message = createQueueMessage(type = "testReleaseMessage_messageIsReleased_inHybridMode", assignedTo = assignedTo)
@@ -1099,7 +1099,7 @@ class MessageQueueControllerTest
     @Test
     fun testReleaseMessage_messageIsReleased_withoutAssignedToInQuery()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val assignedTo = "assigned"
         val message = createQueueMessage(type = "testReleaseMessage_messageIsReleased_withoutAssignedToInQuery", assignedTo = assignedTo)
@@ -1128,7 +1128,7 @@ class MessageQueueControllerTest
     @Test
     fun testReleaseMessage_alreadyReleased()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val message = createQueueMessage(type = "testReleaseMessage_alreadyReleased")
         Assertions.assertNull(message.assignedTo)
@@ -1157,7 +1157,7 @@ class MessageQueueControllerTest
     @Test
     fun testReleaseMessage_cannotBeReleasedWithMisMatchingID()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val assignedTo = "assigned"
         val message = createQueueMessage(type = "testReleaseMessage_cannotBeReleasedWithMisMatchingID", assignedTo = assignedTo)
@@ -1182,7 +1182,7 @@ class MessageQueueControllerTest
     @Test
     fun testRemoveMessage_notFound()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val uuid = UUID.randomUUID().toString()
 
@@ -1198,7 +1198,7 @@ class MessageQueueControllerTest
     @Test
     fun testRemoveMessage_removeExistingEntry()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val message = createQueueMessage(type = "testRemoveMessage_removed")
         Assertions.assertTrue(multiQueue.add(message))
@@ -1213,14 +1213,14 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure when in [MultiQueueAuthenticationType.HYBRID] mode that messages cannot be removed unless a valid
+     * Ensure when in [RestrictionMode.HYBRID] mode that messages cannot be removed unless a valid
      * token is provided on a restricted sub-queue.
      */
     @Test
     fun testRemoveMessage_removeExistingEntry_inHybridMode()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
-        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getAuthenticationType())
 
         val message = createQueueMessage(type = "testRemoveMessage_removeExistingEntry_inHybridMode")
         Assertions.assertTrue(multiQueue.add(message))
@@ -1252,7 +1252,7 @@ class MessageQueueControllerTest
     @Test
     fun testRemoveMessage_doesNotExist()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val uuid = UUID.randomUUID().toString()
         Assertions.assertFalse(multiQueue.containsUUID(uuid).isPresent)
@@ -1271,7 +1271,7 @@ class MessageQueueControllerTest
     @Test
     fun testRemoveMessage_assignedToAnotherID()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val assignedTo = "assignee"
         val message = createQueueMessage(type = "testRemoveMessage_assignedToAnotherID", assignedTo = assignedTo)
@@ -1294,7 +1294,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetOwners_withQueueType()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val assignedTo = "assignedTo"
         val assignedTo2 = "assignedTo2"
@@ -1337,7 +1337,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetOwners_withoutQueueType()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val assignedTo = "assignedTo"
         val assignedTo2 = "assignedTo2"
@@ -1381,7 +1381,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetPerformHealthCheck()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_HEALTH_CHECK)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
@@ -1396,7 +1396,7 @@ class MessageQueueControllerTest
     @Test
     fun testCorrelationId_randomIdOnSuccess()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val message = createQueueMessage(type = "testCorrelationId_providedId")
 
@@ -1418,7 +1418,7 @@ class MessageQueueControllerTest
     @Test
     fun testCorrelationId_providedId()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val message = createQueueMessage(type = "testCorrelationId_providedId")
         val correlationId = "my-correlation-id-123456"
@@ -1441,7 +1441,7 @@ class MessageQueueControllerTest
     @Test
     fun testCorrelationId_randomIdOnError()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val assignedTo = "assignee"
         val message = createQueueMessage(type = "testCorrelationId_randomIdOnError", assignedTo = assignedTo)
@@ -1469,7 +1469,7 @@ class MessageQueueControllerTest
     @Test
     fun testDeleteKeys_singleKey()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val subQueue1 = "testDeleteKeys_singleKey1"
         var messages = listOf(createQueueMessage(subQueue1), createQueueMessage(subQueue1), createQueueMessage(subQueue1))
@@ -1497,14 +1497,14 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure that when in [MultiQueueAuthenticationType.HYBRID] mode any restricted sub-queues cannot be deleted
+     * Ensure that when in [RestrictionMode.HYBRID] mode any restricted sub-queues cannot be deleted
      * unless a valid token is provided.
      */
     @Test
     fun testDeleteKeys_singleKey_inHybridMode()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
-        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getAuthenticationType())
 
         val subQueue1 = "testDeleteKeys_singleKey_inHybridMode1"
         var messages = listOf(createQueueMessage(subQueue1), createQueueMessage(subQueue1), createQueueMessage(subQueue1))
@@ -1559,7 +1559,7 @@ class MessageQueueControllerTest
     @Test
     fun testDeleteKeys_allKeys()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val (messages, types) = initialiseMapWithEntries()
         Assertions.assertEquals(messages.size, multiQueue.size)
@@ -1574,14 +1574,14 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure that when in [MultiQueueAuthenticationType.HYBRID] mode any restricted sub-queues cannot be deleted
+     * Ensure that when in [RestrictionMode.HYBRID] mode any restricted sub-queues cannot be deleted
      * unless a valid token is provided.
      */
     @Test
     fun testDeleteKeys_allKeys_inHybridMode()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(authenticator).getAuthenticationType()
-        Assertions.assertEquals(MultiQueueAuthenticationType.HYBRID, authenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getAuthenticationType())
 
         val (messages, types) = initialiseMapWithEntries()
         Assertions.assertEquals(messages.size, multiQueue.size)
@@ -1619,7 +1619,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetPerformHealthCheck_failureResponse()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         Mockito.doThrow(RuntimeException("Failed to perform health check.")).`when`(multiQueue).performHealthCheckInternal()
 
@@ -1637,7 +1637,7 @@ class MessageQueueControllerTest
     @Test
     fun testCreateMessage_addFails()
     {
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE, authenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getAuthenticationType())
 
         val message = QueueMessage("payload", "type")
 
@@ -1650,14 +1650,14 @@ class MessageQueueControllerTest
     }
 
     /**
-     * Ensure that when [MultiQueueAuthenticationType] is set to [MultiQueueAuthenticationType.RESTRICTED] that any
+     * Ensure that when [RestrictionMode] is set to [RestrictionMode.RESTRICTED] that any
      * of the endpoints failing the [JwtAuthenticationFilter.canSkipTokenVerification] will be inaccessible.
      */
     @Test
     fun testRestrictedModeMakesAllEndpointsInaccessibleWithoutAToken()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.RESTRICTED).`when`(authenticator).getAuthenticationType()
-        Assertions.assertEquals(MultiQueueAuthenticationType.RESTRICTED, authenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(RestrictionMode.RESTRICTED, authenticator.getAuthenticationType())
 
         mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + UUID.randomUUID().toString())
             .contentType(MediaType.APPLICATION_JSON_VALUE))
@@ -1696,13 +1696,13 @@ class MessageQueueControllerTest
 
     /**
      * Ensure that the [JwtAuthenticationFilter] will respond with [HttpStatus.UNAUTHORIZED] when no token is provided,
-     * and it is in [MultiQueueAuthenticationType.RESTRICTED] mode.
+     * and it is in [RestrictionMode.RESTRICTED] mode.
      */
     @Test
     fun testGetEntry_inRestrictedMode()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.RESTRICTED).`when`(authenticator).getAuthenticationType()
-        Assertions.assertEquals(MultiQueueAuthenticationType.RESTRICTED, authenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(authenticator).getAuthenticationType()
+        Assertions.assertEquals(RestrictionMode.RESTRICTED, authenticator.getAuthenticationType())
 
         val type = "testRestrictedMode_getByUUID"
         val message = createQueueMessage(type)

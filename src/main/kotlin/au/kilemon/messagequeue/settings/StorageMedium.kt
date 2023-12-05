@@ -6,7 +6,7 @@ package au.kilemon.messagequeue.settings
  *
  * @author github.com/Kilemonn
  */
-enum class MultiQueueType
+enum class StorageMedium
 {
     /**
      * Will initialise an in-memory multiqueue to store queue messages.

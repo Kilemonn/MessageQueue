@@ -1,6 +1,6 @@
 package au.kilemon.messagequeue.rest.response
 
-import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
+import au.kilemon.messagequeue.authentication.RestrictionMode
 import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthenticationException
 import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthorisationException
 import au.kilemon.messagequeue.filter.CorrelationIdFilter
@@ -11,8 +11,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.slf4j.MDC
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.server.ResponseStatusException
 import java.util.*
 
@@ -70,12 +68,12 @@ class RestResponseExceptionHandlerTest
         val correlationId = UUID.randomUUID().toString()
         MDC.put(CorrelationIdFilter.CORRELATION_ID, correlationId)
         val message = "testHandleMultiQueueAuthorisationException"
-        val exception = MultiQueueAuthorisationException(message, MultiQueueAuthenticationType.NONE)
+        val exception = MultiQueueAuthorisationException(message, RestrictionMode.NONE)
         val response = responseHandler.handleMultiQueueAuthorisationException(exception)
 
         Assertions.assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
         Assertions.assertNotNull(response.body)
-        Assertions.assertEquals(String.format(MultiQueueAuthorisationException.MESSAGE_FORMAT, message, MultiQueueAuthenticationType.NONE), response.body!!.message)
+        Assertions.assertEquals(String.format(MultiQueueAuthorisationException.MESSAGE_FORMAT, message, RestrictionMode.NONE), response.body!!.message)
         Assertions.assertEquals(correlationId, response.body!!.correlationId)
     }
 

@@ -1,6 +1,6 @@
 package au.kilemon.messagequeue.authentication.exception
 
-import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
+import au.kilemon.messagequeue.authentication.RestrictionMode
 
 /**
  * An authorisation exception used when the `MultiQueueAuthenticator` does not allow the caller to perform the
@@ -9,7 +9,7 @@ import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
  *
  * @author github.com/Kilemonn
  */
-class MultiQueueAuthorisationException(subQueue: String, authenticationType: MultiQueueAuthenticationType) : Exception(String.format(MESSAGE_FORMAT, subQueue, authenticationType))
+class MultiQueueAuthorisationException(subQueue: String, authenticationType: RestrictionMode) : Exception(String.format(MESSAGE_FORMAT, subQueue, authenticationType))
 {
     companion object
     {

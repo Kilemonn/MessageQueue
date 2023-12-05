@@ -6,7 +6,7 @@ package au.kilemon.messagequeue.authentication
  *
  * @author github.com/Kilemonn
  */
-enum class MultiQueueAuthenticationType
+enum class RestrictionMode
 {
     /**
      * This is the default, which enforces no authentication on any sub queue, messages can be enqueued and dequeued

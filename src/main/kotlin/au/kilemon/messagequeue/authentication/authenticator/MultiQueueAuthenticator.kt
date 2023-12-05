@@ -1,6 +1,6 @@
 package au.kilemon.messagequeue.authentication.authenticator
 
-import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
+import au.kilemon.messagequeue.authentication.RestrictionMode
 import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthorisationException
 import au.kilemon.messagequeue.filter.JwtAuthenticationFilter
 import au.kilemon.messagequeue.logging.HasLogger
@@ -18,29 +18,29 @@ abstract class MultiQueueAuthenticator: HasLogger
     abstract override val LOG: Logger
 
     @Autowired
-    private lateinit var multiQueueAuthenticationType: MultiQueueAuthenticationType
+    private lateinit var multiQueueAuthenticationType: RestrictionMode
 
     /**
      * @return [multiQueueAuthenticationType]
      */
-    fun getAuthenticationType(): MultiQueueAuthenticationType
+    fun getAuthenticationType(): RestrictionMode
     {
         return multiQueueAuthenticationType
     }
 
     /**
-     * Used only for tests to update the set [MultiQueueAuthenticationType].
+     * Used only for tests to update the set [RestrictionMode].
      *
-     * @param authenticationType the new [MultiQueueAuthenticationType] to set
+     * @param authenticationType the new [RestrictionMode] to set
      */
-    fun setAuthenticationType(authenticationType: MultiQueueAuthenticationType)
+    fun setAuthenticationType(authenticationType: RestrictionMode)
     {
         multiQueueAuthenticationType = authenticationType
     }
 
     /**
      * Used to return a list of completed reserved sub-queue identifiers that can never be used. Even when
-     * [MultiQueueAuthenticationType.NONE] is being used.
+     * [RestrictionMode.NONE] is being used.
      *
      * @return list of sub-queue identifiers that cannot be used
      */
@@ -107,27 +107,27 @@ abstract class MultiQueueAuthenticator: HasLogger
     }
 
     /**
-     * Indicates whether [multiQueueAuthenticationType] is set to [MultiQueueAuthenticationType.NONE].
+     * Indicates whether [multiQueueAuthenticationType] is set to [RestrictionMode.NONE].
      */
     fun isInNoneMode(): Boolean
     {
-        return getAuthenticationType() == MultiQueueAuthenticationType.NONE
+        return getAuthenticationType() == RestrictionMode.NONE
     }
 
     /**
-     * Indicates whether [multiQueueAuthenticationType] is set to [MultiQueueAuthenticationType.HYBRID].
+     * Indicates whether [multiQueueAuthenticationType] is set to [RestrictionMode.HYBRID].
      */
     fun isInHybridMode(): Boolean
     {
-        return getAuthenticationType() == MultiQueueAuthenticationType.HYBRID
+        return getAuthenticationType() == RestrictionMode.HYBRID
     }
 
     /**
-     * Indicates whether [multiQueueAuthenticationType] is set to [MultiQueueAuthenticationType.RESTRICTED].
+     * Indicates whether [multiQueueAuthenticationType] is set to [RestrictionMode.RESTRICTED].
      */
     fun isInRestrictedMode(): Boolean
     {
-        return getAuthenticationType() == MultiQueueAuthenticationType.RESTRICTED
+        return getAuthenticationType() == RestrictionMode.RESTRICTED
     }
 
     /**

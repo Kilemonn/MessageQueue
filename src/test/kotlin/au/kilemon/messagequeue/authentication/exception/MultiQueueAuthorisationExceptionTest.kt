@@ -1,6 +1,6 @@
 package au.kilemon.messagequeue.authentication.exception
 
-import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
+import au.kilemon.messagequeue.authentication.RestrictionMode
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
@@ -18,7 +18,7 @@ class MultiQueueAuthorisationExceptionTest
     @Test
     fun testTypeOfException()
     {
-        val e = MultiQueueAuthorisationException("Sub queue", MultiQueueAuthenticationType.NONE)
+        val e = MultiQueueAuthorisationException("Sub queue", RestrictionMode.NONE)
         Assertions.assertTrue(Exception::class.isInstance(e))
         Assertions.assertFalse(RuntimeException::class.isInstance(e))
     }

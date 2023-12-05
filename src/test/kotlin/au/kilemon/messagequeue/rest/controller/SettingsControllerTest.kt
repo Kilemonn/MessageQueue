@@ -1,11 +1,11 @@
 package au.kilemon.messagequeue.rest.controller
 
-import au.kilemon.messagequeue.authentication.MultiQueueAuthenticationType
+import au.kilemon.messagequeue.authentication.RestrictionMode
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.settings.MessageQueueSettings
-import au.kilemon.messagequeue.settings.MultiQueueType
+import au.kilemon.messagequeue.settings.StorageMedium
 import com.google.gson.Gson
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -64,7 +64,7 @@ class SettingsControllerTest
     /**
      * A helper method to call [SettingsController.getSettings] and verify the response default values.
      */
-    private fun testGetSettings_defaultValues(authenticationType: MultiQueueAuthenticationType)
+    private fun testGetSettings_defaultValues(authenticationType: RestrictionMode)
     {
         Assertions.assertEquals(authenticationType, multiQueueAuthenticator.getAuthenticationType())
 
@@ -74,8 +74,8 @@ class SettingsControllerTest
             .andReturn()
         val settings = gson.fromJson(mvcResult.response.contentAsString, MessageQueueSettings::class.java)
 
-        Assertions.assertEquals(MultiQueueType.IN_MEMORY.toString(), settings.multiQueueType)
-        Assertions.assertEquals(MultiQueueAuthenticationType.NONE.toString(), settings.multiQueueAuthentication)
+        Assertions.assertEquals(StorageMedium.IN_MEMORY.toString(), settings.multiQueueType)
+        Assertions.assertEquals(RestrictionMode.NONE.toString(), settings.multiQueueAuthentication)
 
         Assertions.assertTrue(settings.redisPrefix.isEmpty())
         Assertions.assertEquals(MessageQueueSettings.REDIS_ENDPOINT_DEFAULT, settings.redisEndpoint)
@@ -93,35 +93,35 @@ class SettingsControllerTest
     }
 
     /**
-     * Ensure calls to [SettingsController.getSettings] is still available even then the [MultiQueueAuthenticationType]
-     * is set to [MultiQueueAuthenticationType.NONE].
+     * Ensure calls to [SettingsController.getSettings] is still available even then the [RestrictionMode]
+     * is set to [RestrictionMode.NONE].
      */
     @Test
     fun testGetSettings_noneMode()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.NONE).`when`(multiQueueAuthenticator).getAuthenticationType()
-        testGetSettings_defaultValues(MultiQueueAuthenticationType.NONE)
+        Mockito.doReturn(RestrictionMode.NONE).`when`(multiQueueAuthenticator).getAuthenticationType()
+        testGetSettings_defaultValues(RestrictionMode.NONE)
     }
 
     /**
-     * Ensure calls to [SettingsController.getSettings] is still available even then the [MultiQueueAuthenticationType]
-     * is set to [MultiQueueAuthenticationType.HYBRID].
+     * Ensure calls to [SettingsController.getSettings] is still available even then the [RestrictionMode]
+     * is set to [RestrictionMode.HYBRID].
      */
     @Test
     fun testGetSettings_hybridMode()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
-        testGetSettings_defaultValues(MultiQueueAuthenticationType.HYBRID)
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
+        testGetSettings_defaultValues(RestrictionMode.HYBRID)
     }
 
     /**
-     * Ensure calls to [SettingsController.getSettings] is still available even then the [MultiQueueAuthenticationType]
-     * is set to [MultiQueueAuthenticationType.RESTRICTED].
+     * Ensure calls to [SettingsController.getSettings] is still available even then the [RestrictionMode]
+     * is set to [RestrictionMode.RESTRICTED].
      */
     @Test
     fun testGetSettings_restrictedMode()
     {
-        Mockito.doReturn(MultiQueueAuthenticationType.RESTRICTED).`when`(multiQueueAuthenticator).getAuthenticationType()
-        testGetSettings_defaultValues(MultiQueueAuthenticationType.RESTRICTED)
+        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(multiQueueAuthenticator).getAuthenticationType()
+        testGetSettings_defaultValues(RestrictionMode.RESTRICTED)
     }
 }
