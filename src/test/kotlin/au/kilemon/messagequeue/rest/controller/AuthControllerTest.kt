@@ -24,7 +24,6 @@ import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
-import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.MvcResult
@@ -39,7 +38,7 @@ import java.util.*
  * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
-@WebMvcTest(controllers = [AuthController::class], properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=IN_MEMORY"])
+@WebMvcTest(controllers = [AuthController::class], properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=IN_MEMORY"])
 @Import(*[QueueConfiguration::class, LoggingConfiguration::class])
 class AuthControllerTest
 {

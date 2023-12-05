@@ -30,7 +30,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
  * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
-@WebMvcTest(controllers = [SettingsController::class], properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=IN_MEMORY"])
+@WebMvcTest(controllers = [SettingsController::class], properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=IN_MEMORY"])
 @Import(*[QueueConfiguration::class, LoggingConfiguration::class])
 class SettingsControllerTest
 {

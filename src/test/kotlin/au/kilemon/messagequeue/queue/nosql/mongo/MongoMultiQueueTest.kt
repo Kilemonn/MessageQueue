@@ -28,7 +28,7 @@ import org.testcontainers.utility.DockerImageName
  */
 @ExtendWith(SpringExtension::class)
 @Testcontainers
-@DataMongoTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=MONGO"])
+@DataMongoTest(properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=MONGO"])
 @ContextConfiguration(initializers = [MongoMultiQueueTest.Initializer::class])
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class] )

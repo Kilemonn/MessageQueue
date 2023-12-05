@@ -28,7 +28,7 @@ import org.testcontainers.utility.DockerImageName
  */
 @ExtendWith(SpringExtension::class)
 @Testcontainers
-@DataJpaTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=SQL", "spring.jpa.hibernate.ddl-auto=create", "spring.autoconfigure.exclude="])
+@DataJpaTest(properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=SQL", "spring.jpa.hibernate.ddl-auto=create", "spring.autoconfigure.exclude="])
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(initializers = [PostgreSqlAuthenticatorTest.Initializer::class])
 @Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class] )

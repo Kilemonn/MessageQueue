@@ -42,7 +42,7 @@ import java.util.*
  * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
-@WebMvcTest(controllers = [MessageQueueController::class], properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=IN_MEMORY"])
+@WebMvcTest(controllers = [MessageQueueController::class], properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=IN_MEMORY"])
 @Import(*[QueueConfiguration::class, LoggingConfiguration::class])
 class MessageQueueControllerTest
 {

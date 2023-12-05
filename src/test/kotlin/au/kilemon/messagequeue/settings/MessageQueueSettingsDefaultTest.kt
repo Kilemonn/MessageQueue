@@ -42,8 +42,8 @@ class MessageQueueSettingsDefaultTest
     fun testDefaults()
     {
         Assertions.assertNotNull(messageQueueSettings)
-        Assertions.assertEquals(MessageQueueSettings.MULTI_QUEUE_TYPE_DEFAULT, messageQueueSettings.multiQueueType)
-        Assertions.assertEquals(MessageQueueSettings.MULTI_QUEUE_AUTHENTICATION_DEFAULT, messageQueueSettings.multiQueueAuthentication)
+        Assertions.assertEquals(MessageQueueSettings.STORAGE_MEDIUM_DEFAULT, messageQueueSettings.multiQueueType)
+        Assertions.assertEquals(MessageQueueSettings.RESTRICTION_MODE_DEFAULT, messageQueueSettings.multiQueueAuthentication)
 
         Assertions.assertEquals(MessageQueueSettings.REDIS_ENDPOINT_DEFAULT, messageQueueSettings.redisEndpoint)
         Assertions.assertEquals("", messageQueueSettings.redisPrefix)

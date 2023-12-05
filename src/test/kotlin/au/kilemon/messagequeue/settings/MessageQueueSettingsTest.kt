@@ -16,7 +16,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
  */
 @ExtendWith(SpringExtension::class)
 @TestPropertySource(properties = [
-    "${MessageQueueSettings.MULTI_QUEUE_TYPE}=REDIS",
+    "${MessageQueueSettings.STORAGE_MEDIUM}=REDIS",
     "${MessageQueueSettings.REDIS_ENDPOINT}=123.123.123.123",
     "${MessageQueueSettings.REDIS_PREFIX}=redis",
     "${MessageQueueSettings.REDIS_USE_SENTINELS}=true",

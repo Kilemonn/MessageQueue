@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
 import lombok.Generated
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.beans.factory.config.ConfigurableBeanFactory
-import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
 
 /**
@@ -26,21 +24,23 @@ class MessageQueueSettings
 {
     companion object
     {
-        const val MULTI_QUEUE_TYPE: String = "MULTI_QUEUE_TYPE"
-        const val MULTI_QUEUE_TYPE_DEFAULT: String = "IN_MEMORY"
+        private const val MESSAGE_QUEUE: String = "message-queue"
+
+        const val STORAGE_MEDIUM: String = "$MESSAGE_QUEUE.storage-medium"
+        const val STORAGE_MEDIUM_DEFAULT: String = "IN_MEMORY"
 
         /**
          * Start redis related properties
          */
-        const val REDIS_PREFIX: String = "REDIS_PREFIX"
-
-        const val REDIS_ENDPOINT: String = "REDIS_ENDPOINT"
+        private const val REDIS: String = "redis"
+        const val REDIS_PREFIX: String = "$MESSAGE_QUEUE.$REDIS.prefix"
+        const val REDIS_ENDPOINT: String = "$MESSAGE_QUEUE.$REDIS.endpoint"
         const val REDIS_ENDPOINT_DEFAULT: String = "127.0.0.1"
 
         // Redis sentinel related properties
-        const val REDIS_USE_SENTINELS: String = "REDIS_USE_SENTINELS"
+        const val REDIS_USE_SENTINELS: String = "$MESSAGE_QUEUE.$REDIS.sentinel"
 
-        const val REDIS_MASTER_NAME: String = "REDIS_MASTER_NAME"
+        const val REDIS_MASTER_NAME: String = "$MESSAGE_QUEUE.$REDIS.master-name"
         const val REDIS_MASTER_NAME_DEFAULT: String = "mymaster"
 
         /**
@@ -72,44 +72,44 @@ class MessageQueueSettings
         /**
          * Indicates what authentication mode the `MultiQueue` should be in.
          */
-        const val MULTI_QUEUE_AUTHENTICATION: String = "MULTI_QUEUE_AUTHENTICATION"
-        const val MULTI_QUEUE_AUTHENTICATION_DEFAULT: String = "NONE"
+        const val RESTRICTION_MODE: String = "$MESSAGE_QUEUE.restriction-mode"
+        const val RESTRICTION_MODE_DEFAULT: String = "NONE"
 
         /**
          * A property that is passed through to the [au.kilemon.messagequeue.authentication.token.JwtTokenProvider] and
          * used as the token generation and verification key. If this is not provided, a new key will be generated each
          * time the application starts.
          */
-        const val MULTI_QUEUE_TOKEN_KEY: String = "MULTI_QUEUE_TOKEN_KEY"
+        const val ACCESS_TOKEN_KEY: String = "$MESSAGE_QUEUE.access-token.key"
     }
 
     /**
-     * `Optional` uses the [MULTI_QUEUE_TYPE] environment variable to determine where
+     * `Optional` uses the [STORAGE_MEDIUM] environment variable to determine where
      * the underlying multi queue is persisted. It can be any value of [MultiQueueType].
-     * Defaults to [MultiQueueType.IN_MEMORY] ([MULTI_QUEUE_TYPE_DEFAULT]).
+     * Defaults to [MultiQueueType.IN_MEMORY] ([STORAGE_MEDIUM_DEFAULT]).
      */
-    @SerializedName(MULTI_QUEUE_TYPE)
-    @JsonProperty(MULTI_QUEUE_TYPE)
-    @Value("\${$MULTI_QUEUE_TYPE:$MULTI_QUEUE_TYPE_DEFAULT}")
+    @SerializedName(STORAGE_MEDIUM)
+    @JsonProperty(STORAGE_MEDIUM)
+    @Value("\${$STORAGE_MEDIUM:$STORAGE_MEDIUM_DEFAULT}")
     @get:Generated
     @set:Generated
     lateinit var multiQueueType: String
 
     /**
-     * `Optional` uses the [MULTI_QUEUE_AUTHENTICATION] environment variable to determine whether specific sub-queues
+     * `Optional` uses the [RESTRICTION_MODE] environment variable to determine whether specific sub-queues
      * will require authentication or not to create or access. It can be any value of [MultiQueueType].
-     * Defaults to [MultiQueueType.IN_MEMORY] ([MULTI_QUEUE_AUTHENTICATION_DEFAULT]).
+     * Defaults to [MultiQueueType.IN_MEMORY] ([RESTRICTION_MODE_DEFAULT]).
      */
-    @SerializedName(MULTI_QUEUE_AUTHENTICATION)
-    @JsonProperty(MULTI_QUEUE_AUTHENTICATION)
-    @Value("\${$MULTI_QUEUE_AUTHENTICATION:$MULTI_QUEUE_AUTHENTICATION_DEFAULT}")
+    @SerializedName(RESTRICTION_MODE)
+    @JsonProperty(RESTRICTION_MODE)
+    @Value("\${$RESTRICTION_MODE:$RESTRICTION_MODE_DEFAULT}")
     @get:Generated
     @set:Generated
     lateinit var multiQueueAuthentication: String
 
 
     /**
-     * `Optional` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.REDIS].
+     * `Optional` when [STORAGE_MEDIUM] is set to [MultiQueueType.REDIS].
      * Uses the [REDIS_PREFIX] to set a prefix used for all redis entry keys.
      *
      * E.g. if the initial value for the redis entry is "my-key" and no prefix is defined the entries would be stored under "my-key".
@@ -123,7 +123,7 @@ class MessageQueueSettings
     lateinit var redisPrefix: String
 
     /**
-     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.REDIS].
+     * `Required` when [STORAGE_MEDIUM] is set to [MultiQueueType.REDIS].
      * The input endpoint string which is used for both standalone and the sentinel redis configurations.
      * This supports a comma separated list or single definition of a redis endpoint in the following formats:
      * `<endpoint>:<port>,<endpoint2>:<port2>,<endpoint3>`
@@ -138,7 +138,7 @@ class MessageQueueSettings
     lateinit var redisEndpoint: String
 
     /**
-     * `Optional` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.REDIS].
+     * `Optional` when [STORAGE_MEDIUM] is set to [MultiQueueType.REDIS].
      * Indicates whether the `MultiQueue` should connect directly to the redis instance or connect via one or more sentinel instances.
      * If set to `true` the `MultiQueue` will create a sentinel pool connection instead of a direct connection which is what would occur if this is left as `false`.
      * By default, this is `false`.
@@ -151,7 +151,7 @@ class MessageQueueSettings
     lateinit var redisUseSentinels: String
 
     /**
-     * `Optional` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.REDIS].
+     * `Optional` when [STORAGE_MEDIUM] is set to [MultiQueueType.REDIS].
      * `Required` when [redisUseSentinels] is set to `true`. Is used to indicate the name of the redis master instance.
      * By default, this is [REDIS_MASTER_NAME_DEFAULT].
      */
@@ -163,7 +163,7 @@ class MessageQueueSettings
     lateinit var redisMasterName: String
 
     /**
-     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
+     * `Required` when [STORAGE_MEDIUM] is set to [MultiQueueType.SQL].
      * This defines the database connection string e.g:
      * `"jdbc:mysql://localhost:3306/message-queue"`
      */
@@ -175,7 +175,7 @@ class MessageQueueSettings
     lateinit var sqlEndpoint: String
 
     /**
-     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
+     * `Required` when [STORAGE_MEDIUM] is set to [MultiQueueType.SQL].
      * This is the username/account name used to access the database defined in [SQL_ENDPOINT].
      */
     @SerializedName(SQL_USERNAME)
@@ -186,7 +186,7 @@ class MessageQueueSettings
     lateinit var sqlUsername: String
 
     /**
-     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
+     * `Required` when [STORAGE_MEDIUM] is set to [MultiQueueType.SQL].
      * This is the password used to access the database defined in [SQL_ENDPOINT].
      */
     // TODO: Commenting out since it is unused and returned in the settings endpoint without masking
