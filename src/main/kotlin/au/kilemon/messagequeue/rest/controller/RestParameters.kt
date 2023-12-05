@@ -12,7 +12,7 @@ object RestParameters
 {
     const val ASSIGNED_TO = "assignedTo"
 
-    const val QUEUE_TYPE = "queueType"
+    const val SUB_QUEUE = "subQueue"
 
     const val DETAILED = "detailed"
 

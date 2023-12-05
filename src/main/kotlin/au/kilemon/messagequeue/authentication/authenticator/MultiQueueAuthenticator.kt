@@ -8,7 +8,7 @@ import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 
 /**
- * The base Authenticator class. This is responsible to tracking which sub queues are marked as restricted and
+ * The base Authenticator class. This is responsible to tracking which sub-queues are marked as restricted and
  * maintaining this underlying collection within the specified storage medium.
  *
  * @author github.com/Kilemonn
@@ -18,24 +18,24 @@ abstract class MultiQueueAuthenticator: HasLogger
     abstract override val LOG: Logger
 
     @Autowired
-    private lateinit var multiQueueAuthenticationType: RestrictionMode
+    private lateinit var restrictionMode: RestrictionMode
 
     /**
-     * @return [multiQueueAuthenticationType]
+     * @return [restrictionMode]
      */
-    fun getAuthenticationType(): RestrictionMode
+    fun getRestrictionMode(): RestrictionMode
     {
-        return multiQueueAuthenticationType
+        return restrictionMode
     }
 
     /**
      * Used only for tests to update the set [RestrictionMode].
      *
-     * @param authenticationType the new [RestrictionMode] to set
+     * @param restrictionMode the new [RestrictionMode] to set
      */
-    fun setAuthenticationType(authenticationType: RestrictionMode)
+    fun setRestrictionMode(restrictionMode: RestrictionMode)
     {
-        multiQueueAuthenticationType = authenticationType
+        this.restrictionMode = restrictionMode
     }
 
     /**
@@ -50,8 +50,8 @@ abstract class MultiQueueAuthenticator: HasLogger
     }
 
     /**
-     * Determines whether based on the currently set [getAuthenticationType] and the provided [subQueue] and
-     * [JwtAuthenticationFilter.getSubQueue] to determine if the user is able to interact with the requested sub queue.
+     * Determines whether based on the currently set [getRestrictionMode] and the provided [subQueue] and
+     * [JwtAuthenticationFilter.getSubQueue] to determine if the user is able to interact with the requested sub-queue.
      *
      * @param subQueue the sub-queue identifier that is being requested access to
      * @param throwException `true` to throw an exception if the [subQueue] cannot be accessed, otherwise the return
@@ -67,7 +67,7 @@ abstract class MultiQueueAuthenticator: HasLogger
         {
             if (throwException)
             {
-                throw MultiQueueAuthorisationException(subQueue, getAuthenticationType())
+                throw MultiQueueAuthorisationException(subQueue, getRestrictionMode())
             }
             return false
         }
@@ -87,7 +87,7 @@ abstract class MultiQueueAuthenticator: HasLogger
             }
             else
             {
-                // If we are in hybrid mode and the sub queue is not restricted we should let it pass
+                // If we are in hybrid mode and the sub-queue is not restricted we should let it pass
                 return true
             }
         }
@@ -101,33 +101,33 @@ abstract class MultiQueueAuthenticator: HasLogger
 
         if (throwException)
         {
-            throw MultiQueueAuthorisationException(subQueue, getAuthenticationType())
+            throw MultiQueueAuthorisationException(subQueue, getRestrictionMode())
         }
         return false
     }
 
     /**
-     * Indicates whether [multiQueueAuthenticationType] is set to [RestrictionMode.NONE].
+     * Indicates whether [restrictionMode] is set to [RestrictionMode.NONE].
      */
     fun isInNoneMode(): Boolean
     {
-        return getAuthenticationType() == RestrictionMode.NONE
+        return getRestrictionMode() == RestrictionMode.NONE
     }
 
     /**
-     * Indicates whether [multiQueueAuthenticationType] is set to [RestrictionMode.HYBRID].
+     * Indicates whether [restrictionMode] is set to [RestrictionMode.HYBRID].
      */
     fun isInHybridMode(): Boolean
     {
-        return getAuthenticationType() == RestrictionMode.HYBRID
+        return getRestrictionMode() == RestrictionMode.HYBRID
     }
 
     /**
-     * Indicates whether [multiQueueAuthenticationType] is set to [RestrictionMode.RESTRICTED].
+     * Indicates whether [restrictionMode] is set to [RestrictionMode.RESTRICTED].
      */
     fun isInRestrictedMode(): Boolean
     {
-        return getAuthenticationType() == RestrictionMode.RESTRICTED
+        return getRestrictionMode() == RestrictionMode.RESTRICTED
     }
 
     /**
@@ -163,26 +163,26 @@ abstract class MultiQueueAuthenticator: HasLogger
      * This will delegate to [addRestrictedEntryInternal].
      *
      * @param subQueue the sub-queue identifier to make restricted
-     * @return `true` if the sub queue identifier was added to the restriction set, otherwise `false` if there was
+     * @return `true` if the sub-queue identifier was added to the restriction set, otherwise `false` if there was
      * no underlying change made. If [isInNoneMode] is set this will always return `false`.
      */
     fun addRestrictedEntry(subQueue: String): Boolean
     {
         if (isInNoneMode())
         {
-            LOG.trace("Skipping adding restricted entry for [{}] since the authentication type is set to [{}].", subQueue, getAuthenticationType())
+            LOG.trace("Skipping adding restricted entry for [{}] since the restriction mode is set to [{}].", subQueue, getRestrictionMode())
             return false
         }
         else
         {
             return if (isRestricted(subQueue))
             {
-                LOG.trace("Restriction for sub queue [{}] was not increased as it is already restricted.", subQueue)
+                LOG.trace("Restriction for sub-queue [{}] was not increased as it is already restricted.", subQueue)
                 false
             }
             else
             {
-                LOG.info("Adding restriction to sub queue [{}].", subQueue)
+                LOG.info("Adding restriction to sub-queue [{}].", subQueue)
                 addRestrictedEntryInternal(subQueue)
                 true
             }
@@ -208,19 +208,19 @@ abstract class MultiQueueAuthenticator: HasLogger
     {
         return if (isInNoneMode())
         {
-            LOG.trace("Skipping removing restricted entry for [{}] since the authentication type is set to [{}].", subQueue, getAuthenticationType())
+            LOG.trace("Skipping removing restricted entry for [{}] since the restriction mode is set to [{}].", subQueue, getRestrictionMode())
             false
         }
         else
         {
             return if (isRestricted(subQueue))
             {
-                LOG.info("Removing restriction to sub queue [{}].", subQueue)
+                LOG.info("Removing restriction to sub-queue [{}].", subQueue)
                 removeRestrictionInternal(subQueue)
             }
             else
             {
-                LOG.trace("Restriction for sub queue [{}] was not removed as it is currently unrestricted.", subQueue)
+                LOG.trace("Restriction for sub-queue [{}] was not removed as it is currently unrestricted.", subQueue)
                 false
             }
 
@@ -243,7 +243,7 @@ abstract class MultiQueueAuthenticator: HasLogger
     /**
      * Clear the underlying restriction storage entries. (This is mainly used for testing).
      *
-     * @return the amount of sub queue restrictions that were cleared
+     * @return the amount of sub-queue restrictions that were cleared
      */
     abstract fun clearRestrictedSubQueues(): Long
 }

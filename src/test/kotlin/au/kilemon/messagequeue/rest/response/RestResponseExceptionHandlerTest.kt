@@ -104,13 +104,13 @@ class RestResponseExceptionHandlerTest
     {
         val correlationId = UUID.randomUUID().toString()
         MDC.put(CorrelationIdFilter.CORRELATION_ID, correlationId)
-        val type = "testHandleIllegalSubQueueIdentifierException"
-        val exception = IllegalSubQueueIdentifierException(type)
+        val subQueue = "testHandleIllegalSubQueueIdentifierException"
+        val exception = IllegalSubQueueIdentifierException(subQueue)
         val response = responseHandler.handleIllegalSubQueueIdentifierException(exception)
 
         Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         Assertions.assertNotNull(response.body)
-        Assertions.assertTrue(response.body!!.message!!.contains(type))
+        Assertions.assertTrue(response.body!!.message!!.contains(subQueue))
         Assertions.assertEquals(correlationId, response.body!!.correlationId)
     }
 }

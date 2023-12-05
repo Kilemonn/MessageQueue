@@ -33,18 +33,18 @@ class QueueMessageTest
 
     /**
      * Ensure that two [QueueMessage]s are not equal if one has `null` [QueueMessage.payload] and [QueueMessage.payloadBytes], but the same
-     * [QueueMessage.uuid] and [QueueMessage.type].
+     * [QueueMessage.uuid] and [QueueMessage.subQueue].
      */
     @Test
     fun testEquals_withOneMessageHavingNullPayloadAndBytes()
     {
         val uuid = UUID.randomUUID().toString()
-        val type = "type"
+        val subQueue = "testEquals_withOneMessageHavingNullPayloadAndBytes"
         val message1 = QueueMessage()
         message1.payload = null
         message1.uuid = uuid
-        message1.type = type
-        val message2 = QueueMessage(payload = "stuff", type = type)
+        message1.subQueue = subQueue
+        val message2 = QueueMessage(payload = "stuff", subQueue = subQueue)
         message2.uuid = uuid
 
         Assertions.assertNull(message1.payload)
@@ -56,17 +56,17 @@ class QueueMessageTest
 
     /**
      * Ensure that two [QueueMessage] are equal if they both have `null` [QueueMessage.payload] but `equal` [QueueMessage.payloadBytes], and the same
-     * [QueueMessage.uuid] and [QueueMessage.type].
+     * [QueueMessage.uuid] and [QueueMessage.subQueue].
      */
     @Test
     fun testEquals_withEqualPayloadBytes()
     {
         val uuid = UUID.randomUUID().toString()
-        val type = "type"
-        val message1 = QueueMessage(payload = "stuff", type = type)
+        val subQueue = "testEquals_withEqualPayloadBytes"
+        val message1 = QueueMessage(payload = "stuff", subQueue = subQueue)
         message1.payload = null
         message1.uuid = uuid
-        val message2 = QueueMessage(payload = "stuff", type = type)
+        val message2 = QueueMessage(payload = "stuff", subQueue = subQueue)
         message2.payload = null
         message2.uuid = uuid
 
@@ -76,19 +76,19 @@ class QueueMessageTest
 
     /**
      * Ensure that two [QueueMessage] are equal if they both have `null` [QueueMessage.payloadBytes] but `equal` [QueueMessage.payload], and the same
-     * [QueueMessage.uuid] and [QueueMessage.type].
+     * [QueueMessage.uuid] and [QueueMessage.subQueue].
      */
     @Test
     fun testEquals_withEqualPayloads()
     {
         val uuid = UUID.randomUUID().toString()
-        val type = "type"
+        val subQueue = "testEquals_withEqualPayloads"
         val message1 = QueueMessage()
         message1.uuid = uuid
-        message1.type = type
+        message1.subQueue = subQueue
         val message2 = QueueMessage()
         message2.uuid = uuid
-        message2.type = type
+        message2.subQueue = subQueue
 
         // Set the payload into both objects to ensure this is considered in the equals check too
         val obj = 1287354
@@ -103,16 +103,16 @@ class QueueMessageTest
 
     /**
      * Ensure that two [QueueMessage] are equal if they both have `equal` [QueueMessage.payloadBytes] and [QueueMessage.payload], and the same
-     * [QueueMessage.uuid] and [QueueMessage.type].
+     * [QueueMessage.uuid] and [QueueMessage.subQueue].
      */
     @Test
     fun testEquals_withEqualPayloadsAndBytes()
     {
         val uuid = UUID.randomUUID().toString()
-        val type = "type"
-        val message1 = QueueMessage(payload = "stuff", type = type)
+        val subQueue = "testEquals_withEqualPayloadsAndBytes"
+        val message1 = QueueMessage(payload = "stuff", subQueue = subQueue)
         message1.uuid = uuid
-        val message2 = QueueMessage(payload = "stuff", type = type)
+        val message2 = QueueMessage(payload = "stuff", subQueue = subQueue)
         message2.uuid = uuid
 
         Assertions.assertEquals(message1.payload, message2.payload)
@@ -121,15 +121,15 @@ class QueueMessageTest
     }
 
     /**
-     * Ensure that [QueueMessage.equals] returns `false` when all properties are equal except [QueueMessage.type].
+     * Ensure that [QueueMessage.equals] returns `false` when all properties are equal except [QueueMessage.subQueue].
      */
     @Test
-    fun testEquals_nonEqualType()
+    fun testEquals_nonEqualSubQueue()
     {
         val uuid = UUID.randomUUID().toString()
-        val message1 = QueueMessage(payload = "stuff", type = "type1")
+        val message1 = QueueMessage(payload = "stuff", subQueue = "type1")
         message1.uuid = uuid
-        val message2 = QueueMessage(payload = "stuff", type = "type2")
+        val message2 = QueueMessage(payload = "stuff", subQueue = "type2")
         message2.uuid = uuid
 
         Assertions.assertEquals(message1.payload, message2.payload)
@@ -143,7 +143,7 @@ class QueueMessageTest
     @Test
     fun testEquals_withNull()
     {
-        val message = QueueMessage(payload = "data", type = "testEquals_withNull")
+        val message = QueueMessage(payload = "data", subQueue = "testEquals_withNull")
         Assertions.assertNotEquals(message, null)
     }
 
@@ -153,7 +153,7 @@ class QueueMessageTest
     @Test
     fun testEquals_withNonQueueMessageObject()
     {
-        val message = QueueMessage(payload = "data", type = "testEquals_withNonQueueMessageObject")
+        val message = QueueMessage(payload = "data", subQueue = "testEquals_withNonQueueMessageObject")
         val obj = Any()
         Assertions.assertTrue(obj !is QueueMessage)
         Assertions.assertNotEquals(message, obj)
@@ -167,7 +167,7 @@ class QueueMessageTest
     fun testResolvePayload_payloadNotNullBytesNull()
     {
         val payload = "testResolvePayload_payloadNotNullBytesNull"
-        val message = QueueMessage(null, type = "test")
+        val message = QueueMessage(null, subQueue = "test")
         Assertions.assertNull(message.payloadBytes)
         message.payload = payload
         message.resolvePayloadObject()
@@ -183,7 +183,7 @@ class QueueMessageTest
     {
         val payload1 = "testResolvePayload_payloadNotNullBytesNotNull"
         val payload2 = "payload-bytes"
-        val message = QueueMessage(payload1, type = "test")
+        val message = QueueMessage(payload1, subQueue = "test")
         message.payloadBytes = SerializationUtils.serialize(payload2)
         message.resolvePayloadObject()
         Assertions.assertEquals(payload1, message.payload)
@@ -197,7 +197,7 @@ class QueueMessageTest
     @Test
     fun testResolvePayload_payloadNullBytesNull()
     {
-        val message = QueueMessage(null, type = "test")
+        val message = QueueMessage(null, subQueue = "test")
 
         Assertions.assertNull(message.payload)
         Assertions.assertNull(message.payloadBytes)
@@ -215,7 +215,7 @@ class QueueMessageTest
     fun testResolvePayload_payloadNullBytesNotNull()
     {
         val payload = "testResolvePayload_payloadNullBytesNotNull"
-        val message = QueueMessage(null, type = "test")
+        val message = QueueMessage(null, subQueue = "test")
         message.payloadBytes = SerializationUtils.serialize(payload)
 
         // At this point the payload property will quest payloadBytes, we need to overwrite

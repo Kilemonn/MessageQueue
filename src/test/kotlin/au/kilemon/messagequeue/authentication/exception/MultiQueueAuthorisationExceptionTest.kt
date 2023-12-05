@@ -18,7 +18,7 @@ class MultiQueueAuthorisationExceptionTest
     @Test
     fun testTypeOfException()
     {
-        val e = MultiQueueAuthorisationException("Sub queue", RestrictionMode.NONE)
+        val e = MultiQueueAuthorisationException("sub-queue", RestrictionMode.NONE)
         Assertions.assertTrue(Exception::class.isInstance(e))
         Assertions.assertFalse(RuntimeException::class.isInstance(e))
     }

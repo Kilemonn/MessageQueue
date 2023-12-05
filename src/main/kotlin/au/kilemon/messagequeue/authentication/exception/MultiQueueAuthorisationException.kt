@@ -9,7 +9,7 @@ import au.kilemon.messagequeue.authentication.RestrictionMode
  *
  * @author github.com/Kilemonn
  */
-class MultiQueueAuthorisationException(subQueue: String, authenticationType: RestrictionMode) : Exception(String.format(MESSAGE_FORMAT, subQueue, authenticationType))
+class MultiQueueAuthorisationException(subQueue: String, restrictionMode: RestrictionMode) : Exception(String.format(MESSAGE_FORMAT, subQueue, restrictionMode))
 {
     companion object
     {

@@ -5,7 +5,7 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 
 /**
- * A holder object for the restricted sub queues. Refer to [AuthenticationMatrix].
+ * A holder object for the restricted sub-queues. Refer to [AuthenticationMatrix].
  * This is used only for `Mongo`.
  *
  * @author github.com/Kilemonn

@@ -20,61 +20,61 @@ import java.util.*
 interface SqlQueueMessageRepository: JpaRepository<QueueMessage, Long>
 {
     /**
-     * Delete a [QueueMessage] by the provided [QueueMessage.type] [String].
+     * Delete a [QueueMessage] by the provided [QueueMessage.subQueue] [String].
      *
-     * @param type the [QueueMessage.type] to remove entries by
+     * @param subQueue the [QueueMessage.subQueue] to remove entries by
      * @return the number of deleted entities
      */
     @Modifying
     @Transactional
-    @Query("DELETE FROM QueueMessage WHERE type = ?1")
-    fun deleteByType(type: String): Int
+    @Query("DELETE FROM QueueMessage WHERE subQueue = ?1")
+    fun deleteBySubQueue(subQueue: String): Int
 
     /**
-     * Get a distinct [List] of [String] [QueueMessage.type] that currently exist.
+     * Get a distinct [List] of [String] [QueueMessage.subQueue] that currently exist.
      *
-     * @return a [List] of all the existing [QueueMessage.type] as [String]s
+     * @return a [List] of all the existing [QueueMessage.subQueue] as [String]s
      */
     @Transactional
-    @Query("SELECT DISTINCT type FROM QueueMessage")
-    fun findDistinctType(): List<String>
+    @Query("SELECT DISTINCT subQueue FROM QueueMessage")
+    fun findDistinctSubQueue(): List<String>
 
     /**
-     * Get a list of [QueueMessage] which have [QueueMessage.type] matching the provided [type].
+     * Get a list of [QueueMessage] which have [QueueMessage.subQueue] matching the provided [subQueue].
      *
-     * @param type the type to match [QueueMessage.type] with
-     * @return a [List] of [QueueMessage] who have a matching [QueueMessage.type] with the provided [type]
+     * @param subQueue to match [QueueMessage.subQueue] with
+     * @return a [List] of [QueueMessage] who have a matching [QueueMessage.subQueue] with the provided [subQueue]
      */
     @Transactional
-    fun findByTypeOrderByIdAsc(type: String): List<QueueMessage>
+    fun findBySubQueueOrderByIdAsc(subQueue: String): List<QueueMessage>
 
     /**
-     * Find the entity with the matching [QueueMessage.type] and that has a non-null [QueueMessage.assignedTo]. Sorted by ID ascending.
+     * Find the entity with the matching [QueueMessage.subQueue] and that has a non-null [QueueMessage.assignedTo]. Sorted by ID ascending.
      *
-     * @param type the type to match [QueueMessage.type] with
-     * @return a [List] of [QueueMessage] who have a matching [QueueMessage.type] with the provided [type] and non-null [QueueMessage.assignedTo]
+     * @param subQueue to match [QueueMessage.subQueue] with
+     * @return a [List] of [QueueMessage] who have a matching [QueueMessage.subQueue] with the provided [subQueue] and non-null [QueueMessage.assignedTo]
      */
     @Transactional
-    fun findByTypeAndAssignedToIsNotNullOrderByIdAsc(type: String): List<QueueMessage>
+    fun findBySubQueueAndAssignedToIsNotNullOrderByIdAsc(subQueue: String): List<QueueMessage>
 
     /**
-     * Find the entity with the matching [QueueMessage.type] and that has [QueueMessage.assignedTo] set to `null`. Sorted by ID ascending.
+     * Find the entity with the matching [QueueMessage.subQueue] and that has [QueueMessage.assignedTo] set to `null`. Sorted by ID ascending.
      *
-     * @param type the type to match [QueueMessage.type] with
-     * @return a [List] of [QueueMessage] who have a matching [QueueMessage.type] with the provided [type] and `null` [QueueMessage.assignedTo]
+     * @param subQueue the type to match [QueueMessage.subQueue] with
+     * @return a [List] of [QueueMessage] who have a matching [QueueMessage.subQueue] with the provided [subQueue] and `null` [QueueMessage.assignedTo]
      */
     @Transactional
-    fun findByTypeAndAssignedToIsNullOrderByIdAsc(type: String): List<QueueMessage>
+    fun findBySubQueueAndAssignedToIsNullOrderByIdAsc(subQueue: String): List<QueueMessage>
 
     /**
-     * Find the entity with the matching [QueueMessage.type] and [QueueMessage.assignedTo]. Sorted by ID ascending.
+     * Find the entity with the matching [QueueMessage.subQueue] and [QueueMessage.assignedTo]. Sorted by ID ascending.
      *
-     * @param type the type to match [QueueMessage.type] with
+     * @param subQueue the type to match [QueueMessage.subQueue] with
      * @param assignedTo the identifier to match [QueueMessage.assignedTo] with
-     * @return a [List] of [QueueMessage] who have a matching [QueueMessage.type] and [QueueMessage.assignedTo]
+     * @return a [List] of [QueueMessage] who have a matching [QueueMessage.subQueue] and [QueueMessage.assignedTo]
      */
     @Transactional
-    fun findByTypeAndAssignedToOrderByIdAsc(type: String, assignedTo: String): List<QueueMessage>
+    fun findBySubQueueAndAssignedToOrderByIdAsc(subQueue: String, assignedTo: String): List<QueueMessage>
 
     /**
      * Find the entity which has a [QueueMessage.uuid] matching the provided [uuid].

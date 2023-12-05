@@ -66,7 +66,7 @@ class SettingsControllerTest
      */
     private fun testGetSettings_defaultValues(authenticationType: RestrictionMode)
     {
-        Assertions.assertEquals(authenticationType, multiQueueAuthenticator.getAuthenticationType())
+        Assertions.assertEquals(authenticationType, multiQueueAuthenticator.getRestrictionMode())
 
         val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(SettingsController.SETTINGS_PATH)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
@@ -74,8 +74,8 @@ class SettingsControllerTest
             .andReturn()
         val settings = gson.fromJson(mvcResult.response.contentAsString, MessageQueueSettings::class.java)
 
-        Assertions.assertEquals(StorageMedium.IN_MEMORY.toString(), settings.multiQueueType)
-        Assertions.assertEquals(RestrictionMode.NONE.toString(), settings.multiQueueAuthentication)
+        Assertions.assertEquals(StorageMedium.IN_MEMORY.toString(), settings.storageMedium)
+        Assertions.assertEquals(RestrictionMode.NONE.toString(), settings.restrictionMode)
 
         Assertions.assertTrue(settings.redisPrefix.isEmpty())
         Assertions.assertEquals(MessageQueueSettings.REDIS_ENDPOINT_DEFAULT, settings.redisEndpoint)
@@ -99,7 +99,7 @@ class SettingsControllerTest
     @Test
     fun testGetSettings_noneMode()
     {
-        Mockito.doReturn(RestrictionMode.NONE).`when`(multiQueueAuthenticator).getAuthenticationType()
+        Mockito.doReturn(RestrictionMode.NONE).`when`(multiQueueAuthenticator).getRestrictionMode()
         testGetSettings_defaultValues(RestrictionMode.NONE)
     }
 
@@ -110,7 +110,7 @@ class SettingsControllerTest
     @Test
     fun testGetSettings_hybridMode()
     {
-        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getRestrictionMode()
         testGetSettings_defaultValues(RestrictionMode.HYBRID)
     }
 
@@ -121,7 +121,7 @@ class SettingsControllerTest
     @Test
     fun testGetSettings_restrictedMode()
     {
-        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(multiQueueAuthenticator).getAuthenticationType()
+        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(multiQueueAuthenticator).getRestrictionMode()
         testGetSettings_defaultValues(RestrictionMode.RESTRICTED)
     }
 }

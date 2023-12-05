@@ -87,49 +87,49 @@ class AuthControllerTest
     @Test
     fun testRestrictSubQueue_inNoneMode()
     {
-        val queueType = "testRestrictSubQueue_inNoneMode"
-        Assertions.assertEquals(RestrictionMode.NONE, multiQueueAuthenticator.getAuthenticationType())
+        val subQueue = "testRestrictSubQueue_inNoneMode"
+        Assertions.assertEquals(RestrictionMode.NONE, multiQueueAuthenticator.getRestrictionMode())
         mockMvc.perform(
-            MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${queueType}")
+            MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${subQueue}")
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
     /**
      * Ensure [AuthController.restrictSubQueue] returns [org.springframework.http.HttpStatus.CONFLICT] when the
-     * requested queue type requested is already restricted.
+     * requested sub-queue requested is already restricted.
      */
     @Test
     fun testRestrictSubQueue_alreadyRestricted()
     {
-        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
-        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getRestrictionMode())
 
-        val queueType = "testRestrictSubQueue_alreadyRestricted"
-        Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(queueType))
-        Assertions.assertTrue(multiQueueAuthenticator.isRestricted(queueType))
+        val subQueue = "testRestrictSubQueue_alreadyRestricted"
+        Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(subQueue))
+        Assertions.assertTrue(multiQueueAuthenticator.isRestricted(subQueue))
 
         mockMvc.perform(
-            MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${queueType}")
+            MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${subQueue}")
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isConflict)
     }
 
     /**
      * Ensure [AuthController.restrictSubQueue] returns [org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR]
-     * when the requested queue type fails to be restricted.
+     * when the requested sub-queue fails to be restricted.
      */
     @Test
     fun testRestrictSubQueue_wasNotAdded()
     {
-        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
-        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getRestrictionMode())
 
-        val queueType = "testRestrictSubQueue_wasNotAdded"
-        Mockito.doReturn(false).`when`(multiQueueAuthenticator).addRestrictedEntry(queueType)
+        val subQueue = "testRestrictSubQueue_wasNotAdded"
+        Mockito.doReturn(false).`when`(multiQueueAuthenticator).addRestrictedEntry(subQueue)
 
         mockMvc.perform(
-            MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${queueType}")
+            MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${subQueue}")
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isInternalServerError)
     }
@@ -141,32 +141,32 @@ class AuthControllerTest
     @Test
     fun testRestrictSubQueue_tokenGenerationFailure()
     {
-        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
-        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getRestrictionMode())
 
-        val queueType = "testRestrictSubQueue_tokenGenerationFailure"
-        Mockito.doReturn(Optional.empty<String>()).`when`(jwtTokenProvider).createTokenForSubQueue(queueType)
+        val subQueue = "testRestrictSubQueue_tokenGenerationFailure"
+        Mockito.doReturn(Optional.empty<String>()).`when`(jwtTokenProvider).createTokenForSubQueue(subQueue)
 
         mockMvc.perform(
-            MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${queueType}")
+            MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${subQueue}")
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isInternalServerError)
     }
 
     /**
      * Ensure [AuthController.restrictSubQueue] returns [org.springframework.http.HttpStatus.OK] and a valid
-     * [AuthResponse] when the requested queue type is restricted successfully.
+     * [AuthResponse] when the requested sub-queue is restricted successfully.
      */
     @Test
     fun testRestrictSubQueue_tokenGenerated()
     {
-        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
-        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getRestrictionMode())
 
-        val queueType = "testRestrictSubQueue_tokenGenerated"
+        val subQueue = "testRestrictSubQueue_tokenGenerated"
 
         val mvcResult: MvcResult = mockMvc.perform(
-            MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${queueType}")
+            MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${subQueue}")
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isCreated)
             .andReturn()
@@ -174,7 +174,7 @@ class AuthControllerTest
         val authResponse = gson.fromJson(mvcResult.response.contentAsString, AuthResponse::class.java)
         Assertions.assertNotNull(authResponse.token)
         Assertions.assertNotNull(authResponse.correlationId)
-        Assertions.assertEquals(queueType, authResponse.subQueue)
+        Assertions.assertEquals(subQueue, authResponse.subQueue)
     }
 
     /**
@@ -185,13 +185,13 @@ class AuthControllerTest
     @Test
     fun testRestrictSubQueue_inRestrictedMode()
     {
-        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(multiQueueAuthenticator).getAuthenticationType()
-        Assertions.assertEquals(RestrictionMode.RESTRICTED, multiQueueAuthenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.RESTRICTED, multiQueueAuthenticator.getRestrictionMode())
 
-        val queueType = "testRestrictSubQueue_inRestrictedMode"
+        val subQueue = "testRestrictSubQueue_inRestrictedMode"
 
         val mvcResult: MvcResult = mockMvc.perform(
-            MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${queueType}")
+            MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${subQueue}")
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isCreated)
             .andReturn()
@@ -199,7 +199,7 @@ class AuthControllerTest
         val authResponse = gson.fromJson(mvcResult.response.contentAsString, AuthResponse::class.java)
         Assertions.assertNotNull(authResponse.token)
         Assertions.assertNotNull(authResponse.correlationId)
-        Assertions.assertEquals(queueType, authResponse.subQueue)
+        Assertions.assertEquals(subQueue, authResponse.subQueue)
     }
 
     /**
@@ -209,11 +209,11 @@ class AuthControllerTest
     @Test
     fun testRemoveRestrictionFromSubQueue_inNoneMode()
     {
-        val queueType = "testRemoveRestrictionFromSubQueue_inNoneMode"
+        val subQueue = "testRemoveRestrictionFromSubQueue_inNoneMode"
 
-        Assertions.assertEquals(RestrictionMode.NONE, multiQueueAuthenticator.getAuthenticationType())
+        Assertions.assertEquals(RestrictionMode.NONE, multiQueueAuthenticator.getRestrictionMode())
         mockMvc.perform(
-            MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${queueType}")
+            MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${subQueue}")
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isAccepted)
     }
@@ -225,16 +225,16 @@ class AuthControllerTest
     @Test
     fun testRemoveRestrictionFromSubQueue_invalidToken()
     {
-        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
-        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getRestrictionMode())
 
-        val queueType = "testRemoveRestrictionFromSubQueue_invalidToken"
-        val invalidQueueType = "invalidQueueType"
-        val token = jwtTokenProvider.createTokenForSubQueue(queueType)
+        val subQueue = "testRemoveRestrictionFromSubQueue_invalidToken"
+        val invalidsubQueue = "invalidsubQueue"
+        val token = jwtTokenProvider.createTokenForSubQueue(subQueue)
         Assertions.assertTrue(token.isPresent)
 
         mockMvc.perform(
-            MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${invalidQueueType}")
+            MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${invalidsubQueue}")
                 .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isForbidden)
@@ -248,13 +248,13 @@ class AuthControllerTest
     @Test
     fun testRemoveRestrictionFromSubQueue_withoutAuthToken()
     {
-        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(multiQueueAuthenticator).getAuthenticationType()
-        Assertions.assertEquals(RestrictionMode.RESTRICTED, multiQueueAuthenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.RESTRICTED, multiQueueAuthenticator.getRestrictionMode())
 
-        val queueType = "testRemoveRestrictionFromSubQueue_withoutAuthToken"
+        val subQueue = "testRemoveRestrictionFromSubQueue_withoutAuthToken"
 
         mockMvc.perform(
-            MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${queueType}")
+            MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${subQueue}")
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isUnauthorized)
     }
@@ -266,17 +266,17 @@ class AuthControllerTest
     @Test
     fun testRemoveRestrictionFromSubQueue_validTokenButNotRestricted()
     {
-        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
-        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getRestrictionMode())
 
-        val queueType = "testRemoveRestrictionFromSubQueue_validToken"
-        val token = jwtTokenProvider.createTokenForSubQueue(queueType)
+        val subQueue = "testRemoveRestrictionFromSubQueue_validToken"
+        val token = jwtTokenProvider.createTokenForSubQueue(subQueue)
         Assertions.assertTrue(token.isPresent)
 
-        Assertions.assertFalse(multiQueueAuthenticator.isRestricted(queueType))
+        Assertions.assertFalse(multiQueueAuthenticator.isRestricted(subQueue))
 
         mockMvc.perform(
-            MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${queueType}")
+            MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${subQueue}")
                 .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
@@ -290,20 +290,20 @@ class AuthControllerTest
     @Test
     fun testRemoveRestrictionFromSubQueue_failedToRemoveRestriction()
     {
-        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
-        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getRestrictionMode())
 
-        val queueType = "testRemoveRestrictionFromSubQueue_failedToRemoveRestriction"
-        val token = jwtTokenProvider.createTokenForSubQueue(queueType)
+        val subQueue = "testRemoveRestrictionFromSubQueue_failedToRemoveRestriction"
+        val token = jwtTokenProvider.createTokenForSubQueue(subQueue)
         Assertions.assertTrue(token.isPresent)
 
-        Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(queueType))
-        Assertions.assertTrue(multiQueueAuthenticator.isRestricted(queueType))
+        Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(subQueue))
+        Assertions.assertTrue(multiQueueAuthenticator.isRestricted(subQueue))
 
-        Mockito.doReturn(false).`when`(multiQueueAuthenticator).removeRestriction(queueType)
+        Mockito.doReturn(false).`when`(multiQueueAuthenticator).removeRestriction(subQueue)
 
         mockMvc.perform(
-            MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${queueType}")
+            MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${subQueue}")
                 .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isInternalServerError)
@@ -317,30 +317,30 @@ class AuthControllerTest
     @Test
     fun testRemoveRestrictionFromSubQueue_removeButDontClearQueue()
     {
-        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
-        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getRestrictionMode())
 
-        val queueType = "testRemoveRestrictionFromSubQueue_removeButDontClearQueue"
-        val token = jwtTokenProvider.createTokenForSubQueue(queueType)
+        val subQueue = "testRemoveRestrictionFromSubQueue_removeButDontClearQueue"
+        val token = jwtTokenProvider.createTokenForSubQueue(subQueue)
         Assertions.assertTrue(token.isPresent)
 
-        Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(queueType))
-        Assertions.assertTrue(multiQueueAuthenticator.isRestricted(queueType))
+        Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(subQueue))
+        Assertions.assertTrue(multiQueueAuthenticator.isRestricted(subQueue))
 
         multiQueue.clear()
         try
         {
-            Assertions.assertTrue(multiQueue.add(QueueMessage("a payload", queueType)))
+            Assertions.assertTrue(multiQueue.add(QueueMessage("a payload", subQueue)))
             Assertions.assertEquals(1, multiQueue.size)
 
             mockMvc.perform(
-                MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${queueType}")
+                MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${subQueue}")
                     .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
                     .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(MockMvcResultMatchers.status().isOk)
 
             Assertions.assertEquals(1, multiQueue.size)
-            Assertions.assertFalse(multiQueueAuthenticator.isRestricted(queueType))
+            Assertions.assertFalse(multiQueueAuthenticator.isRestricted(subQueue))
         }
         finally
         {
@@ -356,30 +356,30 @@ class AuthControllerTest
     @Test
     fun testRemoveRestrictionFromSubQueue_removeAndClearQueue()
     {
-        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
-        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getRestrictionMode())
 
-        val queueType = "testRemoveRestrictionFromSubQueue_removeAndClearQueue"
-        val token = jwtTokenProvider.createTokenForSubQueue(queueType)
+        val subQueue = "testRemoveRestrictionFromSubQueue_removeAndClearQueue"
+        val token = jwtTokenProvider.createTokenForSubQueue(subQueue)
         Assertions.assertTrue(token.isPresent)
 
-        Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(queueType))
-        Assertions.assertTrue(multiQueueAuthenticator.isRestricted(queueType))
+        Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(subQueue))
+        Assertions.assertTrue(multiQueueAuthenticator.isRestricted(subQueue))
 
         multiQueue.clear()
         try
         {
-            Assertions.assertTrue(multiQueue.add(QueueMessage("a payload", queueType)))
+            Assertions.assertTrue(multiQueue.add(QueueMessage("a payload", subQueue)))
             Assertions.assertEquals(1, multiQueue.size)
 
             mockMvc.perform(
-                MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${queueType}?${RestParameters.CLEAR_QUEUE}=true")
+                MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${subQueue}?${RestParameters.CLEAR_QUEUE}=true")
                     .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
                     .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(MockMvcResultMatchers.status().isOk)
 
             Assertions.assertEquals(0, multiQueue.size)
-            Assertions.assertFalse(multiQueueAuthenticator.isRestricted(queueType))
+            Assertions.assertFalse(multiQueueAuthenticator.isRestricted(subQueue))
         }
         finally
         {
@@ -394,8 +394,8 @@ class AuthControllerTest
     @Test
     fun testGetRestrictedSubQueueIdentifiers_inNoneMode()
     {
-        Mockito.doReturn(RestrictionMode.NONE).`when`(multiQueueAuthenticator).getAuthenticationType()
-        Assertions.assertEquals(RestrictionMode.NONE, multiQueueAuthenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.NONE).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.NONE, multiQueueAuthenticator.getRestrictionMode())
 
         mockMvc.perform(MockMvcRequestBuilders.get(AuthController.AUTH_PATH)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
@@ -410,8 +410,8 @@ class AuthControllerTest
     @Test
     fun testGetRestrictedSubQueueIdentifiers_notInNoneMode()
     {
-        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getAuthenticationType()
-        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getAuthenticationType())
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getRestrictionMode())
 
         val restrictedIdentifiers = setOf("testGetRestrictedSubQueueIdentifiers_inNoneMode1", "testGetRestrictedSubQueueIdentifiers_inNoneMode2",
             "testGetRestrictedSubQueueIdentifiers_inNoneMode3", "testGetRestrictedSubQueueIdentifiers_inNoneMode4", "testGetRestrictedSubQueueIdentifiers_inNoneMode5")

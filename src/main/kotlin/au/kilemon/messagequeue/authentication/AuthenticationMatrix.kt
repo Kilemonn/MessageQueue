@@ -6,8 +6,8 @@ import javax.persistence.*
 
 /**
  * An object that holds subqueue authentication information.
- * If a specific sub queue is in restricted mode it will have a matching [AuthenticationMatrix] created which will
- * be checked to verify if a specific sub queue can be operated on.
+ * If a specific sub-queue is in restricted mode it will have a matching [AuthenticationMatrix] created which will
+ * be checked to verify if a specific sub-queue can be operated on.
  * This object is used for `In-memory`, `SQL` and `Redis`.
  *
  * @author github.com/Kilemonn

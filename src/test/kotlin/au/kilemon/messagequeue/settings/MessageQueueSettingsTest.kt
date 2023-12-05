@@ -50,7 +50,7 @@ class MessageQueueSettingsTest
     fun testValues()
     {
         Assertions.assertNotNull(messageQueueSettings)
-        Assertions.assertEquals("REDIS", messageQueueSettings.multiQueueType)
+        Assertions.assertEquals("REDIS", messageQueueSettings.storageMedium)
         Assertions.assertEquals("123.123.123.123", messageQueueSettings.redisEndpoint)
         Assertions.assertEquals("redis", messageQueueSettings.redisPrefix)
         Assertions.assertEquals("master", messageQueueSettings.redisMasterName)

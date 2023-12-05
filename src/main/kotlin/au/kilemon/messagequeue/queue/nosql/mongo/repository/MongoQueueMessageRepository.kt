@@ -16,20 +16,20 @@ import java.util.*
 interface MongoQueueMessageRepository: MongoRepository<QueueMessageDocument, Long>
 {
     /**
-     * Get a distinct [List] of [String] [QueueMessageDocument.type] that currently exist.
+     * Get a distinct [List] of [String] [QueueMessageDocument.subQueue] that currently exist.
      *
-     * @return a [List] of all the existing [QueueMessageDocument.type] as [String]s
+     * @return a [List] of all the existing [QueueMessageDocument.subQueue] as [String]s
      */
-    @Aggregation(pipeline = [ "{ '\$group': { '_id' : '\$type' } }" ])
-    fun getDistinctTypes(): List<String>
+    @Aggregation(pipeline = [ "{ '\$group': { '_id' : '\$subQueue' } }" ])
+    fun getDistinctSubQueues(): List<String>
 
     /**
-     * Get a list of [QueueMessageDocument] which have [QueueMessageDocument.type] matching the provided [type].
+     * Get a list of [QueueMessageDocument] which have [QueueMessageDocument.subQueue] matching the provided [subQueue].
      *
-     * @param type the type to match [QueueMessageDocument.type] with
-     * @return a [List] of [QueueMessageDocument] who have a matching [QueueMessageDocument.type] with the provided [type]
+     * @param subQueue the type to match [QueueMessageDocument.subQueue] with
+     * @return a [List] of [QueueMessageDocument] who have a matching [QueueMessageDocument.subQueue] with the provided [subQueue]
      */
-    fun findByTypeOrderByIdAsc(type: String): List<QueueMessageDocument>
+    fun findBySubQueueOrderByIdAsc(subQueue: String): List<QueueMessageDocument>
 
     /**
      * Find and return a [QueueMessageDocument] that matches the provided [uuid].
@@ -40,13 +40,13 @@ interface MongoQueueMessageRepository: MongoRepository<QueueMessageDocument, Lon
     fun findByUuid(uuid: String): Optional<QueueMessageDocument>
 
     /**
-     * Delete all [QueueMessageDocument] that have a [QueueMessageDocument.type] that matches the provided [type].
+     * Delete all [QueueMessageDocument] that have a [QueueMessageDocument.subQueue] that matches the provided [subQueue].
      *
-     * @param type messages that are assigned this queue type will be removed
+     * @param subQueue messages that are assigned this sub-queue will be removed
      * @return the [Int] number of deleted entries
      */
     @Modifying
-    fun deleteByType(type: String): Int
+    fun deleteBySubQueue(subQueue: String): Int
 
     /**
      * Delete a [QueueMessageDocument] by `uuid`.
@@ -65,30 +65,30 @@ interface MongoQueueMessageRepository: MongoRepository<QueueMessageDocument, Lon
     fun findTopByOrderByIdDesc(): Optional<QueueMessageDocument>
 
     /**
-     * Find the entity with the matching [QueueMessageDocument.type] and that has a non-null [QueueMessageDocument.assignedTo]. Sorted by ID ascending.
+     * Find the entity with the matching [QueueMessageDocument.subQueue] and that has a non-null [QueueMessageDocument.assignedTo]. Sorted by ID ascending.
      *
-     * @param type the type to match [QueueMessageDocument.type] with
-     * @return a [List] of [QueueMessageDocument] who have a matching [QueueMessageDocument.type] with the provided [type] and non-null [QueueMessageDocument.assignedTo]
+     * @param subQueue the type to match [QueueMessageDocument.subQueue] with
+     * @return a [List] of [QueueMessageDocument] who have a matching [QueueMessageDocument.subQueue] with the provided [subQueue] and non-null [QueueMessageDocument.assignedTo]
      */
     @Transactional
-    fun findByTypeAndAssignedToIsNotNullOrderByIdAsc(type: String): List<QueueMessageDocument>
+    fun findBySubQueueAndAssignedToIsNotNullOrderByIdAsc(subQueue: String): List<QueueMessageDocument>
 
     /**
-     * Find the entity with the matching [QueueMessageDocument.type] and [QueueMessageDocument.assignedTo]. Sorted by ID ascending.
+     * Find the entity with the matching [QueueMessageDocument.subQueue] and [QueueMessageDocument.assignedTo]. Sorted by ID ascending.
      *
-     * @param type the type to match [QueueMessageDocument.type] with
+     * @param subQueue the type to match [QueueMessageDocument.subQueue] with
      * @param assignedTo the identifier to match [QueueMessageDocument.assignedTo] with
-     * @return a [List] of [QueueMessageDocument] who have a matching [QueueMessageDocument.type] and [QueueMessageDocument.assignedTo]
+     * @return a [List] of [QueueMessageDocument] who have a matching [QueueMessageDocument.subQueue] and [QueueMessageDocument.assignedTo]
      */
     @Transactional
-    fun findByTypeAndAssignedToOrderByIdAsc(type: String, assignedTo: String): List<QueueMessageDocument>
+    fun findBySubQueueAndAssignedToOrderByIdAsc(subQueue: String, assignedTo: String): List<QueueMessageDocument>
 
     /**
-     * Find the entity with the matching [QueueMessageDocument.type] and that has [QueueMessageDocument.assignedTo] set to `null`. Sorted by ID ascending.
+     * Find the entity with the matching [QueueMessageDocument.subQueue] and that has [QueueMessageDocument.assignedTo] set to `null`. Sorted by ID ascending.
      *
-     * @param type the type to match [QueueMessageDocument.type] with
-     * @return a [List] of [QueueMessageDocument] who have a matching [QueueMessageDocument.type] with the provided [type] and `null` [QueueMessageDocument.assignedTo]
+     * @param subQueue the type to match [QueueMessageDocument.subQueue] with
+     * @return a [List] of [QueueMessageDocument] who have a matching [QueueMessageDocument.subQueue] with the provided [subQueue] and `null` [QueueMessageDocument.assignedTo]
      */
     @Transactional
-    fun findByTypeAndAssignedToIsNullOrderByIdAsc(type: String): List<QueueMessageDocument>
+    fun findBySubQueueAndAssignedToIsNullOrderByIdAsc(subQueue: String): List<QueueMessageDocument>
 }

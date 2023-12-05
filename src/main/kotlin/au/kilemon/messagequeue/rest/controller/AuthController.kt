@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
-import lombok.Generated
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -60,7 +59,7 @@ open class AuthController : HasLogger
     {
         if (multiQueueAuthenticator.isInNoneMode())
         {
-            LOG.trace("Returning no restricted identifiers since the authentication type is set to [{}].", multiQueueAuthenticator.getAuthenticationType())
+            LOG.trace("Returning no restricted identifiers since the restriction mode is set to [{}].", multiQueueAuthenticator.getRestrictionMode())
             return ResponseEntity.noContent().build()
         }
 
@@ -68,7 +67,7 @@ open class AuthController : HasLogger
     }
 
     @Operation(summary = "Create restriction on sub-queue.", description = "Create restriction a specific sub-queue to require authentication for future interactions and retrieve a token used to interact with this sub-queue.")
-    @PostMapping("/{${RestParameters.QUEUE_TYPE}}", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @PostMapping("/{${RestParameters.SUB_QUEUE}}", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponses(
         ApiResponse(responseCode = "201", description = "Successfully registered the sub-queue identifier and returns an appropriate token for future access to the sub-queue."),
         ApiResponse(responseCode = "204", description = "The MultiQueue is in a no-auth mode and tokens cannot be generated.", content = [Content()]), // Add empty Content() to remove duplicate responses in swagger docsApiResponse(responseCode = "204", description = "No queue messages match the provided UUID.", content = [Content()])
@@ -76,46 +75,46 @@ open class AuthController : HasLogger
         ApiResponse(responseCode = "500", description = "There was an error generating the auth token for the sub-queue.", content = [Content()])
     )
     fun restrictSubQueue(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The sub-queue that you wish to restrict to allow further access only by callers that posses the returned token.")
-                         @PathVariable(required = true, name = RestParameters.QUEUE_TYPE) queueType: String,
-                          /*@Parameter(`in` = ParameterIn.QUERY, required = false, description = "The generated token's expiry in minutes.")
-                          @RequestParam(required = false, name = RestParameters.EXPIRY) expiry: Long?*/): ResponseEntity<AuthResponse>
+                         @PathVariable(required = true, name = RestParameters.SUB_QUEUE) subQueue: String,
+                         /*@Parameter(`in` = ParameterIn.QUERY, required = false, description = "The generated token's expiry in minutes.")
+                         @RequestParam(required = false, name = RestParameters.EXPIRY) expiry: Long?*/): ResponseEntity<AuthResponse>
     {
         if (multiQueueAuthenticator.isInNoneMode())
         {
-            LOG.trace("Requested token for sub-queue [{}] is not provided as queue is in mode [{}].", queueType,
-                multiQueueAuthenticator.getAuthenticationType())
+            LOG.trace("Requested token for sub-queue [{}] is not provided as queue is in mode [{}].", subQueue,
+                multiQueueAuthenticator.getRestrictionMode())
             return ResponseEntity.noContent().build()
         }
 
-        if (multiQueueAuthenticator.isRestricted(queueType))
+        if (multiQueueAuthenticator.isRestricted(subQueue))
         {
             return ResponseEntity.status(HttpStatus.CONFLICT).build()
         }
         else
         {
             // Generating the token first, so we don't need to roll back restriction add later if there is a problem
-            val token = jwtTokenProvider.createTokenForSubQueue(queueType, null)
+            val token = jwtTokenProvider.createTokenForSubQueue(subQueue, null)
             if (token.isEmpty)
             {
-                LOG.error("Failed to generated token for sub-queue [{}].", queueType)
+                LOG.error("Failed to generated token for sub-queue [{}].", subQueue)
                 return ResponseEntity.internalServerError().build()
             }
 
-            return if (!multiQueueAuthenticator.addRestrictedEntry(queueType))
+            return if (!multiQueueAuthenticator.addRestrictedEntry(subQueue))
             {
-                LOG.error("Failed to add restriction for sub-queue [{}].", queueType)
+                LOG.error("Failed to add restriction for sub-queue [{}].", subQueue)
                 ResponseEntity.internalServerError().build()
             }
             else
             {
-                LOG.info("Successfully generated token for sub-queue [{}].", queueType)
-                ResponseEntity.status(HttpStatus.CREATED).body(AuthResponse(token.get(), queueType))
+                LOG.info("Successfully generated token for sub-queue [{}].", subQueue)
+                ResponseEntity.status(HttpStatus.CREATED).body(AuthResponse(token.get(), subQueue))
             }
         }
     }
 
     @Operation(summary = "Remove restriction from sub-queue.", description = "Remove restriction from sub-queue so it can be accessed without restriction.")
-    @DeleteMapping("/{${RestParameters.QUEUE_TYPE}}", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @DeleteMapping("/{${RestParameters.SUB_QUEUE}}", produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "Successfully removed restriction for the sub-queue identifier."),
         ApiResponse(responseCode = "202", description = "The MultiQueue is in a no-auth mode and sub-queue restrictions are disabled.", content = [Content()]), // Add empty Content() to remove duplicate responses in swagger docsApiResponse(responseCode = "204", description = "No queue messages match the provided UUID.", content = [Content()])
@@ -123,49 +122,51 @@ open class AuthController : HasLogger
         ApiResponse(responseCode = "403", description = "Invalid token provided to remove restriction from requested sub-queue.", content = [Content()]),
         ApiResponse(responseCode = "500", description = "There was an error releasing restriction from the sub-queue.", content = [Content()])
     )
-    fun removeRestrictionFromSubQueue(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The sub-queue identifier to remove restriction for.") @PathVariable(required = true, name = RestParameters.QUEUE_TYPE) queueType: String,
-                                      @Parameter(`in` = ParameterIn.QUERY, required = false, description = "If restriction is removed successfully indicate whether the sub-queue should be cleared now that it is accessible without a token.") @RequestParam(required = false, name = RestParameters.CLEAR_QUEUE) clearQueue: Boolean?): ResponseEntity<Void>
+    fun removeRestrictionFromSubQueue(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The sub-queue identifier to remove restriction for.")
+                                      @PathVariable(required = true, name = RestParameters.SUB_QUEUE) subQueue: String,
+                                      @Parameter(`in` = ParameterIn.QUERY, required = false, description = "If restriction is removed successfully indicate whether the sub-queue should be cleared now that it is accessible without a token.")
+                                      @RequestParam(required = false, name = RestParameters.CLEAR_QUEUE) clearQueue: Boolean?): ResponseEntity<Void>
     {
         if (multiQueueAuthenticator.isInNoneMode())
         {
-            LOG.trace("Requested to release authentication for sub-queue [{}] but queue is in mode [{}].", queueType,
-                multiQueueAuthenticator.getAuthenticationType())
+            LOG.trace("Requested to release authentication for sub-queue [{}] but queue is in mode [{}].", subQueue,
+                multiQueueAuthenticator.getRestrictionMode())
             return ResponseEntity.accepted().build()
         }
 
         val authedToken = JwtAuthenticationFilter.getSubQueue()
-        if (authedToken == queueType)
+        if (authedToken == subQueue)
         {
-            if (multiQueueAuthenticator.isRestricted(queueType))
+            if (multiQueueAuthenticator.isRestricted(subQueue))
             {
-                return if (multiQueueAuthenticator.removeRestriction(queueType))
+                return if (multiQueueAuthenticator.removeRestriction(subQueue))
                 {
                     if (clearQueue == true)
                     {
-                        LOG.info("Restriction removed and clearing sub-queue [{}].", queueType)
-                        multiQueue.clearForType(queueType)
+                        LOG.info("Restriction removed and clearing sub-queue [{}].", subQueue)
+                        multiQueue.clearSubQueue(subQueue)
                     }
                     else
                     {
-                        LOG.info("Removed restriction from sub-queue [{}] without clearing stored messages.", queueType)
+                        LOG.info("Removed restriction from sub-queue [{}] without clearing stored messages.", subQueue)
                     }
                     ResponseEntity.ok().build()
                 }
                 else
                 {
-                    LOG.error("Failed to remove restriction for sub-queue [{}].", queueType)
+                    LOG.error("Failed to remove restriction for sub-queue [{}].", subQueue)
                     ResponseEntity.internalServerError().build()
                 }
             }
             else
             {
-                LOG.info("Cannot remove restriction from a sub-queue [{}] that is not restricted.", queueType)
+                LOG.info("Cannot remove restriction from a sub-queue [{}] that is not restricted.", subQueue)
                 return ResponseEntity.noContent().build()
             }
         }
         else
         {
-            LOG.error("Failed to release authentication for sub-queue [{}] since provided token [{}] is not for the requested sub-queue.", queueType, authedToken)
+            LOG.error("Failed to release authentication for sub-queue [{}] since provided token [{}] is not for the requested sub-queue.", subQueue, authedToken)
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
         }
     }

@@ -95,8 +95,6 @@ class MongoMultiQueueTest: MultiQueueTest()
 
     /**
      * Check the container is running before each test as it's required for the methods to access the [MongoMultiQueue].
-     *
-     * We will call [MongoMultiQueue.initialiseQueueIndex] here because we pass in the [MessageQueueSettings.MULTI_QUEUE_LAZY_INITIALISE] in the [DataMongoTest] annotation.
      */
     @BeforeEach
     fun beforeEach()

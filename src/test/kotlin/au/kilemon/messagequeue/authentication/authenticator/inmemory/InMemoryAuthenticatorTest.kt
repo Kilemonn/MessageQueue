@@ -40,13 +40,13 @@ class InMemoryAuthenticatorTest: MultiQueueAuthenticatorTest()
     fun testIsInNoneMode()
     {
         val authenticator = Mockito.spy(MultiQueueAuthenticator::class.java)
-        Mockito.doReturn(RestrictionMode.NONE).`when`(authenticator).getAuthenticationType()
+        Mockito.doReturn(RestrictionMode.NONE).`when`(authenticator).getRestrictionMode()
         Assertions.assertTrue(authenticator.isInNoneMode())
 
-        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getAuthenticationType()
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getRestrictionMode()
         Assertions.assertFalse(authenticator.isInNoneMode())
 
-        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(authenticator).getAuthenticationType()
+        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(authenticator).getRestrictionMode()
         Assertions.assertFalse(authenticator.isInNoneMode())
     }
 
@@ -58,13 +58,13 @@ class InMemoryAuthenticatorTest: MultiQueueAuthenticatorTest()
     fun testIsInHybridMode()
     {
         val authenticator = Mockito.spy(MultiQueueAuthenticator::class.java)
-        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getAuthenticationType()
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getRestrictionMode()
         Assertions.assertTrue(authenticator.isInHybridMode())
 
-        Mockito.doReturn(RestrictionMode.NONE).`when`(authenticator).getAuthenticationType()
+        Mockito.doReturn(RestrictionMode.NONE).`when`(authenticator).getRestrictionMode()
         Assertions.assertFalse(authenticator.isInHybridMode())
 
-        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(authenticator).getAuthenticationType()
+        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(authenticator).getRestrictionMode()
         Assertions.assertFalse(authenticator.isInHybridMode())
     }
 
@@ -76,13 +76,13 @@ class InMemoryAuthenticatorTest: MultiQueueAuthenticatorTest()
     fun testIsInRestrictedMode()
     {
         val authenticator = Mockito.spy(MultiQueueAuthenticator::class.java)
-        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(authenticator).getAuthenticationType()
+        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(authenticator).getRestrictionMode()
         Assertions.assertTrue(authenticator.isInRestrictedMode())
 
-        Mockito.doReturn(RestrictionMode.NONE).`when`(authenticator).getAuthenticationType()
+        Mockito.doReturn(RestrictionMode.NONE).`when`(authenticator).getRestrictionMode()
         Assertions.assertFalse(authenticator.isInRestrictedMode())
 
-        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getAuthenticationType()
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getRestrictionMode()
         Assertions.assertFalse(authenticator.isInRestrictedMode())
     }
 }

@@ -101,13 +101,13 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
             {
                 if (tokenIsPresentAndQueueIsRestricted(subQueue, authenticator))
                 {
-                    LOG.trace("Accepted request for sub queue [{}].", subQueue.get())
+                    LOG.trace("Accepted request for sub-queue [{}].", subQueue.get())
                     filterChain.doFilter(request, response)
                 }
                 else
                 {
                     val token = if (subQueue.isPresent) subQueue.get() else "null"
-                    LOG.error("Failed to manipulate sub queue [{}] with provided token as the authentication level is set to [{}].", token, authenticator.getAuthenticationType())
+                    LOG.error("Failed to manipulate sub-queue [{}] with provided token as the authentication level is set to [{}].", token, authenticator.getRestrictionMode())
                     handlerExceptionResolver.resolveException(request, response, null, MultiQueueAuthenticationException())
                     return
                 }
@@ -156,13 +156,13 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
     /**
      * Set the provided [Optional][String] into the [MDC] as [JwtAuthenticationFilter.SUB_QUEUE] if it is not [Optional.empty].
      *
-     * @param subQueue an optional sub queue identifier, if it is not [Optional.empty] it will be placed into the [MDC]
+     * @param subQueue an optional sub-queue identifier, if it is not [Optional.empty] it will be placed into the [MDC]
      */
     fun setSubQueue(subQueue: Optional<String>)
     {
         if (subQueue.isPresent)
         {
-            LOG.trace("Setting resolved sub queue from token into request context [{}].", subQueue.get())
+            LOG.trace("Setting resolved sub-queue from token into request context [{}].", subQueue.get())
             MDC.put(SUB_QUEUE, subQueue.get())
         }
     }

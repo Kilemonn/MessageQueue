@@ -49,7 +49,7 @@ class QueueConfiguration : HasLogger
     private lateinit var redisTemplate: RedisTemplate<String, QueueMessage>
 
     /**
-     * Initialise the [MultiQueue] [Bean] based on the [MessageQueueSettings.multiQueueType].
+     * Initialise the [MultiQueue] [Bean] based on the [MessageQueueSettings.storageMedium].
      */
     @Bean
     open fun getMultiQueue(): MultiQueue
@@ -58,7 +58,7 @@ class QueueConfiguration : HasLogger
 
         // Default to in-memory
         var queue: MultiQueue = InMemoryMultiQueue()
-        when (messageQueueSettings.multiQueueType.uppercase()) {
+        when (messageQueueSettings.storageMedium.uppercase()) {
             StorageMedium.REDIS.toString() -> {
                 queue = RedisMultiQueue(messageQueueSettings.redisPrefix, redisTemplate)
             }
@@ -70,44 +70,44 @@ class QueueConfiguration : HasLogger
             }
         }
 
-        LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.STORAGE_MEDIUM, messageQueueSettings.multiQueueType)
+        LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.STORAGE_MEDIUM, messageQueueSettings.storageMedium)
 
         return queue
     }
 
     /**
-     * Initialise the [RestrictionMode] which drives how sub queues are accessed and created.
+     * Initialise the [RestrictionMode] which drives how sub-queues are accessed and created.
      */
     @Bean
-    open fun getMultiQueueAuthenticationType(): RestrictionMode
+    open fun getRestrictionMode(): RestrictionMode
     {
-        var authenticationType = RestrictionMode.NONE
+        var restrictionMode = RestrictionMode.NONE
 
-        if (messageQueueSettings.multiQueueAuthentication.isNotBlank())
+        if (messageQueueSettings.restrictionMode.isNotBlank())
         {
             try
             {
-                authenticationType = RestrictionMode.valueOf(messageQueueSettings.multiQueueAuthentication.uppercase())
+                restrictionMode = RestrictionMode.valueOf(messageQueueSettings.restrictionMode.uppercase())
             }
             catch (ex: Exception)
             {
-                LOG.warn("Unable to initialise appropriate authentication type with provided value [{}], falling back to default [{}].", messageQueueSettings.multiQueueAuthentication, RestrictionMode.NONE, ex)
+                LOG.warn("Unable to initialise appropriate restriction mode with provided value [{}], falling back to default [{}].", messageQueueSettings.restrictionMode, RestrictionMode.NONE, ex)
             }
         }
 
-        LOG.info("Using [{}] authentication as the [{}] is set to [{}].", authenticationType, MessageQueueSettings.RESTRICTION_MODE, messageQueueSettings.multiQueueAuthentication)
+        LOG.info("Using [{}] restriction mode as the [{}] is set to [{}].", restrictionMode, MessageQueueSettings.RESTRICTION_MODE, messageQueueSettings.restrictionMode)
 
-        return authenticationType
+        return restrictionMode
     }
 
     /**
-     * Initialise the [MultiQueueAuthenticator] [Bean] based on the [MessageQueueSettings.multiQueueType].
+     * Initialise the [MultiQueueAuthenticator] [Bean] based on the [MessageQueueSettings.storageMedium].
      */
     @Bean
     open fun getMultiQueueAuthenticator(): MultiQueueAuthenticator
     {
         var authenticator: MultiQueueAuthenticator = InMemoryAuthenticator()
-        when (messageQueueSettings.multiQueueType.uppercase()) {
+        when (messageQueueSettings.storageMedium.uppercase()) {
             StorageMedium.REDIS.toString() -> {
                 authenticator = RedisAuthenticator()
             }
@@ -119,7 +119,7 @@ class QueueConfiguration : HasLogger
             }
         }
 
-        LOG.info("Initialising [{}] authenticator as the [{}] is set to [{}].", authenticator::class.java.name, MessageQueueSettings.STORAGE_MEDIUM, messageQueueSettings.multiQueueType)
+        LOG.info("Initialising [{}] authenticator as the [{}] is set to [{}].", authenticator::class.java.name, MessageQueueSettings.STORAGE_MEDIUM, messageQueueSettings.storageMedium)
 
         return authenticator
     }

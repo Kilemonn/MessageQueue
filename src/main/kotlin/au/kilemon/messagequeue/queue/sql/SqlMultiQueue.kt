@@ -25,24 +25,24 @@ class SqlMultiQueue : MultiQueue(), HasLogger
     @Autowired
     private lateinit var queueMessageRepository: SqlQueueMessageRepository
 
-    override fun getQueueForTypeInternal(queueType: String): Queue<QueueMessage>
+    override fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
     {
-        val entries = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
+        val entries = queueMessageRepository.findBySubQueueOrderByIdAsc(subQueue)
         return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
     }
 
     /**
      * Overriding since we can filter via the DB query.
      */
-    override fun getAssignedMessagesForType(queueType: String, assignedTo: String?): Queue<QueueMessage>
+    override fun getAssignedMessagesInSubQueue(subQueue: String, assignedTo: String?): Queue<QueueMessage>
     {
         val entries = if (assignedTo == null)
         {
-            queueMessageRepository.findByTypeAndAssignedToIsNotNullOrderByIdAsc(queueType)
+            queueMessageRepository.findBySubQueueAndAssignedToIsNotNullOrderByIdAsc(subQueue)
         }
         else
         {
-            queueMessageRepository.findByTypeAndAssignedToOrderByIdAsc(queueType, assignedTo)
+            queueMessageRepository.findBySubQueueAndAssignedToOrderByIdAsc(subQueue, assignedTo)
         }
 
         return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
@@ -51,9 +51,9 @@ class SqlMultiQueue : MultiQueue(), HasLogger
     /**
      * Overriding since we can filter via the DB query.
      */
-    override fun getUnassignedMessagesForType(queueType: String): Queue<QueueMessage>
+    override fun getUnassignedMessagesInSubQueue(subQueue: String): Queue<QueueMessage>
     {
-        val entries = queueMessageRepository.findByTypeAndAssignedToIsNullOrderByIdAsc(queueType)
+        val entries = queueMessageRepository.findBySubQueueAndAssignedToIsNullOrderByIdAsc(subQueue)
         return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
     }
 
@@ -75,21 +75,21 @@ class SqlMultiQueue : MultiQueue(), HasLogger
         }
     }
 
-    override fun clearForTypeInternal(queueType: String): Int
+    override fun clearSubQueueInternal(subQueue: String): Int
     {
-        val amountCleared = queueMessageRepository.deleteByType(queueType)
-        LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, amountCleared)
+        val amountCleared = queueMessageRepository.deleteBySubQueue(subQueue)
+        LOG.debug("Cleared existing sub-queue [{}]. Removed [{}] message entries.", subQueue, amountCleared)
         return amountCleared
     }
 
-    override fun isEmptyForType(queueType: String): Boolean
+    override fun isEmptySubQueue(subQueue: String): Boolean
     {
-        return queueMessageRepository.findByTypeOrderByIdAsc(queueType).isEmpty()
+        return queueMessageRepository.findBySubQueueOrderByIdAsc(subQueue).isEmpty()
     }
 
-    override fun pollInternal(queueType: String): Optional<QueueMessage>
+    override fun pollInternal(subQueue: String): Optional<QueueMessage>
     {
-        val messages = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
+        val messages = queueMessageRepository.findBySubQueueOrderByIdAsc(subQueue)
         return if (messages.isNotEmpty())
         {
             return Optional.of(messages[0].resolvePayloadObject())
@@ -105,7 +105,7 @@ class SqlMultiQueue : MultiQueue(), HasLogger
      */
     override fun keysInternal(includeEmpty: Boolean): HashSet<String>
     {
-        val keySet = HashSet(queueMessageRepository.findDistinctType())
+        val keySet = HashSet(queueMessageRepository.findDistinctSubQueue())
         LOG.debug("Total amount of queue keys [{}].", keySet.size)
         return keySet
     }
@@ -116,12 +116,12 @@ class SqlMultiQueue : MultiQueue(), HasLogger
         return if (optionalMessage.isPresent)
         {
             val message = optionalMessage.get()
-            LOG.debug("Found queue type [{}] for UUID: [{}].", message.type, uuid)
-            Optional.of(message.type)
+            LOG.debug("Found sub-queue [{}] for message with UUID: [{}].", message.subQueue, uuid)
+            Optional.of(message.subQueue)
         }
         else
         {
-            LOG.debug("No queue type exists for UUID: [{}].", uuid)
+            LOG.debug("No sub-queue found for message with UUID: [{}].", uuid)
             Optional.empty()
         }
     }
@@ -159,7 +159,7 @@ class SqlMultiQueue : MultiQueue(), HasLogger
      * Overriding to return [Optional.EMPTY] so that the [MultiQueue.add] does set an `id` into the [QueueMessage]
      * even if the id is `null`.
      */
-    override fun getNextQueueIndex(queueType: String): Optional<Long>
+    override fun getNextSubQueueIndex(subQueue: String): Optional<Long>
     {
         return Optional.empty()
     }

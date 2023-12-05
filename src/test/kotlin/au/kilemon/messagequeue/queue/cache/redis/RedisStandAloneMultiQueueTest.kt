@@ -111,22 +111,22 @@ class RedisStandAloneMultiQueueTest: MultiQueueTest()
 
         val prefix = redisMultiQueue.getPrefix()
 
-        val type = "removePrefix"
-        val type2 = "removePrefix2"
-        Assertions.assertTrue(redisMultiQueue.add(QueueMessage("data", type)))
-        Assertions.assertTrue(redisMultiQueue.add(QueueMessage("data2", type2)))
+        val subQueue = "removePrefix"
+        val subQueue2 = "removePrefix2"
+        Assertions.assertTrue(redisMultiQueue.add(QueueMessage("data", subQueue)))
+        Assertions.assertTrue(redisMultiQueue.add(QueueMessage("data2", subQueue2)))
 
         val keys = redisMultiQueue.keys()
-        Assertions.assertTrue(keys.contains("$prefix$type"))
-        Assertions.assertTrue(keys.contains("$prefix$type2"))
+        Assertions.assertTrue(keys.contains("$prefix$subQueue"))
+        Assertions.assertTrue(keys.contains("$prefix$subQueue2"))
         keys.forEach { key -> Assertions.assertTrue(key.startsWith(prefix)) }
 
         val removedPrefix = redisMultiQueue.removePrefix(keys)
-        Assertions.assertFalse(removedPrefix.contains("$prefix$type"))
-        Assertions.assertFalse(removedPrefix.contains("$prefix$type2"))
+        Assertions.assertFalse(removedPrefix.contains("$prefix$subQueue"))
+        Assertions.assertFalse(removedPrefix.contains("$prefix$subQueue2"))
         removedPrefix.forEach { key -> Assertions.assertFalse(key.startsWith(prefix)) }
 
-        Assertions.assertTrue(removedPrefix.contains(type))
-        Assertions.assertTrue(removedPrefix.contains(type2))
+        Assertions.assertTrue(removedPrefix.contains(subQueue))
+        Assertions.assertTrue(removedPrefix.contains(subQueue2))
     }
 }

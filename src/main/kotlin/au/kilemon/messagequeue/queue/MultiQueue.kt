@@ -17,7 +17,7 @@ import kotlin.collections.HashSet
 
 /**
  * A [MultiQueue] base class, which extends [Queue].
- * It contains various extra methods for interfacing with the [MultiQueue] using the [String] as a queue type identifier
+ * It contains various extra methods for interfacing with the [MultiQueue] using the [String] as a sub-queue identifier
  * to manipulate the appropriate underlying [Queue]s.
  *
  * @author github.com/Kilemonn
@@ -38,7 +38,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
 
     /**
      * Get the underlying size of the [MultiQueue].
-     * This is done by summing the length of each [getQueueForType] for each key in [keys].
+     * This is done by summing the length of each [getSubQueue] for each key in [keys].
      *
      * This is to allow the underlying storage to be the source of truth instead of any temporary counters, since the underlying storage could
      * change at any timeout without direct interaction from the [MultiQueue].
@@ -47,7 +47,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
         get() {
             var internalSize = 0
             keys(false).forEach { key ->
-                internalSize += getQueueForType(key).size
+                internalSize += getSubQueue(key).size
             }
             return internalSize
         }
@@ -66,7 +66,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      *
      * @return the current value of the index before it was incremented
      */
-    abstract fun getNextQueueIndex(queueType: String): Optional<Long>
+    abstract fun getNextSubQueueIndex(subQueue: String): Optional<Long>
 
     /**
      * A wrapper for the [MultiQueue.persistMessageInternal] so this method can be synchronised.
@@ -97,128 +97,128 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
     abstract fun persistMessageInternal(message: QueueMessage)
 
     /**
-     * Retrieves or creates a new [Queue] of type [QueueMessage] for the provided [String].
-     * If the underlying [Queue] does not exist for the provided [String] then a new [Queue] will
+     * Retrieves or creates a new [Queue] of [QueueMessage] for the provided [subQueue].
+     * If the underlying [Queue] does not exist for the provided [subQueue] then a new [Queue] will
      * be created.
      *
-     * **This method should not be called directly, please use [getQueueForType]**
+     * **This method should not be called directly, please use [getSubQueue]**
      *
-     * @param queueType the identifier of the sub-queue [Queue]
+     * @param subQueue the identifier of the sub-queue [Queue]
      * @return the [Queue] matching the provided [String]
      */
-    abstract fun getQueueForTypeInternal(queueType: String): Queue<QueueMessage>
+    abstract fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
 
     /**
      * Retrieves or creates a new [Queue] of type [QueueMessage] for the provided [String].
      * If the underlying [Queue] does not exist for the provided [String] then a new [Queue] will
      * be created.
      *
-     * @param queueType the identifier of the sub-queue [Queue]
+     * @param subQueue the identifier of the sub-queue [Queue]
      * @return the [Queue] matching the provided [String]
-     * @throws IllegalSubQueueIdentifierException If the provided [queueType] is part of the [MultiQueueAuthenticator.getReservedSubQueues]
+     * @throws IllegalSubQueueIdentifierException If the provided [subQueue] is part of the [MultiQueueAuthenticator.getReservedSubQueues]
      */
     @Throws(IllegalSubQueueIdentifierException::class)
-    fun getQueueForType(queueType: String): Queue<QueueMessage>
+    fun getSubQueue(subQueue: String): Queue<QueueMessage>
     {
-        if (!multiQueueAuthenticator.isInNoneMode() && multiQueueAuthenticator.getReservedSubQueues().contains(queueType))
+        if (!multiQueueAuthenticator.isInNoneMode() && multiQueueAuthenticator.getReservedSubQueues().contains(subQueue))
         {
-            throw IllegalSubQueueIdentifierException(queueType)
+            throw IllegalSubQueueIdentifierException(subQueue)
         }
 
-        return getQueueForTypeInternal(queueType)
+        return getSubQueueInternal(subQueue)
     }
 
     /**
-     * Retrieves only assigned messages in the sub-queue for the provided [queueType].
+     * Retrieves only assigned messages in the sub-queue for the provided [subQueue].
      *
-     * By default, this calls [getQueueForType] and iterates through this to determine if the [QueueMessage.assignedTo]
+     * By default, this calls [getSubQueue] and iterates through this to determine if the [QueueMessage.assignedTo]
      * field is `not-null`, if [assignedTo] is `null` or is equal to the provided [assignedTo] if it is `not-null`.
      *
-     * @param queueType the identifier of the sub-queue [Queue]
+     * @param subQueue the identifier of the sub-queue [Queue]
      * @param assignedTo to further filter the messages returned this can be provided
      * @return a limited version of the [Queue] containing only assigned messages
      */
-    open fun getAssignedMessagesForType(queueType: String, assignedTo: String?): Queue<QueueMessage>
+    open fun getAssignedMessagesInSubQueue(subQueue: String, assignedTo: String?): Queue<QueueMessage>
     {
-        val queue = ConcurrentLinkedQueue<QueueMessage>()
-        val queueForType = getQueueForType(queueType)
+        val assignedMessages = ConcurrentLinkedQueue<QueueMessage>()
+        val queue = getSubQueue(subQueue)
         if (assignedTo == null)
         {
-            queue.addAll(queueForType.stream().filter { message -> message.assignedTo != null }.collect(Collectors.toList()))
+            assignedMessages.addAll(queue.stream().filter { message -> message.assignedTo != null }.collect(Collectors.toList()))
         }
         else
         {
-            queue.addAll(queueForType.stream().filter { message -> message.assignedTo == assignedTo }.collect(Collectors.toList()))
+            assignedMessages.addAll(queue.stream().filter { message -> message.assignedTo == assignedTo }.collect(Collectors.toList()))
         }
-        return queue
+        return assignedMessages
     }
 
     /**
-     * Retrieves only unassigned messages in the sub-queue for the provided [queueType].
+     * Retrieves only unassigned messages in the sub-queue for the provided [subQueue].
      *
-     * By default, this iterates over [getQueueForType] and includes only entries where [QueueMessage.assignedTo] is `null`.
+     * By default, this iterates over [getSubQueue] and includes only entries where [QueueMessage.assignedTo] is `null`.
      *
-     * @param queueType the identifier of the sub-queue [Queue]
+     * @param subQueue the identifier of the sub-queue [Queue]
      * @return a limited version of the [Queue] containing only unassigned messages
      */
-    open fun getUnassignedMessagesForType(queueType:String): Queue<QueueMessage>
+    open fun getUnassignedMessagesInSubQueue(subQueue: String): Queue<QueueMessage>
     {
-        val queue = ConcurrentLinkedQueue<QueueMessage>()
-        val queueForType = getQueueForType(queueType)
-        queue.addAll(queueForType.stream().filter { message -> message.assignedTo == null }.collect(Collectors.toList()))
-        return queue
+        val unassignedMessages = ConcurrentLinkedQueue<QueueMessage>()
+        val queue = getSubQueue(subQueue)
+        unassignedMessages.addAll(queue.stream().filter { message -> message.assignedTo == null }.collect(Collectors.toList()))
+        return unassignedMessages
     }
 
     /**
      * Get a map of assignee identifiers and the sub-queue identifier that they own messages in.
-     * If the [queueType] is provided this will iterate over all sub-queues and call [getOwnersAndKeysMapForType] for each of them.
-     * Otherwise, it will only call [getOwnersAndKeysMapForType] on the provided [queueType] if it is not null.
+     * If the [subQueue] is provided this will iterate over all sub-queues and call [getOwnersAndKeysMapForSubQueue] for each of them.
+     * Otherwise, it will only call [getOwnersAndKeysMapForSubQueue] on the provided [subQueue] if it is not null.
      *
-     * @param queueType the queue type retrieve the [Map] from
+     * @param subQueue to retrieve the [Map] from
      * @return the [Map] of assignee identifiers mapped to a list of the sub-queue identifiers that they own any messages in
      */
-    fun getOwnersAndKeysMap(queueType: String?): Map<String, HashSet<String>>
+    fun getOwnersAndKeysMap(subQueue: String?): Map<String, HashSet<String>>
     {
         val responseMap = HashMap<String, HashSet<String>>()
-        if (queueType != null)
+        if (subQueue != null)
         {
-            LOG.debug("Getting owners map for sub-queue with identifier [{}].", queueType)
-            getOwnersAndKeysMapForType(queueType, responseMap)
+            LOG.debug("Getting owners map for sub-queue with identifier [{}].", subQueue)
+            getOwnersAndKeysMapForSubQueue(subQueue, responseMap)
         }
         else
         {
             LOG.debug("Getting owners map for all sub-queues.")
             val keys = keys(false)
-            keys.forEach { key -> getOwnersAndKeysMapForType(key, responseMap) }
+            keys.forEach { key -> getOwnersAndKeysMapForSubQueue(key, responseMap) }
         }
         return responseMap
     }
 
     /**
      * Add an entry to the provided [Map] if any of the messages in the sub-queue are assigned.
-     * The [QueueMessage.type] is appended to the [Set] under it's [QueueMessage.assignedTo] identifier.
+     * The [QueueMessage.subQueue] is appended to the [Set] under it's [QueueMessage.assignedTo] identifier.
      *
-     * @param queueType the sub-queue to iterate and update the map from
+     * @param subQueue the sub-queue to iterate and update the map from
      * @param responseMap the map to update
      */
-    fun getOwnersAndKeysMapForType(queueType: String, responseMap: HashMap<String, HashSet<String>>)
+    fun getOwnersAndKeysMapForSubQueue(subQueue: String, responseMap: HashMap<String, HashSet<String>>)
     {
-        val queueForType: Queue<QueueMessage> = getAssignedMessagesForType(queueType, null)
-        queueForType.forEach { message ->
-            val type = message.type
+        val queue: Queue<QueueMessage> = getAssignedMessagesInSubQueue(subQueue, null)
+        queue.forEach { message ->
+            val subQueueID = message.subQueue
             val assigned = message.assignedTo
             if (assigned != null)
             {
-                LOG.trace("Appending sub-queue identifier [{}] to map for assignee ID [{}].", type, assigned)
+                LOG.trace("Appending sub-queue identifier [{}] to map for assignee ID [{}].", subQueueID, assigned)
                 if (!responseMap.contains(assigned))
                 {
-                    val set = hashSetOf(type)
+                    val set = hashSetOf(subQueueID)
                     responseMap[assigned] = set
                 }
                 else
                 {
                     // Set should not be null since we initialise and set it if the key is contained
-                    responseMap[assigned]!!.add(type)
+                    responseMap[assigned]!!.add(subQueueID)
                 }
             }
         }
@@ -262,48 +262,48 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      *
      * This method should update the [size] property as part of the clearing of the sub-queue.
      *
-     * @param queueType the [String] of the [Queue] to clear
+     * @param subQueue the [String] of the [Queue] to clear
      * @return the number of entries removed
      */
-    abstract fun clearForTypeInternal(queueType: String): Int
+    abstract fun clearSubQueueInternal(subQueue: String): Int
 
     /**
-     * Call to [MultiQueue.clearForTypeInternal].
+     * Call to [MultiQueue.clearSubQueueInternal].
      *
-     * @param queueType the [String] of the [Queue] to clear
+     * @param subQueue the [String] of the [Queue] to clear
      * @return the number of entries removed
      */
-    fun clearForType(queueType: String): Int
+    fun clearSubQueue(subQueue: String): Int
     {
-        return clearForTypeInternal(queueType)
+        return clearSubQueueInternal(subQueue)
     }
 
     /**
      * Indicates whether the underlying [Queue] for the provided [String] is empty. By calling [Queue.isEmpty].
      *
-     * @param queueType the [String] of the [Queue] to check whether it is empty
+     * @param subQueue the [String] of the [Queue] to check whether it is empty
      * @return `true` if the [Queue] for the [String] is empty, otherwise `false`
      */
-    abstract fun isEmptyForType(queueType: String): Boolean
+    abstract fun isEmptySubQueue(subQueue: String): Boolean
 
     /**
      * Calls [Queue.poll] on the underlying [Queue] for the provided [String].
      * This will retrieve **AND** remove the head element of the [Queue].
      *
-     * @param queueType [String] of the [Queue] to poll
+     * @param subQueue [String] of the [Queue] to poll
      * @return the head element or `null`
      */
-    open fun pollForType(queueType: String): Optional<QueueMessage>
+    open fun pollSubQueue(subQueue: String): Optional<QueueMessage>
     {
-        val head = pollInternal(queueType)
+        val head = pollInternal(subQueue)
         if (head.isPresent)
         {
             removeInternal(head.get())
-            LOG.debug("Found and removed head element with UUID [{}] from queue with type [{}].", head.get().uuid, queueType)
+            LOG.debug("Found and removed head element with UUID [{}] from sub-queue [{}].", head.get().uuid, subQueue)
         }
         else
         {
-            LOG.debug("No head element found when polling queue with type [{}].", queueType)
+            LOG.debug("No head element found when polling sub-queue [{}].", subQueue)
         }
         return head
     }
@@ -312,32 +312,32 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      * The internal poll method to be called.
      * This is not to  be called directly.
      *
-     * This method should return the first element in the queue for the provided [queueType].
+     * This method should return the first element in the queue for the provided [subQueue].
      * *The caller will remove this element*.
      *
-     * @param queueType the sub-queue to poll
+     * @param subQueue the sub-queue to poll
      * @return the first message wrapped as an [Optional] otherwise [Optional.empty]
      */
-    abstract fun pollInternal(queueType: String): Optional<QueueMessage>
+    abstract fun pollInternal(subQueue: String): Optional<QueueMessage>
 
     /**
      * Calls [Queue.peek] on the underlying [Queue] for the provided [String].
      * This will retrieve the head element of the [Queue] without removing it.
      *
-     * @param queueType [String] of the [Queue] to peek
+     * @param subQueue [String] of the [Queue] to peek
      * @return the head element or `null`
      */
-    fun peekForType(queueType: String): Optional<QueueMessage>
+    fun peekSubQueue(subQueue: String): Optional<QueueMessage>
     {
-        val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
-        val peeked = Optional.ofNullable(queueForType.peek())
+        val queue: Queue<QueueMessage> = getSubQueue(subQueue)
+        val peeked = Optional.ofNullable(queue.peek())
         if (peeked.isPresent)
         {
-            LOG.debug("Found head element with UUID [{}] from queue with type [{}].", peeked.get().uuid, queueType)
+            LOG.debug("Found head element with UUID [{}] from sub-queue [{}].", peeked.get().uuid, subQueue)
         }
         else
         {
-            LOG.debug("No head element found when peeking queue with type [{}].", queueType)
+            LOG.debug("No head element found when peeking sub-queue [{}].", subQueue)
         }
         return peeked
     }
@@ -347,7 +347,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      * **Should be called directly, please using [keys].**
      *
      * @param includeEmpty *true* to include any empty queues which one had elements in them, otherwise *false* to only include keys from queues which have elements.
-     * @return a [HashSet] of the available `QueueTypes` that have entries in the [MultiQueue].
+     * @return a [HashSet] of the available `Sub-Queues` that have entries in the [MultiQueue].
      */
     abstract fun keysInternal(includeEmpty: Boolean = true): HashSet<String>
 
@@ -355,7 +355,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      * Delegates to [keysInternal] and removes any keys that match in the [MultiQueueAuthenticator.getReservedSubQueues].
      *
      * @param includeEmpty *true* to include any empty queues which one had elements in them, otherwise *false* to only include keys from queues which have elements.
-     * @return a [Set] of the available `QueueTypes` that have entries in the [MultiQueue].
+     * @return a [Set] of the available `Sub-Queues` that have entries in the [MultiQueue].
      */
     fun keys(includeEmpty: Boolean = true): Set<String>
     {
@@ -367,10 +367,10 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
     }
 
     /**
-     * Returns the `queueType` that the [QueueMessage] with the provided [UUID] exists in.
+     * Returns the `sub-queue` that the [QueueMessage] with the provided [UUID] exists in.
      *
      * @param uuid the [UUID] (as a [String]) to look up
-     * @return the `queueType` [String] if a [QueueMessage] exists with the provided [UUID] otherwise [Optional.empty]
+     * @return the `sub-queue` [String] if a [QueueMessage] exists with the provided [UUID] otherwise [Optional.empty]
      */
     abstract fun containsUUID(uuid: String): Optional<String>
 
@@ -380,27 +380,27 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
     /**
      * Override [add] method to declare [Throws] [DuplicateMessageException] annotation.
      *
-     * [Synchronized] so that the call to [MultiQueue.getNextQueueIndex] does not cause issues, since retrieving the next index does
+     * [Synchronized] so that the call to [MultiQueue.getNextSubQueueIndex] does not cause issues, since retrieving the next index does
      * not force it to be auto incremented or unusable by another thread.
      *
      * @throws [DuplicateMessageException] if a message already exists with the same [QueueMessage.uuid] in `any` other queue.
-     * @throws [IllegalSubQueueIdentifierException] if the [QueueMessage.type] is invalid or reserved
+     * @throws [IllegalSubQueueIdentifierException] if the [QueueMessage.subQueue] is invalid or reserved
      */
     @Throws(DuplicateMessageException::class, IllegalSubQueueIdentifierException::class)
     @Synchronized
     override fun add(element: QueueMessage): Boolean
     {
-        if (multiQueueAuthenticator.getReservedSubQueues().contains(element.type))
+        if (multiQueueAuthenticator.getReservedSubQueues().contains(element.subQueue))
         {
-            throw IllegalSubQueueIdentifierException(element.type)
+            throw IllegalSubQueueIdentifierException(element.subQueue)
         }
 
-        val elementIsMappedToType = containsUUID(element.uuid)
-        if ( !elementIsMappedToType.isPresent)
+        val subQueueMessageAlreadyExistsIn = containsUUID(element.uuid)
+        if ( !subQueueMessageAlreadyExistsIn.isPresent)
         {
             if (element.id == null)
             {
-                val index = getNextQueueIndex(element.type)
+                val index = getNextSubQueueIndex(element.subQueue)
                 if (index.isPresent)
                 {
                     element.id = index.get()
@@ -409,20 +409,20 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
             val wasAdded = addInternal(element)
             return if (wasAdded)
             {
-                LOG.debug("Added new message with uuid [{}] to queue with type [{}].", element.uuid, element.type)
+                LOG.debug("Added new message with uuid [{}] to sub-queue [{}].", element.uuid, element.subQueue)
                 true
             }
             else
             {
-                LOG.error("Failed to add message with uuid [{}] to queue with type [{}].", element.uuid, element.type)
+                LOG.error("Failed to add message with uuid [{}] to sub-queue [{}].", element.uuid, element.subQueue)
                 false
             }
         }
         else
         {
-            val existingQueueType = elementIsMappedToType.get()
-            LOG.warn("Did not add new message with uuid [{}] to queue with type [{}] as it already exists in queue with type [{}].", element.uuid, element.type, existingQueueType)
-            throw DuplicateMessageException(element.uuid, existingQueueType)
+            val existingSubQueue = subQueueMessageAlreadyExistsIn.get()
+            LOG.warn("Did not add new message with uuid [{}] to sub-queue [{}] as it already exists in sub-queue [{}].", element.uuid, element.subQueue, existingSubQueue)
+            throw DuplicateMessageException(element.uuid, existingSubQueue)
         }
     }
 
@@ -440,11 +440,11 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
         val wasRemoved = removeInternal(element)
         if (wasRemoved)
         {
-            LOG.debug("Removed element with UUID [{}] from queue with type [{}].", element.uuid, element.type)
+            LOG.debug("Removed element with UUID [{}] from sub-queue [{}].", element.uuid, element.subQueue)
         }
         else
         {
-            LOG.error("Failed to remove element with UUID [{}] from queue with type [{}].", element.uuid, element.type)
+            LOG.error("Failed to remove element with UUID [{}] from sub-queue [{}].", element.uuid, element.subQueue)
         }
         return wasRemoved
     }
@@ -464,8 +464,8 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
         {
             return false
         }
-        val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
-        return queueForType.contains(element)
+        val queue: Queue<QueueMessage> = getSubQueue(element.subQueue)
+        return queue.contains(element)
     }
 
     override fun containsAll(elements: Collection<QueueMessage>): Boolean
@@ -496,7 +496,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
         for (key: String in keys(false))
         {
             // The queue should never be new or created since we passed `false` into `keys()` above.
-            val queueForKey: Queue<QueueMessage> = getQueueForType(key)
+            val queueForKey: Queue<QueueMessage> = getSubQueue(key)
             for(entry: QueueMessage in queueForKey)
             {
                 if ( !elements.contains(entry))
@@ -533,11 +533,11 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
     }
 
     /**
-     * @return `true` any of the [keys] returns `false` for [isEmptyForType], otherwise `false`.
+     * @return `true` any of the [keys] returns `false` for [isEmptySubQueue], otherwise `false`.
      */
     override fun isEmpty(): Boolean
     {
-        val anyHasElements = keys(false).stream().anyMatch { key -> !isEmptyForType(key) }
+        val anyHasElements = keys(false).stream().anyMatch { key -> !isEmptySubQueue(key) }
         return !anyHasElements
     }
 
@@ -547,10 +547,10 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
         var removedEntryCount = 0
         for (key in keys)
         {
-            val amountRemovedForQueue = clearForType(key)
+            val amountRemovedForQueue = clearSubQueue(key)
             removedEntryCount += amountRemovedForQueue
         }
-        LOG.debug("Cleared multi-queue, removed [{}] message entries over [{}] queue types.", removedEntryCount, keys)
+        LOG.debug("Cleared multi-queue, removed [{}] message entries over [{}] sub-queues.", removedEntryCount, keys)
     }
 
     /**

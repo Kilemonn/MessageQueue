@@ -3,9 +3,7 @@ package au.kilemon.messagequeue.message
 import com.fasterxml.jackson.annotation.JsonIgnore
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
-import org.springframework.util.SerializationUtils
 import java.util.*
-import javax.persistence.*
 
 /**
  * This is used for `No-SQL` queues.
@@ -13,7 +11,7 @@ import javax.persistence.*
  * @author github.com/Kilemonn
  */
 @Document(value = QueueMessageDocument.DOCUMENT_NAME)
-class QueueMessageDocument(var payload: Any?, var type: String, var assignedTo: String? = null)
+class QueueMessageDocument(var payload: Any?, var subQueue: String, var assignedTo: String? = null)
 {
     companion object
     {
@@ -34,7 +32,7 @@ class QueueMessageDocument(var payload: Any?, var type: String, var assignedTo: 
     constructor(queueMessage: QueueMessage) : this()
     {
         val resolvedQueueMessage = queueMessage.resolvePayloadObject()
-        this.type = resolvedQueueMessage.type
+        this.subQueue = resolvedQueueMessage.subQueue
         this.uuid = resolvedQueueMessage.uuid
         this.id = resolvedQueueMessage.id
         this.payload = resolvedQueueMessage.payload

@@ -39,7 +39,7 @@ class InMemoryMockMultiQueueTest
     @Test
     fun testPerformAdd_returnsFalse()
     {
-        val message = QueueMessage(null, "type")
+        val message = QueueMessage(null, "testPerformAdd_returnsFalse")
         Mockito.`when`(multiQueue.addInternal(message)).thenReturn(false)
         Mockito.`when`(multiQueue.containsUUID(message.uuid)).thenReturn(Optional.empty())
         Assertions.assertFalse(multiQueue.add(message))
@@ -67,7 +67,7 @@ class InMemoryMockMultiQueueTest
     @Test
     fun testRetainAll_removeFails()
     {
-        val message = QueueMessage("payload", "type-string")
+        val message = QueueMessage("payload", "testRetainAll_removeFails")
         Mockito.`when`(multiQueue.remove(message)).thenReturn(false)
 
         Assertions.assertTrue(multiQueue.add(message))

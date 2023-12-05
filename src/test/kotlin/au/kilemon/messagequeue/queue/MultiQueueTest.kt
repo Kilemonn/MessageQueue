@@ -68,24 +68,24 @@ abstract class MultiQueueTest
     /**
      * Ensure that when a new entry is added, that the [MultiQueue] is no longer empty and reports the correct size.
      *
-     * @param data the incoming [Serializable] data to store in the [MultiQueue] to test that we can cater for multiple types
+     * @param data the incoming [Serializable] data to store in the [MultiQueue] to test that we can cater for multiple [QueueMessage.subQueue]
      */
     @ParameterizedTest
     @MethodSource("parameters_testAdd")
     fun testAdd(data: Serializable)
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val message = QueueMessage(data, "type")
+        val message = QueueMessage(data, "testAdd")
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
         Assertions.assertEquals(1, multiQueue.size)
 
         // Getting the element two ways, via the queue for type and via poll to ensure both ways resolve the object payload properly
-        val queue = multiQueue.getQueueForType(message.type)
+        val queue = multiQueue.getSubQueue(message.subQueue)
         Assertions.assertEquals(1, queue.size)
         val storedElement = queue.elementAt(0)
 
-        val retrievedMessage = multiQueue.pollForType(message.type)
+        val retrievedMessage = multiQueue.pollSubQueue(message.subQueue)
         Assertions.assertTrue(multiQueue.isEmpty())
         Assertions.assertEquals(0, multiQueue.size)
 
@@ -112,37 +112,37 @@ abstract class MultiQueueTest
     }
 
     /***
-     * Test [MultiQueue.add] to ensure that [DuplicateMessageException] is thrown if a [QueueMessage] already exists with the same `UUID` even if it is assigned to a different `queue type`.
+     * Test [MultiQueue.add] to ensure that [DuplicateMessageException] is thrown if a [QueueMessage] already exists with the same `UUID` even if it is assigned to a different `sub-queue`.
      */
     @Test
-    fun testAdd_entryAlreadyExistsInDifferentQueueType()
+    fun testAdd_entryAlreadyExistsInDifferentSubQueue()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val message = QueueMessage("test", "type")
+        val message = QueueMessage("test", "testAdd_entryAlreadyExistsInDifferentSubQueue")
         Assertions.assertTrue(multiQueue.add(message))
 
-        val differentType = "different-type"
-        val differentTypeMessage = QueueMessage(message.payload, differentType)
-        differentTypeMessage.uuid = message.uuid
+        val differentSubQueue = "testAdd_entryAlreadyExistsInDifferentSubQueue2"
+        val differentMessage = QueueMessage(message.payload, differentSubQueue)
+        differentMessage.uuid = message.uuid
 
-        Assertions.assertEquals(message.payload, differentTypeMessage.payload)
-        Assertions.assertEquals(message.uuid, differentTypeMessage.uuid)
-        Assertions.assertNotEquals(message.type, differentTypeMessage.type)
+        Assertions.assertEquals(message.payload, differentMessage.payload)
+        Assertions.assertEquals(message.uuid, differentMessage.uuid)
+        Assertions.assertNotEquals(message.subQueue, differentMessage.subQueue)
 
         Assertions.assertThrows(DuplicateMessageException::class.java)
         {
-            multiQueue.add(differentTypeMessage)
+            multiQueue.add(differentMessage)
         }
     }
 
     /***
-     * Test [MultiQueue.add] to ensure that [DuplicateMessageException] is thrown if a [QueueMessage] already exists with the same `UUID` even if it is assigned to the same `queue type`.
+     * Test [MultiQueue.add] to ensure that [DuplicateMessageException] is thrown if a [QueueMessage] already exists with the same `UUID` even if it is assigned to the same `sub-queue`.
      */
     @Test
     fun testAdd_sameEntryAlreadyExists()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val message = QueueMessage("test", "type")
+        val message = QueueMessage("test", "testAdd_sameEntryAlreadyExists")
         Assertions.assertTrue(multiQueue.add(message))
 
         Assertions.assertThrows(DuplicateMessageException::class.java)
@@ -159,7 +159,7 @@ abstract class MultiQueueTest
     {
         Assertions.assertTrue(multiQueue.isEmpty())
 
-        val message = QueueMessage("A test value", "type")
+        val message = QueueMessage("A test value", "testRemove")
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
@@ -177,7 +177,7 @@ abstract class MultiQueueTest
     fun testRemove_whenEntryDoesntExist()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val messageThatDoesntExist = QueueMessage(Payload("some Other data", 23, false, PayloadEnum.A), "type")
+        val messageThatDoesntExist = QueueMessage(Payload("some Other data", 23, false, PayloadEnum.A), "testRemove_whenEntryDoesntExist")
 
         Assertions.assertFalse(multiQueue.remove(messageThatDoesntExist))
         Assertions.assertTrue(multiQueue.isEmpty())
@@ -190,9 +190,9 @@ abstract class MultiQueueTest
     fun testContains_whenEntryDoesntExist()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val type = "type"
+        val subQueue = "testContains_whenEntryDoesntExist"
         val otherData = Payload("some Other data", 65, true, PayloadEnum.B)
-        val messageThatDoesntExist = QueueMessage(otherData, type)
+        val messageThatDoesntExist = QueueMessage(otherData, subQueue)
         Assertions.assertFalse(multiQueue.contains(messageThatDoesntExist))
     }
 
@@ -203,7 +203,7 @@ abstract class MultiQueueTest
     fun testContains_whenEntryExists()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val message = QueueMessage(0x52347, "type")
+        val message = QueueMessage(0x52347, "testContains_whenEntryExists")
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
@@ -221,7 +221,7 @@ abstract class MultiQueueTest
     fun testContains_whenMetadataPropertiesAreSet()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val message = QueueMessage(0x5234, "type")
+        val message = QueueMessage(0x5234, "testContains_whenMetadataPropertiesAreSet")
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
@@ -248,94 +248,94 @@ abstract class MultiQueueTest
     @Test
     fun testGetNextQueueIndex_doesNotIncrement()
     {
-        val queueType = "testGetNextQueueIndex_doesNotIncrement"
+        val subQueue = "testGetNextQueueIndex_doesNotIncrement"
         if (multiQueue is SqlMultiQueue)
         {
-            Assertions.assertTrue(multiQueue.getNextQueueIndex(queueType).isEmpty)
+            Assertions.assertTrue(multiQueue.getNextSubQueueIndex(subQueue).isEmpty)
         }
         else if (multiQueue is InMemoryMultiQueue)
         {
-            Assertions.assertEquals(1, multiQueue.getNextQueueIndex(queueType).get())
-            Assertions.assertEquals(2, multiQueue.getNextQueueIndex(queueType).get())
-            Assertions.assertEquals(3, multiQueue.getNextQueueIndex(queueType).get())
-            Assertions.assertEquals(4, multiQueue.getNextQueueIndex(queueType).get())
-            Assertions.assertEquals(5, multiQueue.getNextQueueIndex(queueType).get())
+            Assertions.assertEquals(1, multiQueue.getNextSubQueueIndex(subQueue).get())
+            Assertions.assertEquals(2, multiQueue.getNextSubQueueIndex(subQueue).get())
+            Assertions.assertEquals(3, multiQueue.getNextSubQueueIndex(subQueue).get())
+            Assertions.assertEquals(4, multiQueue.getNextSubQueueIndex(subQueue).get())
+            Assertions.assertEquals(5, multiQueue.getNextSubQueueIndex(subQueue).get())
 
-            multiQueue.clearForType(queueType)
-            Assertions.assertEquals(1, multiQueue.getNextQueueIndex(queueType).get())
-            Assertions.assertEquals(2, multiQueue.getNextQueueIndex(queueType).get())
-            Assertions.assertEquals(3, multiQueue.getNextQueueIndex(queueType).get())
-            Assertions.assertEquals(4, multiQueue.getNextQueueIndex(queueType).get())
-            Assertions.assertEquals(5, multiQueue.getNextQueueIndex(queueType).get())
+            multiQueue.clearSubQueue(subQueue)
+            Assertions.assertEquals(1, multiQueue.getNextSubQueueIndex(subQueue).get())
+            Assertions.assertEquals(2, multiQueue.getNextSubQueueIndex(subQueue).get())
+            Assertions.assertEquals(3, multiQueue.getNextSubQueueIndex(subQueue).get())
+            Assertions.assertEquals(4, multiQueue.getNextSubQueueIndex(subQueue).get())
+            Assertions.assertEquals(5, multiQueue.getNextSubQueueIndex(subQueue).get())
 
             multiQueue.clear()
-            Assertions.assertEquals(1, multiQueue.getNextQueueIndex(queueType).get())
-            Assertions.assertEquals(2, multiQueue.getNextQueueIndex(queueType).get())
-            Assertions.assertEquals(3, multiQueue.getNextQueueIndex(queueType).get())
-            Assertions.assertEquals(4, multiQueue.getNextQueueIndex(queueType).get())
-            Assertions.assertEquals(5, multiQueue.getNextQueueIndex(queueType).get())
+            Assertions.assertEquals(1, multiQueue.getNextSubQueueIndex(subQueue).get())
+            Assertions.assertEquals(2, multiQueue.getNextSubQueueIndex(subQueue).get())
+            Assertions.assertEquals(3, multiQueue.getNextSubQueueIndex(subQueue).get())
+            Assertions.assertEquals(4, multiQueue.getNextSubQueueIndex(subQueue).get())
+            Assertions.assertEquals(5, multiQueue.getNextSubQueueIndex(subQueue).get())
         }
         else
         {
-            Assertions.assertTrue(multiQueue.getNextQueueIndex(queueType).isPresent)
-            Assertions.assertEquals(1, multiQueue.getNextQueueIndex(queueType).get())
-            Assertions.assertEquals(1, multiQueue.getNextQueueIndex(queueType).get())
-            Assertions.assertEquals(1, multiQueue.getNextQueueIndex(queueType).get())
+            Assertions.assertTrue(multiQueue.getNextSubQueueIndex(subQueue).isPresent)
+            Assertions.assertEquals(1, multiQueue.getNextSubQueueIndex(subQueue).get())
+            Assertions.assertEquals(1, multiQueue.getNextSubQueueIndex(subQueue).get())
+            Assertions.assertEquals(1, multiQueue.getNextSubQueueIndex(subQueue).get())
         }
     }
 
     /**
-     * Ensure that [MultiQueue.getNextQueueIndex] starts at `1` and increments properly as called once entries are added.
+     * Ensure that [MultiQueue.getNextSubQueueIndex] starts at `1` and increments properly as called once entries are added.
      */
     @Test
     fun testGetNextQueueIndex_withMessages()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
 
-        val queueType1 = "testGetNextQueueIndex_reInitialise1"
-        val queueType2 = "testGetNextQueueIndex_reInitialise2"
+        val subQueue1 = "testGetNextQueueIndex_reInitialise1"
+        val subQueue2 = "testGetNextQueueIndex_reInitialise2"
 
-        val list1 = listOf(QueueMessage(81273648, queueType1), QueueMessage("test test test", queueType1), QueueMessage(false, queueType1))
-        val list2 = listOf(QueueMessage("test", queueType2), QueueMessage(123, queueType2))
+        val list1 = listOf(QueueMessage(81273648, subQueue1), QueueMessage("test test test", subQueue1), QueueMessage(false, subQueue1))
+        val list2 = listOf(QueueMessage("test", subQueue2), QueueMessage(123, subQueue2))
         Assertions.assertTrue(multiQueue.addAll(list1))
         Assertions.assertTrue(multiQueue.addAll(list2))
 
         if (multiQueue is SqlMultiQueue)
         {
-            Assertions.assertTrue(multiQueue.getNextQueueIndex(queueType1).isEmpty)
-            Assertions.assertTrue(multiQueue.getNextQueueIndex(queueType2).isEmpty)
+            Assertions.assertTrue(multiQueue.getNextSubQueueIndex(subQueue1).isEmpty)
+            Assertions.assertTrue(multiQueue.getNextSubQueueIndex(subQueue2).isEmpty)
         }
         else if (multiQueue is InMemoryMultiQueue)
         {
-            Assertions.assertEquals((list1.size + 1).toLong(), multiQueue.getNextQueueIndex(queueType1).get())
-            Assertions.assertEquals((list2.size + 1).toLong(), multiQueue.getNextQueueIndex(queueType2).get())
+            Assertions.assertEquals((list1.size + 1).toLong(), multiQueue.getNextSubQueueIndex(subQueue1).get())
+            Assertions.assertEquals((list2.size + 1).toLong(), multiQueue.getNextSubQueueIndex(subQueue2).get())
         }
         else if (multiQueue is MongoMultiQueue)
         {
-            Assertions.assertEquals((list1.size + list2.size + 1).toLong(), multiQueue.getNextQueueIndex(queueType1).get())
-            Assertions.assertEquals((list1.size + list2.size + 1).toLong(), multiQueue.getNextQueueIndex(queueType2).get())
+            Assertions.assertEquals((list1.size + list2.size + 1).toLong(), multiQueue.getNextSubQueueIndex(subQueue1).get())
+            Assertions.assertEquals((list1.size + list2.size + 1).toLong(), multiQueue.getNextSubQueueIndex(subQueue2).get())
         }
         else
         {
-            Assertions.assertEquals((list1.size + 1).toLong(), multiQueue.getNextQueueIndex(queueType1).get())
-            Assertions.assertEquals((list2.size + 1).toLong(), multiQueue.getNextQueueIndex(queueType2).get())
+            Assertions.assertEquals((list1.size + 1).toLong(), multiQueue.getNextSubQueueIndex(subQueue1).get())
+            Assertions.assertEquals((list2.size + 1).toLong(), multiQueue.getNextSubQueueIndex(subQueue2).get())
         }
     }
 
     /**
-     * Ensure [MultiQueue.getQueueForType] returns the list of [QueueMessage]s always ordered by their [QueueMessage.id].
+     * Ensure [MultiQueue.getSubQueue] returns the list of [QueueMessage]s always ordered by their [QueueMessage.id].
      *
      * This also ensures they are assigned the `id` in the order they are enqueued.
      */
     @Test
-    fun testGetQueueForType_ordered()
+    fun testGetqueue_ordered()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val queueType = "testGetQueueForType_ordered"
+        val subQueue = "testGetqueue_ordered"
 
-        val list = listOf(QueueMessage(81248, queueType), QueueMessage("test data", queueType), QueueMessage(false, queueType))
+        val list = listOf(QueueMessage(81248, subQueue), QueueMessage("test data", subQueue), QueueMessage(false, subQueue))
         Assertions.assertTrue(multiQueue.addAll(list))
-        val queue = multiQueue.getQueueForType(queueType)
+        val queue = multiQueue.getSubQueue(subQueue)
         Assertions.assertEquals(list.size, queue.size)
         var previousIndex: Long? = null
         list.zip(queue).forEach { pair ->
@@ -353,22 +353,22 @@ abstract class MultiQueueTest
     }
 
     /**
-     * Ensure [MultiQueue.getQueueForType] returns the list of [QueueMessage]s always ordered by their [QueueMessage.id].
+     * Ensure [MultiQueue.getSubQueue] returns the list of [QueueMessage]s always ordered by their [QueueMessage.id].
      * Even when messages are changed and re-enqueued we need to make sure the returned message order is retained.
      */
     @Test
-    fun testGetQueueForType_reordered()
+    fun testGetqueue_reordered()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val queueType = "testGetQueueForType_reordered"
+        val subQueue = "testGetqueue_reordered"
 
-        val list = listOf(QueueMessage(81248, queueType), QueueMessage("test data", queueType), QueueMessage(false, queueType))
+        val list = listOf(QueueMessage(81248, subQueue), QueueMessage("test data", subQueue), QueueMessage(false, subQueue))
         Assertions.assertTrue(multiQueue.addAll(list))
 
         // Force an object change, which for some mechanisms would re-enqueue it at the end
         // We will re-retrieve the queue and ensure they are in order to test that the ordering is correct
         // even after the object is changed
-        var queue = multiQueue.getQueueForType(queueType)
+        var queue = multiQueue.getSubQueue(subQueue)
         Assertions.assertEquals(list.size, queue.size)
         val firstMessage = queue.first()
         Assertions.assertEquals(list[0].uuid, firstMessage.uuid)
@@ -376,7 +376,7 @@ abstract class MultiQueueTest
         firstMessage.payload = newData
         multiQueue.persistMessage(firstMessage)
 
-        queue = multiQueue.getQueueForType(queueType)
+        queue = multiQueue.getSubQueue(subQueue)
         var previousIndex: Long? = null
         list.zip(queue).forEach { pair ->
             Assertions.assertEquals(pair.first.uuid, pair.second.uuid)
@@ -394,16 +394,16 @@ abstract class MultiQueueTest
     }
 
     /**
-     * Ensure that calls to [MultiQueue.getQueueForType] with a [MultiQueueAuthenticator.getReservedSubQueues] as an
+     * Ensure that calls to [MultiQueue.getSubQueue] with a [MultiQueueAuthenticator.getReservedSubQueues] as an
      * argument will throw [IllegalSubQueueIdentifierException].
      */
     @Test
-    fun testGetQueueForType_reservedSubQueue()
+    fun testGetqueue_reservedSubQueue()
     {
-        doWithAuthType(RestrictionMode.HYBRID) {
+        doWithRestrictedMode(RestrictionMode.HYBRID) {
             authenticator.getReservedSubQueues().forEach { reservedSubQueueIdentifier ->
                 Assertions.assertThrows(IllegalSubQueueIdentifierException::class.java) {
-                    multiQueue.getQueueForType(reservedSubQueueIdentifier)
+                    multiQueue.getSubQueue(reservedSubQueueIdentifier)
                 }
             }
         }
@@ -416,7 +416,7 @@ abstract class MultiQueueTest
     fun testAddAll_containsAll_removeAll()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val list = listOf(QueueMessage(81273648, "type"), QueueMessage("test test test", "type"))
+        val list = listOf(QueueMessage(81273648, "testAddAll_containsAll_removeAll"), QueueMessage("test test test", "testAddAll_containsAll_removeAll"))
         Assertions.assertTrue(multiQueue.addAll(list))
         Assertions.assertFalse(multiQueue.isEmpty())
         Assertions.assertEquals(2, multiQueue.size)
@@ -436,7 +436,7 @@ abstract class MultiQueueTest
     @Test
     fun testAddAll_throwsDuplicateException()
     {
-        val list = listOf(QueueMessage(81273648, "type"), QueueMessage("test test test", "type"))
+        val list = listOf(QueueMessage(81273648, "testAddAll_throwsDuplicateException"), QueueMessage("test test test", "testAddAll_throwsDuplicateException"))
         Assertions.assertTrue(multiQueue.add(list[1]))
         Assertions.assertFalse(multiQueue.addAll(list))
         Assertions.assertEquals(list.size, multiQueue.size)
@@ -447,15 +447,15 @@ abstract class MultiQueueTest
      * Otherwise, if it does exist make sure that the correct entry is returned and that it is removed.
      */
     @Test
-    fun testPollForType()
+    fun testPollForSubQueue()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val message = QueueMessage(Payload("poll for type", 89, true, PayloadEnum.B), "poll-type")
+        val message = QueueMessage(Payload("poll for type", 89, true, PayloadEnum.B), "testPollForSubQueue")
 
-        Assertions.assertFalse(multiQueue.pollForType(message.type).isPresent)
+        Assertions.assertFalse(multiQueue.pollSubQueue(message.subQueue).isPresent)
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
-        val polledMessage = multiQueue.pollForType(message.type).get()
+        val polledMessage = multiQueue.pollSubQueue(message.subQueue).get()
         Assertions.assertEquals(message, polledMessage)
         Assertions.assertTrue(multiQueue.isEmpty())
     }
@@ -465,68 +465,68 @@ abstract class MultiQueueTest
      * Otherwise, if it does exist make sure that the correct entry is returned.
      */
     @Test
-    fun testPeekForType()
+    fun testPeekForSubQueue()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val message = QueueMessage(Payload("peek for type", 1121, false, PayloadEnum.C), "peek-type")
+        val message = QueueMessage(Payload("peek for type", 1121, false, PayloadEnum.C), "testPeekForSubQueue")
 
-        Assertions.assertFalse(multiQueue.peekForType(message.type).isPresent)
+        Assertions.assertFalse(multiQueue.peekSubQueue(message.subQueue).isPresent)
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
-        val peekedMessage = multiQueue.peekForType(message.type).get()
+        val peekedMessage = multiQueue.peekSubQueue(message.subQueue).get()
         Assertions.assertEquals(message, peekedMessage)
         Assertions.assertFalse(multiQueue.isEmpty())
     }
 
     /**
-     * Ensure that [MultiQueue.isEmptyForType] operates as expected when entries exist and don't exist for a specific type.
+     * Ensure that [MultiQueue.isEmptySubQueue] operates as expected when entries exist and don't exist for a specific sub-queue.
      */
     @Test
-    fun testIsEmptyForType()
+    fun testIsEmptyForSubQueue()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
 
-        val type = "type"
+        val subQueue = "testIsEmptyForSubQueue"
         val data = "test data"
-        val message = QueueMessage(data, type)
+        val message = QueueMessage(data, subQueue)
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertFalse(multiQueue.isEmpty())
-        Assertions.assertFalse(multiQueue.isEmptyForType(type))
-        Assertions.assertTrue(multiQueue.isEmptyForType("another-type"))
+        Assertions.assertFalse(multiQueue.isEmptySubQueue(subQueue))
+        Assertions.assertTrue(multiQueue.isEmptySubQueue("testIsEmptyForSubQueue-another"))
     }
 
     /**
-     * Ensure that only the specific entries are removed when [MultiQueue.clearForTypeInternal] is called.
+     * Ensure that only the specific entries are removed when [MultiQueue.clearSubQueueInternal] is called.
      */
     @Test
-    fun testClearForType()
+    fun testClearForSubQueue()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val type = "clear-for-type"
-        val list = listOf(QueueMessage(81273648, type), QueueMessage("test test test", type))
+        val subQueue = "testClearForSubQueue"
+        val list = listOf(QueueMessage(81273648, subQueue), QueueMessage("test test test", subQueue))
         Assertions.assertTrue(multiQueue.addAll(list))
 
-        val singleEntryType = "single-entry-type"
-        val message = QueueMessage("test message", singleEntryType)
+        val singleEntrySubQueue = "testClearForSubQueue2"
+        val message = QueueMessage("test message", singleEntrySubQueue)
         Assertions.assertTrue(multiQueue.add(message))
 
         Assertions.assertEquals(3, multiQueue.size)
-        multiQueue.clearForTypeInternal(type)
+        multiQueue.clearSubQueueInternal(subQueue)
         Assertions.assertEquals(1, multiQueue.size)
-        multiQueue.clearForTypeInternal(singleEntryType)
+        multiQueue.clearSubQueueInternal(singleEntrySubQueue)
         Assertions.assertTrue(multiQueue.isEmpty())
     }
 
     /**
-     * Ensure that no change is made when the specific type has no entries.
+     * Ensure that no change is made when the specific sub-queue has no entries.
      */
     @Test
-    fun testClearForType_DoesNotExist()
+    fun testClearSubQueue_DoesNotExist()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val type = "clear-for-type-does-not-exist"
-        multiQueue.clearForTypeInternal(type)
+        val subQueue = "testClearSubQueue_DoesNotExist"
+        multiQueue.clearSubQueueInternal(subQueue)
         Assertions.assertTrue(multiQueue.isEmpty())
     }
 
@@ -537,11 +537,11 @@ abstract class MultiQueueTest
     fun testRetainAll()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val type = "type1"
-        val type2 = "type2"
+        val subQueue = "testRetainAll1"
+        val subQueue2 = "testRetainAll2"
         val data = Payload("some payload", 1, true, PayloadEnum.A)
         val data2 = Payload("some more data", 2, false, PayloadEnum.B)
-        val list = listOf(QueueMessage(data, type), QueueMessage(data, type2), QueueMessage(data2, type), QueueMessage(data2, type2))
+        val list = listOf(QueueMessage(data, subQueue), QueueMessage(data, subQueue2), QueueMessage(data2, subQueue), QueueMessage(data2, subQueue2))
 
         Assertions.assertTrue(multiQueue.addAll(list))
         Assertions.assertEquals(4, multiQueue.size)
@@ -550,9 +550,9 @@ abstract class MultiQueueTest
         toRetain.addAll(list.subList(0, 2))
         Assertions.assertEquals(2, toRetain.size)
         // No elements of this type to cover all branches of code
-        val type3 = "type3"
-        val type3Message = QueueMessage(Payload("type3 data", 3, false, PayloadEnum.C), type3)
-        toRetain.add(type3Message)
+        val subQueue3 = "testRetainAll3"
+        val message3 = QueueMessage(Payload("data 3", 3, false, PayloadEnum.C), subQueue3)
+        toRetain.add(message3)
         Assertions.assertEquals(3, toRetain.size)
 
         Assertions.assertTrue(multiQueue.retainAll(toRetain))
@@ -574,14 +574,14 @@ abstract class MultiQueueTest
     fun testPersistMessage()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val type = "test-persist"
+        val subQueue = "testPersistMessage"
         val data = Payload("some payload", 1, true, PayloadEnum.A)
         val data2 = Payload("some more data", 2, false, PayloadEnum.B)
 
-        val message = QueueMessage(data, type)
+        val message = QueueMessage(data, subQueue)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val persistedMessage = multiQueue.peekForType(message.type)
+        val persistedMessage = multiQueue.peekSubQueue(message.subQueue)
         Assertions.assertTrue(persistedMessage.isPresent)
         val messageToUpdate = persistedMessage.get()
         Assertions.assertEquals(message, messageToUpdate)
@@ -601,7 +601,7 @@ abstract class MultiQueueTest
 
         multiQueue.persistMessage(messageToUpdate)
 
-        val reRetrievedMessage = multiQueue.peekForType(message.type)
+        val reRetrievedMessage = multiQueue.peekSubQueue(message.subQueue)
         Assertions.assertTrue(reRetrievedMessage.isPresent)
         Assertions.assertEquals(messageToUpdate, reRetrievedMessage.get())
     }
@@ -613,7 +613,7 @@ abstract class MultiQueueTest
     @Test
     fun testPersistMessage_messageHasNullID()
     {
-        val message = QueueMessage("payload", "type")
+        val message = QueueMessage("payload", "testPersistMessage_messageHasNullID")
         Assertions.assertNull(message.id)
 
         if (multiQueue !is InMemoryMultiQueue)
@@ -626,16 +626,16 @@ abstract class MultiQueueTest
     }
 
     /**
-     * Test [MultiQueue.getAssignedMessagesForType] returns only messages with a non-null [QueueMessage.assignedTo] property.
+     * Test [MultiQueue.getAssignedMessagesInSubQueue] returns only messages with a non-null [QueueMessage.assignedTo] property.
      */
     @Test
-    fun testGetAssignedMessagesForType_noAssignedTo()
+    fun testGetAssignedMessagesForSubQueue_noAssignedTo()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val type = "test-assigned-messages-for-type"
-        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), type)
-        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), type)
-        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), type)
+        val subQueue = "testGetAssignedMessagesForSubQueue_noAssignedTo"
+        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), subQueue)
+        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), subQueue)
+        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), subQueue)
 
         // Assign message 1
         val assignedTo = "me"
@@ -651,11 +651,11 @@ abstract class MultiQueueTest
         multiQueue.persistMessage(message2)
 
         // Ensure all messages are in the queue
-        val messagesInSubQueue = multiQueue.getQueueForType(type)
+        val messagesInSubQueue = multiQueue.getSubQueue(subQueue)
         Assertions.assertEquals(3, messagesInSubQueue.size)
 
         // Check only messages 1 and 2 are returned in the assigned queue
-        val assignedMessages = multiQueue.getAssignedMessagesForType(type, null)
+        val assignedMessages = multiQueue.getAssignedMessagesInSubQueue(subQueue, null)
         Assertions.assertEquals(2, assignedMessages.size)
 
         val list = ArrayList<QueueMessage>()
@@ -666,17 +666,18 @@ abstract class MultiQueueTest
     }
 
     /**
-     * Test [MultiQueue.getAssignedMessagesForType] returns only messages with the matching [QueueMessage.assignedTo] property.
+     * Test [MultiQueue.getAssignedMessagesInSubQueue] returns only messages with the matching [QueueMessage.assignedTo] property.
      */
     @Test
-    fun testGetAssignedMessagesForType_withAssignedTo()
+    fun testGetAssignedMessagesForSubQueue_withAssignedTo()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val type = "test-assigned-messages-for-type"
-        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), type)
-        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), type)
-        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), type)
-        val message4 = QueueMessage(Payload("some more data data data", 4, false, PayloadEnum.A), type)
+        Assertions.assertTrue(multiQueue.isEmpty())
+        val subQueue = "testGetAssignedMessagesForSubQueue_withAssignedTo"
+        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), subQueue)
+        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), subQueue)
+        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), subQueue)
+        val message4 = QueueMessage(Payload("some more data data data", 4, false, PayloadEnum.A), subQueue)
 
         // Assign message 1, 2 and 3
         val assignedTo = "me"
@@ -695,11 +696,11 @@ abstract class MultiQueueTest
         multiQueue.persistMessage(message2)
 
         // Ensure all messages are in the queue
-        val messagesInSubQueue = multiQueue.getQueueForType(type)
+        val messagesInSubQueue = multiQueue.getSubQueue(subQueue)
         Assertions.assertEquals(4, messagesInSubQueue.size)
 
         // Check only messages 1 and 2 are assigned to 'assignedTo'
-        val assignedMessages = multiQueue.getAssignedMessagesForType(type, assignedTo)
+        val assignedMessages = multiQueue.getAssignedMessagesInSubQueue(subQueue, assignedTo)
         Assertions.assertEquals(2, assignedMessages.size)
 
         val list = ArrayList<QueueMessage>()
@@ -711,17 +712,17 @@ abstract class MultiQueueTest
     }
 
     /**
-     * Test [MultiQueue.getUnassignedMessagesForType] returns only messages with a `null` [QueueMessage.assignedTo] property.
+     * Test [MultiQueue.getUnassignedMessagesInSubQueue] returns only messages with a `null` [QueueMessage.assignedTo] property.
      */
     @Test
-    fun testGetUnassignedMessagesForType()
+    fun testGetUnassignedMessagesForSubQueue()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val type = "test-unassigned-messages-for-type"
-        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), type)
-        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), type)
-        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), type)
-        val message4 = QueueMessage(Payload("some more data data data", 4, true, PayloadEnum.A), type)
+        val subQueue = "testGetUnassignedMessagesForSubQueue"
+        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), subQueue)
+        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), subQueue)
+        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), subQueue)
+        val message4 = QueueMessage(Payload("some more data data data", 4, true, PayloadEnum.A), subQueue)
 
         val assignedTo = "you"
         message.assignedTo = assignedTo
@@ -739,11 +740,11 @@ abstract class MultiQueueTest
         multiQueue.persistMessage(message3)
 
         // Ensure all messages are in the queue
-        val messagesInSubQueue = multiQueue.getQueueForType(type)
+        val messagesInSubQueue = multiQueue.getSubQueue(subQueue)
         Assertions.assertEquals(4, messagesInSubQueue.size)
 
         // Check only messages 3 and 4 are returned in the unassigned queue
-        val assignedMessages = multiQueue.getUnassignedMessagesForType(type)
+        val assignedMessages = multiQueue.getUnassignedMessagesInSubQueue(subQueue)
         Assertions.assertEquals(2, assignedMessages.size)
 
         val list = ArrayList<QueueMessage>()
@@ -755,21 +756,21 @@ abstract class MultiQueueTest
     }
 
     /**
-     * Test [MultiQueue.getOwnersAndKeysMapForType] to ensure that the provided map is populated properly with the correct entries
+     * Test [MultiQueue.getOwnersAndKeysMapForSubQueue] to ensure that the provided map is populated properly with the correct entries
      * for the current [MultiQueue] state.
      */
     @Test
-    fun testGetOwnersAndKeysMapForType()
+    fun testGetOwnersAndKeysMapForSubQueue()
     {
         val responseMap = HashMap<String, HashSet<String>>()
 
         Assertions.assertTrue(multiQueue.isEmpty())
-        val type = "test-get-owners-and-keys-map-for-type"
-        val type2 = "test-get-owners-and-keys-map-for-type2"
-        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), type)
-        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), type)
-        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), type2)
-        val message4 = QueueMessage(Payload("some more data data data", 4, true, PayloadEnum.A), type)
+        val subQueue = "test-get-owners-and-keys-map-for-subqueue"
+        val subQueue2 = "test-get-owners-and-keys-map-for-subqueue2"
+        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), subQueue)
+        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), subQueue)
+        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), subQueue2)
+        val message4 = QueueMessage(Payload("some more data data data", 4, true, PayloadEnum.A), subQueue)
 
         val assignedTo = "assigned1"
         val assignedTo2 = "assigned2"
@@ -783,7 +784,7 @@ abstract class MultiQueueTest
         Assertions.assertTrue(multiQueue.add(message3))
         Assertions.assertTrue(multiQueue.add(message4))
 
-        multiQueue.getOwnersAndKeysMapForType(type, responseMap)
+        multiQueue.getOwnersAndKeysMapForSubQueue(subQueue, responseMap)
 
         Assertions.assertEquals(2, responseMap.keys.size)
         val listOfKeys = ArrayList<String>()
@@ -792,13 +793,13 @@ abstract class MultiQueueTest
         Assertions.assertTrue(listOfKeys.contains(assignedTo))
         Assertions.assertTrue(listOfKeys.contains(assignedTo2))
 
-        val typesForAssignedTo = responseMap[assignedTo]
-        Assertions.assertEquals(1, typesForAssignedTo!!.size)
-        Assertions.assertEquals(type, typesForAssignedTo.iterator().next())
+        val subQueuesForAssignedTo = responseMap[assignedTo]
+        Assertions.assertEquals(1, subQueuesForAssignedTo!!.size)
+        Assertions.assertEquals(subQueue, subQueuesForAssignedTo.iterator().next())
 
-        val typesForAssignedTo2 = responseMap[assignedTo2]
-        Assertions.assertEquals(1, typesForAssignedTo2!!.size)
-        Assertions.assertEquals(type, typesForAssignedTo2.iterator().next())
+        val subQueuesForAssignedTo2 = responseMap[assignedTo2]
+        Assertions.assertEquals(1, subQueuesForAssignedTo2!!.size)
+        Assertions.assertEquals(subQueue, subQueuesForAssignedTo2.iterator().next())
     }
 
     /**
@@ -806,15 +807,15 @@ abstract class MultiQueueTest
      * for the current [MultiQueue] state.
      */
     @Test
-    fun testGetOwnersAndKeysMap_withQueueType()
+    fun testGetOwnersAndKeysMap_inSubQueue()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val type = "test-get-owners-and-keys-map"
-        val type2 = "test-get-owners-and-keys-map2"
-        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), type)
-        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), type)
-        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), type2)
-        val message4 = QueueMessage(Payload("some more data data data", 4, true, PayloadEnum.A), type)
+        val subQueue = "testGetOwnersAndKeysMap_inSubQueue"
+        val subQueue2 = "testGetOwnersAndKeysMap_inSubQueue2"
+        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), subQueue)
+        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), subQueue)
+        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), subQueue2)
+        val message4 = QueueMessage(Payload("some more data data data", 4, true, PayloadEnum.A), subQueue)
 
         val assignedTo = "assigned1"
         val assignedTo2 = "assigned2"
@@ -828,7 +829,7 @@ abstract class MultiQueueTest
         Assertions.assertTrue(multiQueue.add(message3))
         Assertions.assertTrue(multiQueue.add(message4))
 
-        val responseMap = multiQueue.getOwnersAndKeysMap(type)
+        val responseMap = multiQueue.getOwnersAndKeysMap(subQueue)
 
         Assertions.assertEquals(2, responseMap.keys.size)
         val listOfKeys = responseMap.keys.toList()
@@ -836,13 +837,13 @@ abstract class MultiQueueTest
         Assertions.assertTrue(listOfKeys.contains(assignedTo))
         Assertions.assertTrue(listOfKeys.contains(assignedTo2))
 
-        val typesForAssignedTo = responseMap[assignedTo]
-        Assertions.assertEquals(1, typesForAssignedTo!!.size)
-        Assertions.assertEquals(type, typesForAssignedTo.iterator().next())
+        val subQueuesForAssignedTo = responseMap[assignedTo]
+        Assertions.assertEquals(1, subQueuesForAssignedTo!!.size)
+        Assertions.assertEquals(subQueue, subQueuesForAssignedTo.iterator().next())
 
-        val typesForAssignedTo2 = responseMap[assignedTo2]
-        Assertions.assertEquals(1, typesForAssignedTo2!!.size)
-        Assertions.assertEquals(type, typesForAssignedTo2.iterator().next())
+        val subQueuesForAssignedTo2 = responseMap[assignedTo2]
+        Assertions.assertEquals(1, subQueuesForAssignedTo2!!.size)
+        Assertions.assertEquals(subQueue, subQueuesForAssignedTo2.iterator().next())
     }
 
     /**
@@ -850,19 +851,19 @@ abstract class MultiQueueTest
      * for the current [MultiQueue] state.
      */
     @Test
-    fun testGetOwnersAndKeysMap_withoutQueueType()
+    fun testGetOwnersAndKeysMap_notInSubQueue()
     {
         Assertions.assertTrue(multiQueue.isEmpty())
-        val type = "test-get-owners-and-keys-map"
-        val type2 = "test-get-owners-and-keys-map2"
-        val type3 = "test-get-owners-and-keys-map3"
-        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), type)
-        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), type)
-        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), type2)
-        val message4 = QueueMessage(Payload("some more data data data", 4, true, PayloadEnum.A), type)
-        val message5 = QueueMessage(Payload("just data", 5, true, PayloadEnum.C), type3)
-        val message6 = QueueMessage(Payload("just more data", 6, false, PayloadEnum.B), type2)
-        val message7 = QueueMessage(Payload("just more and more data", 7, false, PayloadEnum.A), type)
+        val subQueue = "test-get-owners-and-keys-map"
+        val subQueue2 = "test-get-owners-and-keys-map2"
+        val subQueue3 = "test-get-owners-and-keys-map3"
+        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), subQueue)
+        val message2 = QueueMessage(Payload("some more data", 2, false, PayloadEnum.B), subQueue)
+        val message3 = QueueMessage(Payload("some more data data", 3, false, PayloadEnum.C), subQueue2)
+        val message4 = QueueMessage(Payload("some more data data data", 4, true, PayloadEnum.A), subQueue)
+        val message5 = QueueMessage(Payload("just data", 5, true, PayloadEnum.C), subQueue3)
+        val message6 = QueueMessage(Payload("just more data", 6, false, PayloadEnum.B), subQueue2)
+        val message7 = QueueMessage(Payload("just more and more data", 7, false, PayloadEnum.A), subQueue)
 
         val assignedTo = "assigned1"
         val assignedTo2 = "assigned2"
@@ -892,19 +893,19 @@ abstract class MultiQueueTest
         Assertions.assertTrue(listOfKeys.contains(assignedTo2))
         Assertions.assertTrue(listOfKeys.contains(assignedTo3))
 
-        val typesForAssignedTo = responseMap[assignedTo]!!.toList()
-        Assertions.assertEquals(1, typesForAssignedTo.size)
-        Assertions.assertTrue(typesForAssignedTo.contains(type))
+        val subQueuesForAssignedTo = responseMap[assignedTo]!!.toList()
+        Assertions.assertEquals(1, subQueuesForAssignedTo.size)
+        Assertions.assertTrue(subQueuesForAssignedTo.contains(subQueue))
 
-        val typesForAssignedTo2 = responseMap[assignedTo2]!!.toList()
-        Assertions.assertEquals(2, typesForAssignedTo2.size)
-        Assertions.assertTrue(typesForAssignedTo2.contains(type))
-        Assertions.assertTrue(typesForAssignedTo2.contains(type2))
+        val subQueuesForAssignedTo2 = responseMap[assignedTo2]!!.toList()
+        Assertions.assertEquals(2, subQueuesForAssignedTo2.size)
+        Assertions.assertTrue(subQueuesForAssignedTo2.contains(subQueue))
+        Assertions.assertTrue(subQueuesForAssignedTo2.contains(subQueue2))
 
-        val typesForAssignedTo3 = responseMap[assignedTo3]!!.toList()
-        Assertions.assertEquals(2, typesForAssignedTo3.size)
-        Assertions.assertTrue(typesForAssignedTo3.contains(type2))
-        Assertions.assertTrue(typesForAssignedTo3.contains(type3))
+        val subQueuesForAssignedTo3 = responseMap[assignedTo3]!!.toList()
+        Assertions.assertEquals(2, subQueuesForAssignedTo3.size)
+        Assertions.assertTrue(subQueuesForAssignedTo3.contains(subQueue2))
+        Assertions.assertTrue(subQueuesForAssignedTo3.contains(subQueue3))
     }
 
     /**
@@ -913,8 +914,8 @@ abstract class MultiQueueTest
     @Test
     fun testGetMessageByUUID_matchingMessage()
     {
-        val type = "testGetMessageByUUID_matchingMessage"
-        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), type)
+        val subQueue = "testGetMessageByUUID_matchingMessage"
+        val message = QueueMessage(Payload("some payload", 1, true, PayloadEnum.A), subQueue)
         Assertions.assertTrue(multiQueue.add(message))
 
         val retrievedMessage = multiQueue.getMessageByUUID(message.uuid)
@@ -944,12 +945,12 @@ abstract class MultiQueueTest
     }
 
     /**
-     * Ensure that we cannot add a new [QueueMessage] with [QueueMessage.type] set to any of the [MultiQueueAuthenticator.getReservedSubQueues] entries.
+     * Ensure that we cannot add a new [QueueMessage] with [QueueMessage.subQueue] set to any of the [MultiQueueAuthenticator.getReservedSubQueues] entries.
      */
     @Test
     fun testAddReservedSubQueue()
     {
-        doWithAuthType(RestrictionMode.RESTRICTED) {
+        doWithRestrictedMode(RestrictionMode.RESTRICTED) {
             authenticator.getReservedSubQueues().forEach { reservedSubQueueIdentifier ->
                 val message = QueueMessage("Data", reservedSubQueueIdentifier)
                 Assertions.assertThrows(IllegalSubQueueIdentifierException::class.java) {
@@ -966,7 +967,7 @@ abstract class MultiQueueTest
     @Test
     fun testKeysWithReservedSubQueueUsage()
     {
-        doWithAuthType(RestrictionMode.HYBRID) {
+        doWithRestrictedMode(RestrictionMode.HYBRID) {
             var keys = multiQueue.keys()
             authenticator.getReservedSubQueues().forEach { reservedSubQueueIdentifier ->
                 Assertions.assertFalse(keys.contains(reservedSubQueueIdentifier))
@@ -986,17 +987,17 @@ abstract class MultiQueueTest
     }
 
     /**
-     * Perform the provided [function] with the [RestrictionMode] set to [authenticationType].
+     * Perform the provided [function] with the [RestrictionMode] set to [restrictionMode].
      * Once completed the [RestrictionMode] will be set back to its initial value.
      *
-     * @param authenticationType the [RestrictionMode] to be set while the [function] is being called
+     * @param restrictionMode the [RestrictionMode] to be set while the [function] is being called
      * @param function the function to call with the provided [RestrictionMode] being active
      * @return `T` the result of the [function]
      */
-    private fun <T> doWithAuthType(authenticationType: RestrictionMode, function: Supplier<T>): T
+    private fun <T> doWithRestrictedMode(restrictionMode: RestrictionMode, function: Supplier<T>): T
     {
-        val previousAuthType = authenticator.getAuthenticationType()
-        authenticator.setAuthenticationType(authenticationType)
+        val previousRestrictedMode = authenticator.getRestrictionMode()
+        authenticator.setRestrictionMode(restrictionMode)
 
         try
         {
@@ -1004,7 +1005,7 @@ abstract class MultiQueueTest
         }
         finally
         {
-            authenticator.setAuthenticationType(previousAuthType)
+            authenticator.setRestrictionMode(previousRestrictedMode)
         }
     }
 
@@ -1024,7 +1025,7 @@ abstract class MultiQueueTest
             {
                 Assertions.assertThrows(UnsupportedOperationException::class.java)
                 {
-                    multiQueue.offer(QueueMessage(Payload("test data", 13, false, PayloadEnum.C), "test type"))
+                    multiQueue.offer(QueueMessage(Payload("test data", 13, false, PayloadEnum.C), "test sub-queue"))
                 }
             },
             {

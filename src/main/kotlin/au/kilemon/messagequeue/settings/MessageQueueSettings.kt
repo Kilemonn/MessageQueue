@@ -10,7 +10,8 @@ import org.springframework.stereotype.Component
  * An object that holds application level properties and is set initially on application start up.
  * This will control things such as:
  * - Credentials to external data storage
- * - The type of `MultiQueue` being used
+ * - The storage medium of `MultiQueue` being used
+ * - The restriction mode being used
  * - Other utility configuration for the application to use.
  *
  * When `SQL` is used, the following property must be provided:
@@ -67,7 +68,7 @@ class MessageQueueSettings
         const val SQL_SCHEMA_DEFAULT: String = "public"
 
         /**
-         * Start authenticated sub queue properties.
+         * Start authenticated sub-queue properties.
          */
         /**
          * Indicates what authentication mode the `MultiQueue` should be in.
@@ -93,7 +94,7 @@ class MessageQueueSettings
     @Value("\${$STORAGE_MEDIUM:$STORAGE_MEDIUM_DEFAULT}")
     @get:Generated
     @set:Generated
-    lateinit var multiQueueType: String
+    lateinit var storageMedium: String
 
     /**
      * `Optional` uses the [RESTRICTION_MODE] environment variable to determine whether specific sub-queues
@@ -105,7 +106,7 @@ class MessageQueueSettings
     @Value("\${$RESTRICTION_MODE:$RESTRICTION_MODE_DEFAULT}")
     @get:Generated
     @set:Generated
-    lateinit var multiQueueAuthentication: String
+    lateinit var restrictionMode: String
 
 
     /**

@@ -1,6 +1,5 @@
 package au.kilemon.messagequeue.queue.cache.redis
 
-import au.kilemon.messagequeue.authentication.authenticator.cache.redis.RedisAuthenticator
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
@@ -11,9 +10,7 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ScanOptions
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicLong
 import java.util.stream.Collectors
-import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 
 /**
@@ -28,18 +25,18 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
     override val LOG: Logger = this.initialiseLogger()
 
     /**
-     * Append the [MessageQueueSettings.redisPrefix] to the provided [queueType] [String].
+     * Append the [MessageQueueSettings.redisPrefix] to the provided [subQueue] [String].
      *
-     * @param queueType the [String] to add the prefix to
-     * @return a [String] with the provided [queueType] type with the [MessageQueueSettings.redisPrefix] appended to the beginning.
+     * @param subQueue the [String] to add the prefix to
+     * @return a [String] with the provided [subQueue] with the [MessageQueueSettings.redisPrefix] appended to the beginning.
      */
-    private fun appendPrefix(queueType: String): String
+    private fun appendPrefix(subQueue: String): String
     {
-        if (hasPrefix() && !queueType.startsWith(getPrefix()))
+        if (hasPrefix() && !subQueue.startsWith(getPrefix()))
         {
-            return "${getPrefix()}$queueType"
+            return "${getPrefix()}$subQueue"
         }
-        return queueType
+        return subQueue
     }
 
     /**
@@ -77,12 +74,12 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
     }
 
     /**
-     * Attempts to append the prefix before requesting the underlying redis entry if the provided [queueType] is not prefixed with [MessageQueueSettings.redisPrefix].
+     * Attempts to append the prefix before requesting the underlying redis entry if the provided [subQueue] is not prefixed with [MessageQueueSettings.redisPrefix].
      */
-    override fun getQueueForTypeInternal(queueType: String): Queue<QueueMessage>
+    override fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
     {
         val queue = ConcurrentLinkedQueue<QueueMessage>()
-        val set = redisTemplate.opsForSet().members(appendPrefix(queueType))
+        val set = redisTemplate.opsForSet().members(appendPrefix(subQueue))
         if (!set.isNullOrEmpty())
         {
             queue.addAll(set.toSortedSet { message1, message2 -> (message1.id ?: 0).minus(message2.id ?: 0).toInt() })
@@ -90,10 +87,10 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
         return queue
     }
 
-    override fun getAssignedMessagesForType(queueType: String, assignedTo: String?): Queue<QueueMessage>
+    override fun getAssignedMessagesInSubQueue(subQueue: String, assignedTo: String?): Queue<QueueMessage>
     {
         val queue = ConcurrentLinkedQueue<QueueMessage>()
-        val existingQueue = getQueueForType(queueType)
+        val existingQueue = getSubQueue(subQueue)
         if (existingQueue.isNotEmpty())
         {
             if (assignedTo == null)
@@ -115,30 +112,30 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
 
     override fun getMessageByUUID(uuid: String): Optional<QueueMessage>
     {
-        val queueType = containsUUID(uuid)
-        if (queueType.isPresent)
+        val subQueue = containsUUID(uuid)
+        if (subQueue.isPresent)
         {
-            val queueForType: Queue<QueueMessage> = getQueueForType(queueType.get())
-            return queueForType.stream().filter { message -> message.uuid == uuid }.findFirst()
+            val queue: Queue<QueueMessage> = getSubQueue(subQueue.get())
+            return queue.stream().filter { message -> message.uuid == uuid }.findFirst()
         }
         return Optional.empty()
     }
 
     override fun addInternal(element: QueueMessage): Boolean
     {
-        val result = redisTemplate.opsForSet().add(appendPrefix(element.type), element)
+        val result = redisTemplate.opsForSet().add(appendPrefix(element.subQueue), element)
         return result != null && result > 0
     }
 
     /**
-     * Overriding to pass in the [queueType] into [appendPrefix].
+     * Overriding to pass in the [subQueue] into [appendPrefix].
      */
-    override fun getNextQueueIndex(queueType: String): Optional<Long>
+    override fun getNextSubQueueIndex(subQueue: String): Optional<Long>
     {
-        val queueForType = getQueueForType(appendPrefix(queueType))
-        return if (queueForType.isNotEmpty())
+        val queue = getSubQueue(appendPrefix(subQueue))
+        return if (queue.isNotEmpty())
         {
-            Optional.ofNullable(queueForType.last().id?.plus(1) ?: 1)
+            Optional.ofNullable(queue.last().id?.plus(1) ?: 1)
         }
         else
         {
@@ -148,35 +145,35 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
 
     override fun removeInternal(element: QueueMessage): Boolean
     {
-        val result = redisTemplate.opsForSet().remove(appendPrefix(element.type), element)
+        val result = redisTemplate.opsForSet().remove(appendPrefix(element.subQueue), element)
         return result != null && result > 0
     }
 
-    override fun clearForTypeInternal(queueType: String): Int
+    override fun clearSubQueueInternal(subQueue: String): Int
     {
         var amountRemoved = 0
-        val queueForType = getQueueForType(queueType)
-        if (queueForType.isNotEmpty())
+        val queue = getSubQueue(subQueue)
+        if (queue.isNotEmpty())
         {
-            amountRemoved = queueForType.size
-            redisTemplate.delete(appendPrefix(queueType))
-            LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, amountRemoved)
+            amountRemoved = queue.size
+            redisTemplate.delete(appendPrefix(subQueue))
+            LOG.debug("Cleared existing sub-queue [{}]. Removed [{}] message entries.", subQueue, amountRemoved)
         }
         else
         {
-            LOG.debug("Attempting to clear non-existent queue for type [{}]. No messages cleared.", queueType)
+            LOG.debug("Attempting to clear non-existent sub-queue [{}]. No messages cleared.", subQueue)
         }
         return amountRemoved
     }
 
-    override fun isEmptyForType(queueType: String): Boolean
+    override fun isEmptySubQueue(subQueue: String): Boolean
     {
-        return getQueueForType(queueType).isEmpty()
+        return getSubQueue(subQueue).isEmpty()
     }
 
-    override fun pollInternal(queueType: String): Optional<QueueMessage>
+    override fun pollInternal(subQueue: String): Optional<QueueMessage>
     {
-        val queue = getQueueForType(queueType)
+        val queue = getSubQueue(subQueue)
         if (queue.isNotEmpty())
         {
             return Optional.of(queue.iterator().next())
@@ -203,7 +200,7 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
                 val sizeOfQueue = redisTemplate.opsForSet().size(key)
                 if (sizeOfQueue != null && sizeOfQueue > 0)
                 {
-                    LOG.trace("Queue type [{}] is not empty and will be returned in keys() call.", key)
+                    LOG.trace("Sub-queue [{}] is not empty and will be returned in keys() call.", key)
                     retainedKeys.add(key)
                 }
             }
@@ -216,15 +213,15 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
     {
         for (key in keys())
         {
-            val queue = getQueueForType(key)
+            val queue = getSubQueue(key)
             val anyMatchTheUUID = queue.stream().anyMatch{ message -> uuid == message.uuid }
             if (anyMatchTheUUID)
             {
-                LOG.debug("Found queue type [{}] for UUID: [{}].", key, uuid)
+                LOG.debug("Found sub-queue [{}] for message UUID: [{}].", key, uuid)
                 return Optional.of(key)
             }
         }
-        LOG.debug("No queue type exists for UUID: [{}].", uuid)
+        LOG.debug("No sub-queue contains message with UUID: [{}].", uuid)
         return Optional.empty()
     }
 
@@ -234,7 +231,7 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
      */
     override fun persistMessageInternal(message: QueueMessage)
     {
-        val queue = getQueueForType(message.type)
+        val queue = getSubQueue(message.subQueue)
         val matchingMessage = queue.stream().filter{ element -> element.uuid == message.uuid }.findFirst()
         if (matchingMessage.isPresent)
         {
