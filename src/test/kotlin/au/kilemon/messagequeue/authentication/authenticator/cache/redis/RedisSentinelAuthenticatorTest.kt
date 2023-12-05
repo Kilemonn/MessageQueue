@@ -27,7 +27,7 @@ import org.testcontainers.utility.DockerImageName
  * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
-@TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=REDIS"])
+@TestPropertySource(properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=REDIS"])
 @Testcontainers
 @ContextConfiguration(initializers = [RedisSentinelAuthenticatorTest.Initializer::class])
 @Import(*[LoggingConfiguration::class, RedisConfiguration::class, QueueConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class])

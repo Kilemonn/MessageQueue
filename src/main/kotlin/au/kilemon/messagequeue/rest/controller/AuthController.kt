@@ -77,8 +77,8 @@ open class AuthController : HasLogger
     )
     fun restrictSubQueue(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The sub-queue that you wish to restrict to allow further access only by callers that posses the returned token.")
                          @PathVariable(required = true, name = RestParameters.QUEUE_TYPE) queueType: String,
-                          @Parameter(`in` = ParameterIn.QUERY, required = false, description = "The generated token's expiry in minutes.")
-                          @RequestParam(required = false, name = RestParameters.EXPIRY) expiry: Long?): ResponseEntity<AuthResponse>
+                          /*@Parameter(`in` = ParameterIn.QUERY, required = false, description = "The generated token's expiry in minutes.")
+                          @RequestParam(required = false, name = RestParameters.EXPIRY) expiry: Long?*/): ResponseEntity<AuthResponse>
     {
         if (multiQueueAuthenticator.isInNoneMode())
         {
@@ -94,7 +94,7 @@ open class AuthController : HasLogger
         else
         {
             // Generating the token first, so we don't need to roll back restriction add later if there is a problem
-            val token = jwtTokenProvider.createTokenForSubQueue(queueType, expiry)
+            val token = jwtTokenProvider.createTokenForSubQueue(queueType, null)
             if (token.isEmpty)
             {
                 LOG.error("Failed to generated token for sub-queue [{}].", queueType)
@@ -108,7 +108,7 @@ open class AuthController : HasLogger
             }
             else
             {
-                LOG.info("Successfully generated token for sub-queue [{}] with expiry [{}] minutes.", queueType, expiry)
+                LOG.info("Successfully generated token for sub-queue [{}].", queueType)
                 ResponseEntity.status(HttpStatus.CREATED).body(AuthResponse(token.get(), queueType))
             }
         }

@@ -31,7 +31,7 @@ class JwtTokenProvider: HasLogger
 
     private var algorithm: Algorithm? = null
 
-    @Value("\${${MessageQueueSettings.MULTI_QUEUE_TOKEN_KEY}:\"\"}")
+    @Value("\${${MessageQueueSettings.ACCESS_TOKEN_KEY}:\"\"}")
     var tokenKey: String = ""
         private set
 
@@ -52,19 +52,19 @@ class JwtTokenProvider: HasLogger
     /**
      * Get the key to be used for Jwt token generation and verification.
      *
-     * @return If a value is provided via [MessageQueueSettings.MULTI_QUEUE_TOKEN_KEY] then we will use it if it is
+     * @return If a value is provided via [MessageQueueSettings.ACCESS_TOKEN_KEY] then we will use it if it is
      * not blank. Otherwise, a randomly generated a byte array is returned
      */
     fun getOrGenerateKey(key: String): ByteArray
     {
         return if (key.isNotBlank())
         {
-            LOG.info("Using provided key in property [{}] as the HMAC512 token generation and verification key.", MessageQueueSettings.MULTI_QUEUE_TOKEN_KEY)
+            LOG.info("Using provided key in property [{}] as the HMAC512 token generation and verification key.", MessageQueueSettings.ACCESS_TOKEN_KEY)
             key.toByteArray()
         }
         else
         {
-            LOG.info("No HMAC512 key provided in property [{}] for token generation and verification key. Generating a new random key.", MessageQueueSettings.MULTI_QUEUE_TOKEN_KEY)
+            LOG.info("No HMAC512 key provided in property [{}] for token generation and verification key. Generating a new random key.", MessageQueueSettings.ACCESS_TOKEN_KEY)
             val random = SecureRandom()
             val bytes = ByteArray(128)
             random.nextBytes(bytes)

@@ -70,7 +70,7 @@ class QueueConfiguration : HasLogger
             }
         }
 
-        LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType)
+        LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.STORAGE_MEDIUM, messageQueueSettings.multiQueueType)
 
         return queue
     }
@@ -95,7 +95,7 @@ class QueueConfiguration : HasLogger
             }
         }
 
-        LOG.info("Using [{}] authentication as the [{}] is set to [{}].", authenticationType, MessageQueueSettings.MULTI_QUEUE_AUTHENTICATION, messageQueueSettings.multiQueueAuthentication)
+        LOG.info("Using [{}] authentication as the [{}] is set to [{}].", authenticationType, MessageQueueSettings.RESTRICTION_MODE, messageQueueSettings.multiQueueAuthentication)
 
         return authenticationType
     }
@@ -119,7 +119,7 @@ class QueueConfiguration : HasLogger
             }
         }
 
-        LOG.info("Initialising [{}] authenticator as the [{}] is set to [{}].", authenticator::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType)
+        LOG.info("Initialising [{}] authenticator as the [{}] is set to [{}].", authenticator::class.java.name, MessageQueueSettings.STORAGE_MEDIUM, messageQueueSettings.multiQueueType)
 
         return authenticator
     }
