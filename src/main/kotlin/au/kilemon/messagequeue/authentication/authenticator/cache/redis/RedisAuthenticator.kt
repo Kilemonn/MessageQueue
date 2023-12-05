@@ -5,6 +5,7 @@ import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthentica
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.RedisTemplate
+import java.util.stream.Collectors
 
 /**
  * A [MultiQueueAuthenticator] implementation using Redis as the storage mechanism for the restricted
@@ -60,7 +61,7 @@ class RedisAuthenticator: MultiQueueAuthenticator()
 
     override fun getRestrictedSubQueueIdentifiers(): Set<String>
     {
-        return getMembersSet().map { authMatrix -> authMatrix.subQueue }.toList().toSet()
+        return getMembersSet().stream().map { authMatrix -> authMatrix.subQueue }.collect(Collectors.toSet())
     }
 
     override fun clearRestrictedSubQueues(): Long

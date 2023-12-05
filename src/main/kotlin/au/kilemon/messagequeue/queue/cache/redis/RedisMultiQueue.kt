@@ -35,11 +35,45 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
      */
     private fun appendPrefix(queueType: String): String
     {
-        if (prefix.isNotBlank() && !queueType.startsWith(prefix))
+        if (hasPrefix() && !queueType.startsWith(getPrefix()))
         {
-            return "${prefix}$queueType"
+            return "${getPrefix()}$queueType"
         }
         return queueType
+    }
+
+    /**
+     * @return whether the [prefix] is [String.isNotBlank]
+     */
+    internal fun hasPrefix(): Boolean
+    {
+        return getPrefix().isNotBlank()
+    }
+
+    /**
+     * @return [prefix]
+     */
+    internal fun getPrefix(): String
+    {
+        return prefix
+    }
+
+    /**
+     * If [prefix] is set, removes this from all provided [keys].
+     * If [prefix] is null or blank, then the provided [keys] [Set] is immediately returned.
+     *
+     * @param keys the [Set] of [String] to remove the [prefix] from
+     * @return the updated [Set] of [String] with the [prefix] removed
+     */
+    fun removePrefix(keys: Set<String>): Set<String>
+    {
+        if (!hasPrefix())
+        {
+            return keys
+        }
+
+        val prefixLength = getPrefix().length
+        return keys.stream().filter { key -> key.startsWith(getPrefix()) }.map { key -> key.substring(prefixLength) }.collect(Collectors.toSet())
     }
 
     /**

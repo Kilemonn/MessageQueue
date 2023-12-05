@@ -4,6 +4,7 @@ import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthentica
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
+import au.kilemon.messagequeue.queue.cache.redis.RedisMultiQueue
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
 import au.kilemon.messagequeue.rest.response.MessageResponse
@@ -255,7 +256,12 @@ open class MessageQueueController : HasLogger
     fun getKeys(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "Indicates whether to include keys that currently have zero entries (but have had entries previously). Is true by default.")
                 @RequestParam(required = false, name = RestParameters.INCLUDE_EMPTY) includeEmpty: Boolean?): ResponseEntity<Set<String>>
     {
-        return ResponseEntity.ok(messageQueue.keys(includeEmpty ?: true))
+        val keys = messageQueue.keys(includeEmpty ?: true)
+        if (messageQueue is RedisMultiQueue)
+        {
+            return ResponseEntity.ok((messageQueue as RedisMultiQueue).removePrefix(keys))
+        }
+        return ResponseEntity.ok(keys)
     }
 
     @Operation(summary = "Delete a keys or all keys, in turn clearing that sub queue.", description = "Delete the sub queue that matches the provided key. If no key is provided, all sub queues will be cleared.")

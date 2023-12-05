@@ -4,6 +4,7 @@ import au.kilemon.messagequeue.authentication.AuthenticationMatrix
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
+import java.util.stream.Collectors
 
 /**
  * A [MultiQueueAuthenticator] implementation using SQL as the storage mechanism for the restricted sub-queue
@@ -42,7 +43,7 @@ class SqlAuthenticator: MultiQueueAuthenticator()
     override fun getRestrictedSubQueueIdentifiers(): Set<String>
     {
         return authenticationMatrixRepository.findAll().stream().map { authMatrix -> authMatrix.subQueue }
-            .toList().toSet()
+            .collect(Collectors.toSet())
     }
 
     override fun clearRestrictedSubQueues(): Long

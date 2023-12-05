@@ -3,12 +3,14 @@ package au.kilemon.messagequeue.queue.cache.redis
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
+import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.test.util.TestPropertyValues
@@ -95,5 +97,36 @@ class RedisStandAloneMultiQueueTest: MultiQueueTest()
     {
         Assertions.assertTrue(redis.isRunning)
         multiQueue.clear()
+    }
+
+    /**
+     * Test [RedisMultiQueue.removePrefix] to make sure the prefix is removed correctly.
+     */
+    @Test
+    fun testRemovePrefix()
+    {
+        Assertions.assertTrue(multiQueue is RedisMultiQueue)
+        val redisMultiQueue: RedisMultiQueue = (multiQueue as RedisMultiQueue)
+        Assertions.assertTrue(redisMultiQueue.hasPrefix())
+
+        val prefix = redisMultiQueue.getPrefix()
+
+        val type = "removePrefix"
+        val type2 = "removePrefix2"
+        Assertions.assertTrue(redisMultiQueue.add(QueueMessage("data", type)))
+        Assertions.assertTrue(redisMultiQueue.add(QueueMessage("data2", type2)))
+
+        val keys = redisMultiQueue.keys()
+        Assertions.assertTrue(keys.contains("$prefix$type"))
+        Assertions.assertTrue(keys.contains("$prefix$type2"))
+        keys.forEach { key -> Assertions.assertTrue(key.startsWith(prefix)) }
+
+        val removedPrefix = redisMultiQueue.removePrefix(keys)
+        Assertions.assertFalse(removedPrefix.contains("$prefix$type"))
+        Assertions.assertFalse(removedPrefix.contains("$prefix$type2"))
+        removedPrefix.forEach { key -> Assertions.assertFalse(key.startsWith(prefix)) }
+
+        Assertions.assertTrue(removedPrefix.contains(type))
+        Assertions.assertTrue(removedPrefix.contains(type2))
     }
 }
