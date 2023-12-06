@@ -17,7 +17,7 @@ class SqlAuthenticator: MultiQueueAuthenticator()
     override val LOG: Logger = this.initialiseLogger()
 
     @Autowired
-    lateinit var authenticationMatrixRepository: SqlAuthenticationMatrixRepository
+    private lateinit var authenticationMatrixRepository: SqlAuthenticationMatrixRepository
 
     override fun isRestrictedInternal(subQueue: String): Boolean
     {

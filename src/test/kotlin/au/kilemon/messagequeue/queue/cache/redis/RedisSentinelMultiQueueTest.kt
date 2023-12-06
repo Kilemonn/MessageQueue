@@ -3,11 +3,13 @@ package au.kilemon.messagequeue.queue.cache.redis
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
+import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.boot.test.util.TestPropertyValues
 import org.springframework.context.ApplicationContextInitializer
@@ -99,5 +101,28 @@ class RedisSentinelMultiQueueTest: MultiQueueTest()
         Assertions.assertTrue(redis.isRunning)
         Assertions.assertTrue(sentinel.isRunning)
         multiQueue.clear()
+    }
+
+    /**
+     * Test [RedisMultiQueue.removePrefix] to make sure no change is made to the provided [Set] when [RedisMultiQueue.hasPrefix] is false.
+     */
+    @Test
+    fun testRemovePrefix_noPrefix()
+    {
+        Assertions.assertTrue(multiQueue is RedisMultiQueue)
+        val redisMultiQueue: RedisMultiQueue = (multiQueue as RedisMultiQueue)
+        Assertions.assertFalse(redisMultiQueue.hasPrefix())
+
+        val subQueue = "removePrefix"
+        val subQueue2 = "removePrefix2"
+        Assertions.assertTrue(redisMultiQueue.add(QueueMessage("data", subQueue)))
+        Assertions.assertTrue(redisMultiQueue.add(QueueMessage("data2", subQueue2)))
+
+        val keys = redisMultiQueue.keys()
+        Assertions.assertTrue(keys.contains(subQueue))
+        Assertions.assertTrue(keys.contains(subQueue2))
+
+        val removedPrefix = redisMultiQueue.removePrefix(keys)
+        Assertions.assertTrue(removedPrefix.containsAll(keys))
     }
 }

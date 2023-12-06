@@ -81,23 +81,31 @@ class QueueConfiguration : HasLogger
     @Bean
     open fun getRestrictionMode(): RestrictionMode
     {
-        var restrictionMode = RestrictionMode.NONE
-
-        if (messageQueueSettings.restrictionMode.isNotBlank())
-        {
-            try
-            {
-                restrictionMode = RestrictionMode.valueOf(messageQueueSettings.restrictionMode.uppercase())
-            }
-            catch (ex: Exception)
-            {
-                LOG.warn("Unable to initialise appropriate restriction mode with provided value [{}], falling back to default [{}].", messageQueueSettings.restrictionMode, RestrictionMode.NONE, ex)
-            }
-        }
-
+        val restrictionMode = parseRestrictionMode(messageQueueSettings.restrictionMode)
         LOG.info("Using [{}] restriction mode as the [{}] is set to [{}].", restrictionMode, MessageQueueSettings.RESTRICTION_MODE, messageQueueSettings.restrictionMode)
 
         return restrictionMode
+    }
+
+    /**
+     * Parse the provided [String] into a [RestrictionMode]. If it does not match any [RestrictionMode] then [RestrictionMode.NONE] is returned.
+     */
+    internal fun parseRestrictionMode(restrictionMode: String): RestrictionMode
+    {
+        val defaultRestrictionMode = RestrictionMode.NONE
+        try
+        {
+            if (restrictionMode.isNotBlank())
+            {
+                return RestrictionMode.valueOf(restrictionMode.uppercase())
+            }
+        }
+        catch (ex: Exception)
+        {
+            LOG.warn("Unable to initialise appropriate restriction mode with provided value [{}], falling back to default [{}].", restrictionMode, defaultRestrictionMode, ex)
+        }
+
+        return defaultRestrictionMode
     }
 
     /**
