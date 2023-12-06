@@ -2,7 +2,7 @@ package au.kilemon.messagequeue.queue.nosql.mongo
 
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
-import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
+import au.kilemon.messagequeue.queue.MultiQueueTest
 import au.kilemon.messagequeue.queue.nosql.mongo.MongoMultiQueueTest.Companion.MONGO_CONTAINER
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
@@ -28,11 +28,11 @@ import org.testcontainers.utility.DockerImageName
  */
 @ExtendWith(SpringExtension::class)
 @Testcontainers
-@DataMongoTest(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=MONGO"])
+@DataMongoTest(properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=MONGO"])
 @ContextConfiguration(initializers = [MongoMultiQueueTest.Initializer::class])
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import( *[QueueConfiguration::class, LoggingConfiguration::class, AbstractMultiQueueTest.AbstractMultiQueueTestConfiguration::class] )
-class MongoMultiQueueTest: AbstractMultiQueueTest()
+@Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class] )
+class MongoMultiQueueTest: MultiQueueTest()
 {
     companion object
     {
@@ -95,8 +95,6 @@ class MongoMultiQueueTest: AbstractMultiQueueTest()
 
     /**
      * Check the container is running before each test as it's required for the methods to access the [MongoMultiQueue].
-     *
-     * We will call [MongoMultiQueue.initialiseQueueIndex] here because we pass in the [MessageQueueSettings.MULTI_QUEUE_LAZY_INITIALISE] in the [DataMongoTest] annotation.
      */
     @BeforeEach
     fun beforeEach()

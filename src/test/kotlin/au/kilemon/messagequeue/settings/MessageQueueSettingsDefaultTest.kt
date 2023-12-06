@@ -42,10 +42,21 @@ class MessageQueueSettingsDefaultTest
     fun testDefaults()
     {
         Assertions.assertNotNull(messageQueueSettings)
-        Assertions.assertEquals(MessageQueueSettings.MULTI_QUEUE_TYPE_DEFAULT, messageQueueSettings.multiQueueType)
+        Assertions.assertEquals(MessageQueueSettings.STORAGE_MEDIUM_DEFAULT, messageQueueSettings.storageMedium)
+        Assertions.assertEquals(MessageQueueSettings.RESTRICTION_MODE_DEFAULT, messageQueueSettings.restrictionMode)
+
         Assertions.assertEquals(MessageQueueSettings.REDIS_ENDPOINT_DEFAULT, messageQueueSettings.redisEndpoint)
         Assertions.assertEquals("", messageQueueSettings.redisPrefix)
         Assertions.assertEquals(MessageQueueSettings.REDIS_MASTER_NAME_DEFAULT, messageQueueSettings.redisMasterName)
         Assertions.assertEquals(false.toString(), messageQueueSettings.redisUseSentinels)
+
+        Assertions.assertEquals("", messageQueueSettings.sqlEndpoint)
+        Assertions.assertEquals("", messageQueueSettings.sqlUsername)
+
+        Assertions.assertEquals("", messageQueueSettings.mongoHost)
+        Assertions.assertEquals("", messageQueueSettings.mongoUri)
+        Assertions.assertEquals("", messageQueueSettings.mongoPort)
+        Assertions.assertEquals("", messageQueueSettings.mongoDatabase)
+        Assertions.assertEquals("", messageQueueSettings.mongoUsername)
     }
 }

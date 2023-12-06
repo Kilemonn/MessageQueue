@@ -1,5 +1,9 @@
 package au.kilemon.messagequeue.rest.response
 
+import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthenticationException
+import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthorisationException
+import au.kilemon.messagequeue.queue.exception.IllegalSubQueueIdentifierException
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -18,5 +22,23 @@ class RestResponseExceptionHandler: ResponseEntityExceptionHandler()
     fun handleResponseStatusException(ex: ResponseStatusException): ResponseEntity<ErrorResponse>
     {
         return ResponseEntity<ErrorResponse>(ErrorResponse(ex.reason), ex.status)
+    }
+
+    @ExceptionHandler(MultiQueueAuthorisationException::class)
+    fun handleMultiQueueAuthorisationException(ex: MultiQueueAuthorisationException): ResponseEntity<ErrorResponse>
+    {
+        return ResponseEntity<ErrorResponse>(ErrorResponse(ex.message), HttpStatus.FORBIDDEN)
+    }
+
+    @ExceptionHandler(MultiQueueAuthenticationException::class)
+    fun handleMultiQueueAuthenticationException(ex: MultiQueueAuthenticationException): ResponseEntity<ErrorResponse>
+    {
+        return ResponseEntity<ErrorResponse>(ErrorResponse(ex.message), HttpStatus.UNAUTHORIZED)
+    }
+
+    @ExceptionHandler(IllegalSubQueueIdentifierException::class)
+    fun handleIllegalSubQueueIdentifierException(ex: IllegalSubQueueIdentifierException): ResponseEntity<ErrorResponse>
+    {
+        return ResponseEntity<ErrorResponse>(ErrorResponse(ex.message), HttpStatus.BAD_REQUEST)
     }
 }

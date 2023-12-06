@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * A NoSql mongo backed [MultiQueue]. All operations are performed directly on the database it is the complete source of truth.
@@ -26,7 +25,7 @@ class MongoMultiQueue : MultiQueue(), HasLogger
         const val INDEX_ID = "index_id"
     }
 
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     @Lazy
     @Autowired
@@ -48,15 +47,15 @@ class MongoMultiQueue : MultiQueue(), HasLogger
     /**
      * Overriding to use more direct optimised queries.
      */
-    override fun getAssignedMessagesForType(queueType: String, assignedTo: String?): Queue<QueueMessage>
+    override fun getAssignedMessagesInSubQueue(subQueue: String, assignedTo: String?): Queue<QueueMessage>
     {
         val entries = if (assignedTo == null)
         {
-            queueMessageRepository.findByTypeAndAssignedToIsNotNullOrderByIdAsc(queueType)
+            queueMessageRepository.findBySubQueueAndAssignedToIsNotNullOrderByIdAsc(subQueue)
         }
         else
         {
-            queueMessageRepository.findByTypeAndAssignedToOrderByIdAsc(queueType, assignedTo)
+            queueMessageRepository.findBySubQueueAndAssignedToOrderByIdAsc(subQueue, assignedTo)
         }
 
         return ConcurrentLinkedQueue(entries.map { entry -> QueueMessage(entry) })
@@ -65,15 +64,15 @@ class MongoMultiQueue : MultiQueue(), HasLogger
     /**
      * Overriding since we can filter via the DB query.
      */
-    override fun getUnassignedMessagesForType(queueType: String): Queue<QueueMessage>
+    override fun getUnassignedMessagesInSubQueue(subQueue: String): Queue<QueueMessage>
     {
-        val entries = queueMessageRepository.findByTypeAndAssignedToIsNullOrderByIdAsc(queueType)
+        val entries = queueMessageRepository.findBySubQueueAndAssignedToIsNullOrderByIdAsc(subQueue)
         return ConcurrentLinkedQueue(entries.map { entry -> QueueMessage(entry) })
     }
 
-    override fun getQueueForType(queueType: String): Queue<QueueMessage>
+    override fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
     {
-        val entries = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
+        val entries = queueMessageRepository.findBySubQueueOrderByIdAsc(subQueue)
         return ConcurrentLinkedQueue(entries.map { entry -> QueueMessage(entry) })
     }
 
@@ -95,21 +94,21 @@ class MongoMultiQueue : MultiQueue(), HasLogger
         }
     }
 
-    override fun clearForTypeInternal(queueType: String): Int
+    override fun clearSubQueueInternal(subQueue: String): Int
     {
-        val amountCleared = queueMessageRepository.deleteByType(queueType)
-        LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, amountCleared)
+        val amountCleared = queueMessageRepository.deleteBySubQueue(subQueue)
+        LOG.debug("Cleared existing queue for sub-queue [{}]. Removed [{}] message entries.", subQueue, amountCleared)
         return amountCleared
     }
 
-    override fun isEmptyForType(queueType: String): Boolean
+    override fun isEmptySubQueue(subQueue: String): Boolean
     {
-        return queueMessageRepository.findByTypeOrderByIdAsc(queueType).isEmpty()
+        return queueMessageRepository.findBySubQueueOrderByIdAsc(subQueue).isEmpty()
     }
 
-    override fun pollInternal(queueType: String): Optional<QueueMessage>
+    override fun pollInternal(subQueue: String): Optional<QueueMessage>
     {
-        val messages = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
+        val messages = queueMessageRepository.findBySubQueueOrderByIdAsc(subQueue)
         return if (messages.isNotEmpty())
         {
             return Optional.of(QueueMessage(messages[0]))
@@ -123,9 +122,9 @@ class MongoMultiQueue : MultiQueue(), HasLogger
     /**
      * The [includeEmpty] value makes no difference it is always effectively `false`.
      */
-    override fun keys(includeEmpty: Boolean): Set<String>
+    override fun keysInternal(includeEmpty: Boolean): HashSet<String>
     {
-        val keySet = queueMessageRepository.getDistinctTypes().toSet()
+        val keySet = HashSet(queueMessageRepository.getDistinctSubQueues())
         LOG.debug("Total amount of queue keys [{}].", keySet.size)
         return keySet
     }
@@ -136,12 +135,12 @@ class MongoMultiQueue : MultiQueue(), HasLogger
         return if (optionalMessage.isPresent)
         {
             val message = optionalMessage.get()
-            LOG.debug("Found queue type [{}] for UUID: [{}].", message.type, uuid)
-            Optional.of(message.type)
+            LOG.debug("Found sub-queue [{}] for UUID: [{}].", message.subQueue, uuid)
+            Optional.of(message.subQueue)
         }
         else
         {
-            LOG.debug("No queue type exists for UUID: [{}].", uuid)
+            LOG.debug("No sub-queue exists for UUID: [{}].", uuid)
             Optional.empty()
         }
     }
@@ -163,12 +162,12 @@ class MongoMultiQueue : MultiQueue(), HasLogger
      * Overriding to use the constant [INDEX_ID] for all look-ups since the ID is shared and needs to be assigned to
      * the [QueueMessageDocument] before it is created.
      */
-    override fun getNextQueueIndex(queueType: String): Optional<Long>
+    override fun getNextSubQueueIndex(subQueue: String): Optional<Long>
     {
         val largestIdMessage = queueMessageRepository.findTopByOrderByIdDesc()
         return if (largestIdMessage.isPresent)
         {
-            Optional.ofNullable(largestIdMessage.get().id?.plus(1) ?: 1)
+            Optional.of(largestIdMessage.get().id?.plus(1) ?: 1)
         }
         else
         {

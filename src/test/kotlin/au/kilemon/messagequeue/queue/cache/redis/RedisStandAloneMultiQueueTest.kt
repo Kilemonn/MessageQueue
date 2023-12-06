@@ -3,31 +3,27 @@ package au.kilemon.messagequeue.queue.cache.redis
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
-import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
+import au.kilemon.messagequeue.message.QueueMessage
+import au.kilemon.messagequeue.queue.MultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.test.util.TestPropertyValues
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Lazy
-import org.springframework.data.redis.connection.RedisConnectionFactory
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
-import java.util.*
 
 
 /**
@@ -45,16 +41,16 @@ import java.util.*
  * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
-@TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=REDIS", "${MessageQueueSettings.REDIS_PREFIX}=test"])
+@TestPropertySource(properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=REDIS", "${MessageQueueSettings.REDIS_PREFIX}=test"])
 @Testcontainers
 @ContextConfiguration(initializers = [RedisStandAloneMultiQueueTest.Initializer::class])
-@Import(*[QueueConfiguration::class, LoggingConfiguration::class, RedisConfiguration::class, AbstractMultiQueueTest.AbstractMultiQueueTestConfiguration::class])
-class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest()
+@Import(*[QueueConfiguration::class, LoggingConfiguration::class, RedisConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class])
+class RedisStandAloneMultiQueueTest: MultiQueueTest()
 {
     companion object
     {
         private const val REDIS_PORT: Int = 6379
-        private const val REDIS_CONTAINER: String = "redis:7.0.5-alpine"
+        private const val REDIS_CONTAINER: String = "redis:7.2.3-alpine"
 
         lateinit var redis: GenericContainer<*>
 
@@ -101,5 +97,36 @@ class RedisStandAloneMultiQueueTest: AbstractMultiQueueTest()
     {
         Assertions.assertTrue(redis.isRunning)
         multiQueue.clear()
+    }
+
+    /**
+     * Test [RedisMultiQueue.removePrefix] to make sure the prefix is removed correctly.
+     */
+    @Test
+    fun testRemovePrefix()
+    {
+        Assertions.assertTrue(multiQueue is RedisMultiQueue)
+        val redisMultiQueue: RedisMultiQueue = (multiQueue as RedisMultiQueue)
+        Assertions.assertTrue(redisMultiQueue.hasPrefix())
+
+        val prefix = redisMultiQueue.getPrefix()
+
+        val subQueue = "removePrefix"
+        val subQueue2 = "removePrefix2"
+        Assertions.assertTrue(redisMultiQueue.add(QueueMessage("data", subQueue)))
+        Assertions.assertTrue(redisMultiQueue.add(QueueMessage("data2", subQueue2)))
+
+        val keys = redisMultiQueue.keys()
+        Assertions.assertTrue(keys.contains("$prefix$subQueue"))
+        Assertions.assertTrue(keys.contains("$prefix$subQueue2"))
+        keys.forEach { key -> Assertions.assertTrue(key.startsWith(prefix)) }
+
+        val removedPrefix = redisMultiQueue.removePrefix(keys)
+        Assertions.assertFalse(removedPrefix.contains("$prefix$subQueue"))
+        Assertions.assertFalse(removedPrefix.contains("$prefix$subQueue2"))
+        removedPrefix.forEach { key -> Assertions.assertFalse(key.startsWith(prefix)) }
+
+        Assertions.assertTrue(removedPrefix.contains(subQueue))
+        Assertions.assertTrue(removedPrefix.contains(subQueue2))
     }
 }

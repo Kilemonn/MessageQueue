@@ -6,9 +6,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import org.slf4j.MDC
 
 /**
- * A response object which wraps the [QueueMessage], and exposes the `type` [String].
+ * A response object which wraps the [QueueMessage], and exposes the `sub-queue` [String].
  *
  * @author github.com/Kilemonn
  */
-@JsonPropertyOrder("correlationId", "queueType", "message")
-data class MessageResponse(val message: QueueMessage, val queueType: String = message.type, val correlationId: String? = MDC.get(CorrelationIdFilter.CORRELATION_ID))
+@JsonPropertyOrder("correlationId", "subQueue", "message")
+data class MessageResponse(val message: QueueMessage, val subQueue: String = message.subQueue, val correlationId: String? = MDC.get(CorrelationIdFilter.CORRELATION_ID))

@@ -1,6 +1,13 @@
 package au.kilemon.messagequeue.configuration
 
 import au.kilemon.messagequeue.MessageQueueApplication
+import au.kilemon.messagequeue.authentication.RestrictionMode
+import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
+import au.kilemon.messagequeue.authentication.authenticator.cache.redis.RedisAuthenticator
+import au.kilemon.messagequeue.authentication.authenticator.inmemory.InMemoryAuthenticator
+import au.kilemon.messagequeue.authentication.authenticator.nosql.mongo.MongoAuthenticator
+import au.kilemon.messagequeue.authentication.authenticator.sql.SqlAuthenticator
+import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.logging.Messages
 import au.kilemon.messagequeue.message.QueueMessage
@@ -10,8 +17,7 @@ import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
 import au.kilemon.messagequeue.queue.nosql.mongo.MongoMultiQueue
 import au.kilemon.messagequeue.queue.sql.SqlMultiQueue
 import au.kilemon.messagequeue.settings.MessageQueueSettings
-import au.kilemon.messagequeue.settings.MultiQueueType
-import lombok.Generated
+import au.kilemon.messagequeue.settings.StorageMedium
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
@@ -30,26 +36,20 @@ import java.util.*
 @Configuration
 class QueueConfiguration : HasLogger
 {
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     @Autowired
-    @get:Generated
-    @set:Generated
-    lateinit var messageQueueSettings: MessageQueueSettings
+    private lateinit var messageQueueSettings: MessageQueueSettings
 
     @Autowired
-    @get:Generated
-    @set:Generated
-    lateinit var messageSource: ReloadableResourceBundleMessageSource
+    private lateinit var messageSource: ReloadableResourceBundleMessageSource
 
     @Autowired
     @Lazy
-    @get:Generated
-    @set:Generated
-    lateinit var redisTemplate: RedisTemplate<String, QueueMessage>
+    private lateinit var redisTemplate: RedisTemplate<String, QueueMessage>
 
     /**
-     * Initialise the [MultiQueue] [Bean] based on the [MessageQueueSettings.multiQueueType].
+     * Initialise the [MultiQueue] [Bean] based on the [MessageQueueSettings.storageMedium].
      */
     @Bean
     open fun getMultiQueue(): MultiQueue
@@ -58,20 +58,75 @@ class QueueConfiguration : HasLogger
 
         // Default to in-memory
         var queue: MultiQueue = InMemoryMultiQueue()
-        when (messageQueueSettings.multiQueueType) {
-            MultiQueueType.REDIS.toString() -> {
+        when (messageQueueSettings.storageMedium.uppercase()) {
+            StorageMedium.REDIS.toString() -> {
                 queue = RedisMultiQueue(messageQueueSettings.redisPrefix, redisTemplate)
             }
-            MultiQueueType.SQL.toString() -> {
+            StorageMedium.SQL.toString() -> {
                 queue = SqlMultiQueue()
             }
-            MultiQueueType.MONGO.toString() -> {
+            StorageMedium.MONGO.toString() -> {
                 queue = MongoMultiQueue()
             }
         }
 
-        LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.MULTI_QUEUE_TYPE, messageQueueSettings.multiQueueType)
+        LOG.info("Initialising [{}] queue as the [{}] is set to [{}].", queue::class.java.name, MessageQueueSettings.STORAGE_MEDIUM, messageQueueSettings.storageMedium)
 
         return queue
+    }
+
+    /**
+     * Initialise the [RestrictionMode] which drives how sub-queues are accessed and created.
+     */
+    @Bean
+    open fun getRestrictionMode(): RestrictionMode
+    {
+        var restrictionMode = RestrictionMode.NONE
+
+        if (messageQueueSettings.restrictionMode.isNotBlank())
+        {
+            try
+            {
+                restrictionMode = RestrictionMode.valueOf(messageQueueSettings.restrictionMode.uppercase())
+            }
+            catch (ex: Exception)
+            {
+                LOG.warn("Unable to initialise appropriate restriction mode with provided value [{}], falling back to default [{}].", messageQueueSettings.restrictionMode, RestrictionMode.NONE, ex)
+            }
+        }
+
+        LOG.info("Using [{}] restriction mode as the [{}] is set to [{}].", restrictionMode, MessageQueueSettings.RESTRICTION_MODE, messageQueueSettings.restrictionMode)
+
+        return restrictionMode
+    }
+
+    /**
+     * Initialise the [MultiQueueAuthenticator] [Bean] based on the [MessageQueueSettings.storageMedium].
+     */
+    @Bean
+    open fun getMultiQueueAuthenticator(): MultiQueueAuthenticator
+    {
+        var authenticator: MultiQueueAuthenticator = InMemoryAuthenticator()
+        when (messageQueueSettings.storageMedium.uppercase()) {
+            StorageMedium.REDIS.toString() -> {
+                authenticator = RedisAuthenticator()
+            }
+            StorageMedium.SQL.toString() -> {
+                authenticator = SqlAuthenticator()
+            }
+            StorageMedium.MONGO.toString() -> {
+                authenticator = MongoAuthenticator()
+            }
+        }
+
+        LOG.info("Initialising [{}] authenticator as the [{}] is set to [{}].", authenticator::class.java.name, MessageQueueSettings.STORAGE_MEDIUM, messageQueueSettings.storageMedium)
+
+        return authenticator
+    }
+
+    @Bean
+    open fun getJwtTokenProvider(): JwtTokenProvider
+    {
+        return JwtTokenProvider()
     }
 }

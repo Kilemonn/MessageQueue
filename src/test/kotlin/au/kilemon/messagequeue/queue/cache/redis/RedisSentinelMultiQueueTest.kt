@@ -3,23 +3,16 @@ package au.kilemon.messagequeue.queue.cache.redis
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
-import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
+import au.kilemon.messagequeue.queue.MultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.test.util.TestPropertyValues
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
-import org.springframework.context.annotation.Lazy
-import org.springframework.data.redis.connection.RedisConnectionFactory
-import org.springframework.data.redis.connection.RedisSentinelConfiguration
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.junit.jupiter.SpringExtension
@@ -36,20 +29,18 @@ import java.util.*
  * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
-@TestPropertySource(properties = ["${MessageQueueSettings.MULTI_QUEUE_TYPE}=REDIS"])
+@TestPropertySource(properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=REDIS"])
 @Testcontainers
 @ContextConfiguration(initializers = [RedisSentinelMultiQueueTest.Initializer::class])
-@Import(*[LoggingConfiguration::class, RedisConfiguration::class, QueueConfiguration::class, AbstractMultiQueueTest.AbstractMultiQueueTestConfiguration::class])
-class RedisSentinelMultiQueueTest: AbstractMultiQueueTest()
+@Import(*[LoggingConfiguration::class, RedisConfiguration::class, QueueConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class])
+class RedisSentinelMultiQueueTest: MultiQueueTest()
 {
     companion object
     {
-        private const val REDIS_CONTAINER: String = "redis:7.0.5-alpine"
-
+        private const val REDIS_CONTAINER: String = "redis:7.2.3-alpine"
         private const val REDIS_SENTINEL_CONTAINER: String = "s7anley/redis-sentinel-docker:3.2.12"
 
         lateinit var redis: GenericContainer<*>
-
         lateinit var sentinel: GenericContainer<*>
 
         /**

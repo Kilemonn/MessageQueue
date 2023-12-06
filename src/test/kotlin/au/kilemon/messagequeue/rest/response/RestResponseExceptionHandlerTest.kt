@@ -1,6 +1,10 @@
 package au.kilemon.messagequeue.rest.response
 
+import au.kilemon.messagequeue.authentication.RestrictionMode
+import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthenticationException
+import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthorisationException
 import au.kilemon.messagequeue.filter.CorrelationIdFilter
+import au.kilemon.messagequeue.queue.exception.IllegalSubQueueIdentifierException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -17,6 +21,8 @@ import java.util.*
  */
 class RestResponseExceptionHandlerTest
 {
+    private val responseHandler = RestResponseExceptionHandler()
+
     @BeforeEach
     fun setUp()
     {
@@ -33,22 +39,78 @@ class RestResponseExceptionHandlerTest
     }
 
     /**
-     * Ensure all the properties required to create an [ErrorResponse] are correctly extracted from the [ResponseStatusException].
+     * Ensure [RestResponseExceptionHandler.handleResponseStatusException] sets all the properties required to create an
+     * [ErrorResponse] are correctly extracted from the [ResponseStatusException].
      */
     @Test
     fun testHandleResponseStatusException()
     {
         val correlationId = UUID.randomUUID().toString()
         MDC.put(CorrelationIdFilter.CORRELATION_ID, correlationId)
-        val responseHandler = RestResponseExceptionHandler()
         val message = "Bad error message"
-        val statusCode = HttpStatus.FORBIDDEN
+        val statusCode = HttpStatus.I_AM_A_TEAPOT
         val exception = ResponseStatusException(statusCode, message)
         val response = responseHandler.handleResponseStatusException(exception)
 
         Assertions.assertEquals(statusCode, response.statusCode)
         Assertions.assertNotNull(response.body)
         Assertions.assertEquals(message, response.body!!.message)
+        Assertions.assertEquals(correlationId, response.body!!.correlationId)
+    }
+
+    /**
+     * Ensure the [RestResponseExceptionHandler.handleMultiQueueAuthorisationException] returns the appropriate
+     * response code and message on error.
+     */
+    @Test
+    fun testHandleMultiQueueAuthorisationException()
+    {
+        val correlationId = UUID.randomUUID().toString()
+        MDC.put(CorrelationIdFilter.CORRELATION_ID, correlationId)
+        val message = "testHandleMultiQueueAuthorisationException"
+        val exception = MultiQueueAuthorisationException(message, RestrictionMode.NONE)
+        val response = responseHandler.handleMultiQueueAuthorisationException(exception)
+
+        Assertions.assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
+        Assertions.assertNotNull(response.body)
+        Assertions.assertEquals(String.format(MultiQueueAuthorisationException.MESSAGE_FORMAT, message, RestrictionMode.NONE), response.body!!.message)
+        Assertions.assertEquals(correlationId, response.body!!.correlationId)
+    }
+
+    /**
+     * Ensure the [RestResponseExceptionHandler.handleMultiQueueAuthenticationException] returns the appropriate
+     * response code and message on error.
+     */
+    @Test
+    fun testHandleMultiQueueAuthenticationException()
+    {
+        val correlationId = UUID.randomUUID().toString()
+        MDC.put(CorrelationIdFilter.CORRELATION_ID, correlationId)
+        val exception = MultiQueueAuthenticationException()
+        val response = responseHandler.handleMultiQueueAuthenticationException(exception)
+
+        Assertions.assertEquals(HttpStatus.UNAUTHORIZED, response.statusCode)
+        Assertions.assertNotNull(response.body)
+        Assertions.assertEquals(MultiQueueAuthenticationException.ERROR_MESSAGE, response.body!!.message)
+        Assertions.assertEquals(correlationId, response.body!!.correlationId)
+    }
+
+    /**
+     * Ensure the [RestResponseExceptionHandler.handleIllegalSubQueueIdentifierException] returns the appropriate reponse
+     * and error message.
+     */
+    @Test
+    fun testHandleIllegalSubQueueIdentifierException()
+    {
+        val correlationId = UUID.randomUUID().toString()
+        MDC.put(CorrelationIdFilter.CORRELATION_ID, correlationId)
+        val subQueue = "testHandleIllegalSubQueueIdentifierException"
+        val exception = IllegalSubQueueIdentifierException(subQueue)
+        val response = responseHandler.handleIllegalSubQueueIdentifierException(exception)
+
+        Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+        Assertions.assertNotNull(response.body)
+        Assertions.assertTrue(response.body!!.message!!.contains(subQueue))
         Assertions.assertEquals(correlationId, response.body!!.correlationId)
     }
 }

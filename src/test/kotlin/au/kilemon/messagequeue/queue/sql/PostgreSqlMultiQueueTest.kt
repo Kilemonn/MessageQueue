@@ -2,7 +2,7 @@ package au.kilemon.messagequeue.queue.sql
 
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
-import au.kilemon.messagequeue.queue.AbstractMultiQueueTest
+import au.kilemon.messagequeue.queue.MultiQueueTest
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -22,14 +22,14 @@ import java.util.*
  * @author github.com/Kilemonn
  */
 @ContextConfiguration(initializers = [PostgreSqlMultiQueueTest.Initializer::class])
-@Import( *[QueueConfiguration::class, LoggingConfiguration::class, AbstractMultiQueueTest.AbstractMultiQueueTestConfiguration::class] )
-class PostgreSqlMultiQueueTest: AbstractSqlMultiQueueTest()
+@Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class] )
+class PostgreSqlMultiQueueTest: SqlMultiQueueTest()
 {
     companion object
     {
         lateinit var database: GenericContainer<*>
 
-        private const val POSTGRES_CONTAINER = "postgres:14.5"
+        private const val POSTGRES_CONTAINER = "postgres:14.9-alpine"
         private const val POSTGRES_PORT = 5432
 
         /**

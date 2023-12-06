@@ -8,7 +8,7 @@ import javax.persistence.*
 
 /**
  * A base [QueueMessage] object which will wrap any object that is placed into the `MultiQueue`.
- * This object wraps a [Any] type `T` which is the payload to be stored in the queue. (This is actually a [Serializable] but causes issues in initialisation
+ * This object wraps an [Any] which is the payload to be stored in the queue. (This is actually a [Serializable] but causes issues in initialisation
  * if the type is an `interface`. This needs to be [Serializable] if you want to use it with `Redis` or anything else).
  *
  * This is used for `InMemory`, `Redis` and `SQL` queues.
@@ -17,7 +17,7 @@ import javax.persistence.*
  */
 @Entity
 @Table(name = QueueMessage.TABLE_NAME) // TODO: Schema configuration schema = "\${${MessageQueueSettings.SQL_SCHEMA}:${MessageQueueSettings.SQL_SCHEMA_DEFAULT}}")
-class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
+class QueueMessage(payload: Any?, @Column(name = "subqueue", nullable = false) var subQueue: String, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
 {
     companion object
     {
@@ -52,7 +52,7 @@ class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @C
 
     constructor(queueMessageDocument: QueueMessageDocument) : this()
     {
-        this.type = queueMessageDocument.type
+        this.subQueue = queueMessageDocument.subQueue
         this.uuid = queueMessageDocument.uuid
         this.id = queueMessageDocument.id
         this.payload = queueMessageDocument.payload
@@ -94,7 +94,7 @@ class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @C
         {
             // Create a temporary object since the object is edited in place if we are using the in-memory queue
             val newMessage = QueueMessage()
-            newMessage.type = type
+            newMessage.subQueue = subQueue
             newMessage.assignedTo = assignedTo
             newMessage.uuid = uuid
             newMessage.payload = "***" // Mark as stars to indicate that it is there but not returned
@@ -107,9 +107,10 @@ class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @C
     /**
      * Overriding to only include specific properties when checking if messages are equal.
      * This checks the following are equal in order to return `true`:
-     * - UUID
-     * - payload value
-     * - type
+     * - [uuid]
+     * - [payload]
+     * - [payloadBytes]
+     * - [subQueue]
      */
     override fun equals(other: Any?): Boolean
     {
@@ -120,7 +121,7 @@ class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @C
 
         return other.uuid == this.uuid
                 && (this.payload == other.payload || this.payloadBytes.contentEquals(other.payloadBytes))
-                && this.type == other.type
+                && this.subQueue == other.subQueue
     }
 
     /**
@@ -129,7 +130,7 @@ class QueueMessage(payload: Any?, @Column(nullable = false) var type: String, @C
     override fun hashCode(): Int {
         var result = payload?.hashCode() ?: 0
         result = 31 * result + (payloadBytes?.hashCode() ?: 0)
-        result = 31 * result + type.hashCode()
+        result = 31 * result + subQueue.hashCode()
         result = 31 * result + uuid.hashCode()
         return result
     }
