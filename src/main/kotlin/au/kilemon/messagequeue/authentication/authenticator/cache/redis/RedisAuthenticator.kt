@@ -23,7 +23,7 @@ class RedisAuthenticator: MultiQueueAuthenticator()
     override val LOG: Logger = this.initialiseLogger()
 
     @Autowired
-    lateinit var redisTemplate: RedisTemplate<String, AuthenticationMatrix>
+    private lateinit var redisTemplate: RedisTemplate<String, AuthenticationMatrix>
 
     /**
      * Overriding to completely remove all access to the [RESTRICTED_KEY].
@@ -45,7 +45,7 @@ class RedisAuthenticator: MultiQueueAuthenticator()
 
     override fun isRestrictedInternal(subQueue: String): Boolean
     {
-        return getMembersSet().contains(AuthenticationMatrix(subQueue)) ?: false
+        return getMembersSet().contains(AuthenticationMatrix(subQueue))
     }
 
     override fun addRestrictedEntryInternal(subQueue: String)
