@@ -2,6 +2,7 @@ package au.kilemon.messagequeue.settings
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
+import io.swagger.v3.oas.annotations.media.Schema
 import lombok.Generated
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -89,6 +90,8 @@ class MessageQueueSettings
      * the underlying multi queue is persisted. It can be any value of [StorageMedium].
      * Defaults to [StorageMedium.IN_MEMORY] ([STORAGE_MEDIUM_DEFAULT]).
      */
+    @Schema(title = "Storage Medium", example = "IN_MEMORY",
+        description = "The storage entity that will be used to hold and store the QueueMessages.")
     @SerializedName(STORAGE_MEDIUM)
     @JsonProperty(STORAGE_MEDIUM)
     @Value("\${$STORAGE_MEDIUM:$STORAGE_MEDIUM_DEFAULT}")
@@ -101,6 +104,9 @@ class MessageQueueSettings
      * will require authentication or not to create or access. It can be any value of [StorageMedium].
      * Defaults to [StorageMedium.IN_MEMORY] ([RESTRICTION_MODE_DEFAULT]).
      */
+    @Schema(title = "Restriction Mode", example = "RESTRICTED",
+        description = "The restriction mode indicates how the MessageQueue can be interacted with. " +
+                "This property will drive whether credentials need to be created and shared for **all** sub-queues, **some** of the sub-queues or **none** of the sub-queues.")
     @SerializedName(RESTRICTION_MODE)
     @JsonProperty(RESTRICTION_MODE)
     @Value("\${$RESTRICTION_MODE:$RESTRICTION_MODE_DEFAULT}")
@@ -116,6 +122,9 @@ class MessageQueueSettings
      * E.g. if the initial value for the redis entry is "my-key" and no prefix is defined the entries would be stored under "my-key".
      * Using the same scenario if the prefix is "prefix" then the resultant key would be "prefixmy-key".
      */
+    @Schema(title = "Redis Prefix", example = "my-prefix-",
+        description = "Used to remove/reduce the likelihood of any collisions if this is being used in an existing redis instance. " +
+                "The prefix will be added to all entries made in the redis storage medium.")
     @SerializedName(REDIS_PREFIX)
     @JsonProperty(REDIS_PREFIX)
     @Value("\${$REDIS_PREFIX:}")
@@ -131,6 +140,8 @@ class MessageQueueSettings
      *
      * If not provided [REDIS_ENDPOINT_DEFAULT] will be used by default.
      */
+    @Schema(title = "Redis Endpoint", example = "sentinel1.com:5545,sentinel2.org:9980",
+        description = "The endpoint string which is used for both standalone and the sentinel redis configurations.")
     @SerializedName(REDIS_ENDPOINT)
     @JsonProperty(REDIS_ENDPOINT)
     @Value("\${$REDIS_ENDPOINT:$REDIS_ENDPOINT_DEFAULT}")
@@ -144,6 +155,8 @@ class MessageQueueSettings
      * If set to `true` the `MultiQueue` will create a sentinel pool connection instead of a direct connection which is what would occur if this is left as `false`.
      * By default, this is `false`.
      */
+    @Schema(title = "Redis Sentinel Mode Enabled", example = "true",
+        description = "Indicates whether the `MultiQueue` should connect directly to the redis instance or connect via one or more sentinel instances.")
     @SerializedName(REDIS_USE_SENTINELS)
     @JsonProperty(REDIS_USE_SENTINELS)
     @Value("\${$REDIS_USE_SENTINELS:false}")
@@ -156,6 +169,8 @@ class MessageQueueSettings
      * `Required` when [redisUseSentinels] is set to `true`. Is used to indicate the name of the redis master instance.
      * By default, this is [REDIS_MASTER_NAME_DEFAULT].
      */
+    @Schema(title = "Redis Master Name", example = "not-my-master",
+        description = "The name of the redis master instance.")
     @SerializedName(REDIS_MASTER_NAME)
     @JsonProperty(REDIS_MASTER_NAME)
     @Value("\${$REDIS_MASTER_NAME:$REDIS_MASTER_NAME_DEFAULT}")
@@ -168,6 +183,8 @@ class MessageQueueSettings
      * This defines the database connection string e.g:
      * `"jdbc:mysql://localhost:3306/message-queue"`
      */
+    @Schema(title = "SQL Endpoint", example = "postgresql://127.0.0.1:5432/postgres",
+        description = "The database connection string that the application should connect to.")
     @SerializedName(SQL_ENDPOINT)
     @JsonProperty(SQL_ENDPOINT)
     @Value("\${$SQL_ENDPOINT:}")
@@ -179,6 +196,8 @@ class MessageQueueSettings
      * `Required` when [STORAGE_MEDIUM] is set to [StorageMedium.SQL].
      * This is the username/account name used to access the database defined in [SQL_ENDPOINT].
      */
+    @Schema(title = "SQL Username", example = "postgres",
+        description = "The username/account name used to access the database at the configured endpoint.")
     @SerializedName(SQL_USERNAME)
     @JsonProperty(SQL_USERNAME)
     @Value("\${$SQL_USERNAME:}")
@@ -201,6 +220,8 @@ class MessageQueueSettings
      * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
      * It specifies the host name that the mongo db is available at.
      */
+    @Schema(title = "MongoDB Endpoint", example = "mongodb://127.0.0.1",
+        description = "The endpoint url that is used to connect to the MongoDB instance.")
     @SerializedName(MONGO_HOST)
     @JsonProperty(MONGO_HOST)
     @Value("\${$MONGO_HOST:}")
@@ -212,6 +233,8 @@ class MessageQueueSettings
      * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
      * It specifies the port that the mongo db is available on.
      */
+    @Schema(title = "MongoDB Port", example = "27017",
+        description = "The port that the MongoDB has exposed.")
     @SerializedName(MONGO_PORT)
     @JsonProperty(MONGO_PORT)
     @Value("\${$MONGO_PORT:}")
@@ -223,6 +246,8 @@ class MessageQueueSettings
      * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
      * It specifies the database you wish to connect to.
      */
+    @Schema(title = "MongoDB Database", example = "my-table",
+        description = "The database that should be connected to and where the QueueMessage documents will be created.")
     @SerializedName(MONGO_DATABASE)
     @JsonProperty(MONGO_DATABASE)
     @Value("\${$MONGO_DATABASE:}")
@@ -234,6 +259,8 @@ class MessageQueueSettings
      * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
      * It specifies the username that you wish to connect with.
      */
+    @Schema(title = "MongoDB Username", example = "my-username",
+        description = "This is the username/account name used to access the database at the configured endpoint.")
     @SerializedName(MONGO_USERNAME)
     @JsonProperty(MONGO_USERNAME)
     @Value("\${$MONGO_USERNAME:}")
@@ -256,6 +283,8 @@ class MessageQueueSettings
      * Required when [StorageMedium.MONGO] is used and the above mongo properties are empty.
      * It specifies all properties of the mongo connection in the format of `mongodb://<username>:<password>@<host>:<port>/<database>`.
      */
+    @Schema(title = "MongoDB URI", example = "mongodb://root:password@mongo:27017/messagequeue?authSource=admin",
+        description = "The whole connection url that is used to connect to the MongoDB instance.")
     @SerializedName(MONGO_URI)
     @JsonProperty(MONGO_URI)
     @Value("\${$MONGO_URI:}")

@@ -169,7 +169,6 @@ class MessageQueueControllerTest
         Assertions.assertEquals(message.payload, deserialisedPayload)
         Assertions.assertNull(messageResponse.message.assignedTo)
         Assertions.assertEquals(message.subQueue, messageResponse.message.subQueue)
-        Assertions.assertEquals(message.subQueue, messageResponse.subQueue)
         Assertions.assertNotNull(messageResponse.message.uuid)
     }
 
@@ -225,7 +224,6 @@ class MessageQueueControllerTest
         Assertions.assertEquals(message1.payload, deserialisedPayload)
         Assertions.assertNull(messageResponse.message.assignedTo)
         Assertions.assertEquals(message1.subQueue, messageResponse.message.subQueue)
-        Assertions.assertEquals(message1.subQueue, messageResponse.subQueue)
         Assertions.assertNotNull(messageResponse.message.uuid)
 
         val subQueue2 = entries.second[1]
@@ -245,7 +243,6 @@ class MessageQueueControllerTest
         Assertions.assertEquals(message2.payload, deserialisedPayload2)
         Assertions.assertNull(messageResponse2.message.assignedTo)
         Assertions.assertEquals(message2.subQueue, messageResponse2.message.subQueue)
-        Assertions.assertEquals(message2.subQueue, messageResponse2.subQueue)
         Assertions.assertNotNull(messageResponse2.message.uuid)
     }
 
@@ -272,7 +269,6 @@ class MessageQueueControllerTest
         Assertions.assertEquals(message.payload, deserialisedPayload)
         Assertions.assertEquals(message.assignedTo, messageResponse.message.assignedTo)
         Assertions.assertEquals(message.subQueue, messageResponse.message.subQueue)
-        Assertions.assertEquals(message.subQueue, messageResponse.subQueue)
         Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
 
         val createdMessage = multiQueue.peekSubQueue(message.subQueue).get()
@@ -304,7 +300,6 @@ class MessageQueueControllerTest
         Assertions.assertEquals(message.payload, deserialisedPayload)
         Assertions.assertNull(messageResponse.message.assignedTo)
         Assertions.assertEquals(message.subQueue, messageResponse.message.subQueue)
-        Assertions.assertEquals(message.subQueue, messageResponse.subQueue)
         Assertions.assertNotNull(messageResponse.message.uuid)
 
         val createdMessage = multiQueue.peekSubQueue(message.subQueue).get()
@@ -663,7 +658,6 @@ class MessageQueueControllerTest
         Assertions.assertTrue(owned.isNotEmpty())
         owned.forEach { message ->
             Assertions.assertTrue(message.message.uuid == message1.uuid || message.message.uuid == message2.uuid)
-            Assertions.assertEquals(subQueue, message.subQueue)
             Assertions.assertEquals(subQueue, message.message.subQueue)
             Assertions.assertEquals(assignedTo, message.message.assignedTo)
         }
@@ -712,7 +706,6 @@ class MessageQueueControllerTest
         Assertions.assertTrue(owned.isNotEmpty())
         owned.forEach { message ->
             Assertions.assertTrue(message.message.uuid == message1.uuid || message.message.uuid == message2.uuid)
-            Assertions.assertEquals(subQueue, message.subQueue)
             Assertions.assertEquals(subQueue, message.message.subQueue)
             Assertions.assertEquals(assignedTo, message.message.assignedTo)
         }

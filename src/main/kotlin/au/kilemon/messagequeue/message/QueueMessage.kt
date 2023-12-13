@@ -1,6 +1,7 @@
 package au.kilemon.messagequeue.message
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import io.swagger.v3.oas.annotations.media.Schema
 import org.springframework.util.SerializationUtils
 import java.io.Serializable
 import java.util.*
@@ -17,21 +18,34 @@ import javax.persistence.*
  */
 @Entity
 @Table(name = QueueMessage.TABLE_NAME) // TODO: Schema configuration schema = "\${${MessageQueueSettings.SQL_SCHEMA}:${MessageQueueSettings.SQL_SCHEMA_DEFAULT}}")
-class QueueMessage(payload: Any?, @Column(name = "subqueue", nullable = false) var subQueue: String, @Column(name = "assignedto") var assignedTo: String? = null): Serializable
+class QueueMessage: Serializable
 {
     companion object
     {
         const val TABLE_NAME: String = "multiqueuemessages"
     }
 
+    @Schema(title = "Sub-queue identifier", example = "my-queue-name",
+        description = "The sub-queue identifier for the sub-queue that this message is stored in.")
+    @Column(name = "subqueue", nullable = false)
+    var subQueue: String
+
+    @Schema(title = "Assignee identifier", example = "owner-id",
+        description = "The unique identifier of assignee who currently possessions or owns this message.")
+    @Column(name = "assignedto")
+    var assignedTo: String? = null
+
+    @Schema(description = "The message payload, this can be any type of complex or simple object that you wish.")
     @Transient
-    var payload = payload
+    var payload: Any? = null
         set(value)
         {
             field = value
             payloadBytes = SerializationUtils.serialize(payload)
         }
 
+    @Schema(title = "Message unique identifier", example = "7a3c1326-f038-4c17-9b6b-a9ada353f79c",
+        description = "A unique identifier for this message, usually in the form of a UUID, unless created otherwise. This can be used to directly retireve or manipulate the message.")
     @Column(nullable = false, unique = true)
     var uuid: String = UUID.randomUUID().toString()
 
@@ -49,6 +63,13 @@ class QueueMessage(payload: Any?, @Column(name = "subqueue", nullable = false) v
      * Required for JSON deserialisation.
      */
     constructor() : this(null, "")
+
+    constructor(payload: Any?, subQueue: String, assignedTo: String? = null)
+    {
+        this.payload = payload
+        this.subQueue = subQueue
+        this.assignedTo = assignedTo
+    }
 
     constructor(queueMessageDocument: QueueMessageDocument) : this()
     {
