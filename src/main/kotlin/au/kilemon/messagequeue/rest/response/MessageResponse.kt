@@ -14,9 +14,11 @@ import org.slf4j.MDC
 @JsonPropertyOrder("correlationId", "message")
 class MessageResponse
 {
-    @Schema(title = "The request correlation ID.", example = "1599dcd3-7424-4f97-bc99-b9b3e5c53d59")
+    @Schema(title = "The request correlation ID.", example = "1599dcd3-7424-4f97-bc99-b9b3e5c53d59",
+        description = "A UUID that uniquely identifies the performed request. This will correlate with any logs written as part of this request for debugging purposes.")
     val correlationId: String? = MDC.get(CorrelationIdFilter.CORRELATION_ID)
 
+    @Schema(description = "The retrieved or created QueueMessage.")
     val message: QueueMessage
 
     /**
