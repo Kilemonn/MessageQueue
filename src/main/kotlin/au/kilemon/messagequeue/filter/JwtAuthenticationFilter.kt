@@ -38,6 +38,9 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
 
         const val SUB_QUEUE = "Sub-Queue"
 
+        const val SWAGGER_DOC_ENDPOINT = "/swagger-ui"
+        const val SWAGGER_DOC_CONFIG_ENDPOINT = "/api-docs"
+
         /**
          * Gets the stored [SUB_QUEUE] from the [MDC].
          * This can be null if no valid token is provided.
@@ -134,7 +137,9 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
             Pair(HttpMethod.GET, "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}${MessageQueueController.ENDPOINT_OWNERS}"),
             Pair(HttpMethod.GET, AuthController.AUTH_PATH),
             Pair(HttpMethod.POST, AuthController.AUTH_PATH),
-            Pair(HttpMethod.GET, SettingsController.SETTINGS_PATH)
+            Pair(HttpMethod.GET, SettingsController.SETTINGS_PATH),
+            Pair(HttpMethod.GET, SWAGGER_DOC_ENDPOINT),
+            Pair(HttpMethod.GET, SWAGGER_DOC_CONFIG_ENDPOINT)
         )
 
         return noTokenCheckEndpoints
