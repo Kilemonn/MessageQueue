@@ -2,10 +2,16 @@ package au.kilemon.messagequeue.message
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.Lob
+import jakarta.persistence.Table
 import org.springframework.util.SerializationUtils
 import java.io.Serializable
 import java.util.*
-import javax.persistence.*
 
 /**
  * A base [QueueMessage] object which will wrap any object that is placed into the `MultiQueue`.
@@ -36,7 +42,7 @@ class QueueMessage: Serializable
     var assignedTo: String? = null
 
     @Schema(description = "The message payload, this can be any type of complex or simple object that you wish.")
-    @Transient
+    @jakarta.persistence.Transient
     var payload: Any? = null
         set(value)
         {
@@ -56,7 +62,7 @@ class QueueMessage: Serializable
 
     @JsonIgnore
     @Lob
-    @Column
+    @Column(length = 50000)
     var payloadBytes: ByteArray? = SerializationUtils.serialize(payload)
 
     /**

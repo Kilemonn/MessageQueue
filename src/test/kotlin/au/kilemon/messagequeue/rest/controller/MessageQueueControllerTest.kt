@@ -170,6 +170,9 @@ class MessageQueueControllerTest
         Assertions.assertNull(messageResponse.message.assignedTo)
         Assertions.assertEquals(message.subQueue, messageResponse.message.subQueue)
         Assertions.assertNotNull(messageResponse.message.uuid)
+
+        Assertions.assertNull(messageResponse.message.payloadBytes)
+        Assertions.assertNull(messageResponse.message.id)
     }
 
     /**

@@ -1,15 +1,16 @@
 package au.kilemon.messagequeue.filter
 
 import au.kilemon.messagequeue.logging.HasLogger
+import jakarta.servlet.FilterChain
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.Logger
 import org.slf4j.MDC
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import java.util.*
-import javax.servlet.FilterChain
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
+
 
 /**
  * A request filter that either takes the incoming provided [CORRELATION_ID_HEADER] and sets it into the [MDC] OR

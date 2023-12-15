@@ -21,7 +21,7 @@ class RestResponseExceptionHandler: ResponseEntityExceptionHandler()
     @ExceptionHandler(ResponseStatusException::class)
     fun handleResponseStatusException(ex: ResponseStatusException): ResponseEntity<ErrorResponse>
     {
-        return ResponseEntity<ErrorResponse>(ErrorResponse(ex.reason), ex.status)
+        return ResponseEntity<ErrorResponse>(ErrorResponse(ex.reason), ex.statusCode)
     }
 
     @ExceptionHandler(MultiQueueAuthorisationException::class)

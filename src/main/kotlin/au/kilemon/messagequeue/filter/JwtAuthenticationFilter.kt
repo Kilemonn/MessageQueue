@@ -8,6 +8,9 @@ import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
 import au.kilemon.messagequeue.rest.controller.AuthController
 import au.kilemon.messagequeue.rest.controller.MessageQueueController
 import au.kilemon.messagequeue.rest.controller.SettingsController
+import jakarta.servlet.FilterChain
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.Logger
 import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
@@ -18,9 +21,6 @@ import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import org.springframework.web.servlet.HandlerExceptionResolver
 import java.util.*
-import javax.servlet.FilterChain
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 /**
  * A filter responsible for verifying provided Jwt tokens when sub-queues are being accessed.
@@ -37,6 +37,9 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
         const val BEARER_HEADER_VALUE = "Bearer "
 
         const val SUB_QUEUE = "Sub-Queue"
+
+        const val SWAGGER_DOC_ENDPOINT = "/swagger-ui"
+        const val SWAGGER_DOC_CONFIG_ENDPOINT = "/api-docs"
 
         /**
          * Gets the stored [SUB_QUEUE] from the [MDC].
@@ -134,7 +137,9 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
             Pair(HttpMethod.GET, "${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}${MessageQueueController.ENDPOINT_OWNERS}"),
             Pair(HttpMethod.GET, AuthController.AUTH_PATH),
             Pair(HttpMethod.POST, AuthController.AUTH_PATH),
-            Pair(HttpMethod.GET, SettingsController.SETTINGS_PATH)
+            Pair(HttpMethod.GET, SettingsController.SETTINGS_PATH),
+            Pair(HttpMethod.GET, SWAGGER_DOC_ENDPOINT),
+            Pair(HttpMethod.GET, SWAGGER_DOC_CONFIG_ENDPOINT)
         )
 
         return noTokenCheckEndpoints

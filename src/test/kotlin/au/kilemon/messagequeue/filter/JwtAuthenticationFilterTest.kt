@@ -7,6 +7,7 @@ import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.queue.MultiQueueTest
 import au.kilemon.messagequeue.rest.controller.MessageQueueController
+import jakarta.servlet.http.HttpServletRequest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -24,7 +25,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.servlet.HandlerExceptionResolver
 import org.springframework.web.servlet.handler.HandlerExceptionResolverComposite
 import java.util.*
-import javax.servlet.http.HttpServletRequest
 
 /**
  * A test class for the [JwtAuthenticationFilter].
