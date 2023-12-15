@@ -2,10 +2,16 @@ package au.kilemon.messagequeue.message
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.Lob
+import jakarta.persistence.Table
 import org.springframework.util.SerializationUtils
 import java.io.Serializable
 import java.util.*
-import javax.persistence.*
 
 /**
  * A base [QueueMessage] object which will wrap any object that is placed into the `MultiQueue`.

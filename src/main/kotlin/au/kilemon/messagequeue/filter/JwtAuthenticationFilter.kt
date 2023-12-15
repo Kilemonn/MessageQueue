@@ -8,6 +8,9 @@ import au.kilemon.messagequeue.authentication.token.JwtTokenProvider
 import au.kilemon.messagequeue.rest.controller.AuthController
 import au.kilemon.messagequeue.rest.controller.MessageQueueController
 import au.kilemon.messagequeue.rest.controller.SettingsController
+import jakarta.servlet.FilterChain
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.Logger
 import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
@@ -18,9 +21,6 @@ import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import org.springframework.web.servlet.HandlerExceptionResolver
 import java.util.*
-import javax.servlet.FilterChain
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 /**
  * A filter responsible for verifying provided Jwt tokens when sub-queues are being accessed.
