@@ -2,7 +2,7 @@
 <configuration>
     <!-- Properties list for use below -->
     <property name="LOGS" value="./logs"/>
-    <property name="PATTERN" value="%d %p [%X{correlationId}] %C{1.} [%t] %m%n"/>
+    <property name="PATTERN" value="%d %p [%t] [%X{correlationId}] %C{1} - %m%n"/>
     <property name="ARCHIVED_FILE_SUFFIX" value="-%d{yyyy-MM-dd}.%i"/>
 
     <!-- Console appender formatting -->
