@@ -42,7 +42,7 @@ class QueueMessage: Serializable
     var assignedTo: String? = null
 
     @Schema(description = "The message payload, this can be any type of complex or simple object that you wish.")
-    @Transient
+    @jakarta.persistence.Transient
     var payload: Any? = null
         set(value)
         {
