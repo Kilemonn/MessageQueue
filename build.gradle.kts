@@ -27,8 +27,10 @@ dependencies {
     // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-data-mongodb
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb:3.2.0")
 
-    // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-ui
-    implementation("org.springdoc:springdoc-openapi-ui:1.7.0")
+    // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.3.0")
+    // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
 
     implementation("com.google.code.gson:gson:2.10.1")
 
