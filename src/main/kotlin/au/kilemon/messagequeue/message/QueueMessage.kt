@@ -62,7 +62,7 @@ class QueueMessage: Serializable
 
     @JsonIgnore
     @Lob
-    @Column
+    @Column(length = 50000)
     var payloadBytes: ByteArray? = SerializationUtils.serialize(payload)
 
     /**
