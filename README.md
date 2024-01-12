@@ -7,9 +7,11 @@ A message queue service, which can receive, hold and provide messages that are s
 A storage mechanism can be used to persist messages and sub queues can be restricted so only correctly provided credentials
 can interact with such queues.
 
-**More detailed documentation can be found in the Wiki!**
+### More detailed documentation can be found in the Wiki!
 
 ## Quick Start
+
+There is an image hosted in Docker Hub: https://hub.docker.com/r/kilemon/message-queue
 
 By default, the application will be store messages in memory and no queue restriction will be available.
 To start the application you can use the following command to pull and run the latest version of the image:
