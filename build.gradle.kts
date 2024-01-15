@@ -1,7 +1,9 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+val springVersion = "3.2.1"
+
 plugins {
-    id("org.springframework.boot") version "3.2.0"
+    id("org.springframework.boot") version "3.2.1"
     id("io.spring.dependency-management") version "1.1.4"
     kotlin("jvm") version "1.9.21"
     kotlin("plugin.spring") version "1.9.21"
@@ -18,14 +20,14 @@ repositories {
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web:3.2.0")
-    implementation("org.springframework.boot:spring-boot-starter-validation:3.2.0")
-    implementation("org.springframework.boot:spring-boot-starter-data-redis:3.2.0")
+    implementation("org.springframework.boot:spring-boot-starter-web:${springVersion}")
+    implementation("org.springframework.boot:spring-boot-starter-validation:${springVersion}")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis:${springVersion}")
     // JPA dependency
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.2.0")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:${springVersion}")
     // No SQL drivers
     // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-data-mongodb
-    implementation("org.springframework.boot:spring-boot-starter-data-mongodb:3.2.0")
+    implementation("org.springframework.boot:spring-boot-starter-data-mongodb:${springVersion}")
 
     // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.3.0")
@@ -50,7 +52,7 @@ dependencies {
     implementation("com.auth0:java-jwt:4.4.0")
 
     // Test dependencies
-    testImplementation("org.springframework.boot:spring-boot-starter-test:3.2.0")
+    testImplementation("org.springframework.boot:spring-boot-starter-test:${springVersion}")
     // Required to mock MultiQueue objects since they apparently override a final 'remove(Object)' method.
     testImplementation("org.mockito:mockito-inline:5.2.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
