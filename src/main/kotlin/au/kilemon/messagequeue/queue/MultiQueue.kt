@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.stream.Collectors
-import kotlin.collections.HashSet
 
 /**
  * A [MultiQueue] base class, which extends [Queue].
@@ -180,17 +179,18 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
     fun getOwnersAndKeysMap(subQueue: String?): Map<String, HashSet<String>>
     {
         val responseMap = HashMap<String, HashSet<String>>()
-        if (subQueue != null)
+        val keyList = if (subQueue != null)
         {
             LOG.debug("Getting owners map for sub-queue with identifier [{}].", subQueue)
-            getOwnersAndKeysMapForSubQueue(subQueue, responseMap)
+            setOf(subQueue)
         }
         else
         {
-            LOG.debug("Getting owners map for all sub-queues.")
             val keys = keys(false)
-            keys.forEach { key -> getOwnersAndKeysMapForSubQueue(key, responseMap) }
+            LOG.debug("Getting owners map for all [{}] sub-queues.", keys.size)
+            keys
         }
+        keyList.forEach { key -> getOwnersAndKeysMapForSubQueue(key, responseMap) }
         return responseMap
     }
 
