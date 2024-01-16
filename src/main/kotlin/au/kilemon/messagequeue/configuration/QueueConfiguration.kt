@@ -128,7 +128,6 @@ class QueueConfiguration : HasLogger
         }
 
         LOG.info("Initialising [{}] authenticator as the [{}] is set to [{}].", authenticator::class.java.name, MessageQueueSettings.STORAGE_MEDIUM, messageQueueSettings.storageMedium)
-        LOG.info("Reserved subQueue identifiers for this authenticator are: [{}]", authenticator.getReservedSubQueues())
 
         return authenticator
     }

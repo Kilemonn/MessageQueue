@@ -5,7 +5,9 @@ import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthorisationE
 import au.kilemon.messagequeue.filter.JwtAuthenticationFilter
 import au.kilemon.messagequeue.logging.HasLogger
 import org.slf4j.Logger
+import org.springframework.beans.factory.InitializingBean
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 
 /**
  * The base Authenticator class. This is responsible to tracking which sub-queues are marked as restricted and
@@ -13,12 +15,21 @@ import org.springframework.beans.factory.annotation.Autowired
  *
  * @author github.com/Kilemonn
  */
-abstract class MultiQueueAuthenticator: HasLogger
+abstract class MultiQueueAuthenticator: HasLogger, InitializingBean
 {
     abstract override val LOG: Logger
 
     @Autowired
     private lateinit var restrictionMode: RestrictionMode
+
+    /**
+     * Since [restrictionMode] will not be available at the time of object construction, only once spring injects it
+     * we will add specific logging here once we know the [restrictionMode] and [MultiQueueAuthenticator] implementation being used.
+     */
+    override fun afterPropertiesSet()
+    {
+        LOG.info("Reserved subQueue identifiers for this authenticator are: [{}].", getReservedSubQueues())
+    }
 
     /**
      * @return [restrictionMode]
