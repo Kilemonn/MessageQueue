@@ -115,9 +115,11 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
         val subQueue = containsUUID(uuid)
         if (subQueue.isPresent)
         {
+            LOG.trace("Found message with uuid [{}].", uuid)
             val queue: Queue<QueueMessage> = getSubQueue(subQueue.get())
             return queue.stream().filter { message -> message.uuid == uuid }.findFirst()
         }
+        LOG.trace("No message found with uuid [{}].", uuid)
         return Optional.empty()
     }
 
@@ -135,10 +137,22 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
         val queue = getSubQueue(appendPrefix(subQueue))
         return if (queue.isNotEmpty())
         {
-            Optional.ofNullable(queue.last().id?.plus(1) ?: 1)
+            var lastIndex = queue.last().id
+            if (lastIndex == null)
+            {
+                LOG.warn("subQueue [{}] is not empty but last index is null. Returning index with value [{}].", subQueue, 1)
+                return Optional.of(1)
+            }
+            else
+            {
+                lastIndex++
+                LOG.trace("Incrementing and returning index for subQueue [{}]. Returning index with value [{}].", subQueue, lastIndex)
+                return Optional.of(lastIndex)
+            }
         }
         else
         {
+            LOG.trace("subQueue [{}] is empty, returning index with value [{}].", subQueue, 1)
             Optional.of(1)
         }
     }

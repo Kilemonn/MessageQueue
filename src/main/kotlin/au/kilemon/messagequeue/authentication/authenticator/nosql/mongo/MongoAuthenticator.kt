@@ -33,11 +33,25 @@ class MongoAuthenticator: MultiQueueAuthenticator()
         val largestIdMessage = authenticationMatrixRepository.findTopByOrderByIdDesc()
         return if (largestIdMessage.isPresent)
         {
-            largestIdMessage.get().id?.plus(1) ?: 1
+            var lastIndex = largestIdMessage.get().id
+            if (lastIndex == null)
+            {
+                val index = 1L
+                LOG.warn("Returning [{}] as next index, an auth matrix entry was found but its ID was null.", index)
+                return index
+            }
+            else
+            {
+                lastIndex++
+                LOG.trace("Returning [{}] as next index.", lastIndex)
+                return lastIndex
+            }
         }
         else
         {
-            1
+            val index = 1L
+            LOG.trace("Returning [{}] as next index since there are no existing auth matrix entries.", index)
+            index
         }
     }
 

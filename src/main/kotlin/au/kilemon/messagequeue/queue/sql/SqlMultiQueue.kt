@@ -67,10 +67,12 @@ class SqlMultiQueue : MultiQueue(), HasLogger
         val message = queueMessageRepository.findByUuid(uuid)
         return if (message.isPresent)
         {
+            LOG.trace("Found message with uuid [{}].", uuid)
             Optional.of(message.get().resolvePayloadObject())
         }
         else
         {
+            LOG.trace("No message found with uuid [{}].", uuid)
             Optional.empty()
         }
     }

@@ -52,10 +52,6 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
         }
 
     /**
-     * New methods for the [MultiQueue] that are required by implementing classes.
-     */
-
-    /**
      * Get the next queue index.
      * If it does not exist yet, a default value of 1 will be set and returned.
      *
@@ -80,6 +76,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
     fun persistMessage(message: QueueMessage)
     {
         persistMessageInternal(message)
+        LOG.trace("Successfully persisted message [{}].", message.uuid)
     }
 
     /**
@@ -124,7 +121,9 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
             throw IllegalSubQueueIdentifierException(subQueue)
         }
 
-        return getSubQueueInternal(subQueue)
+        val queue = getSubQueueInternal(subQueue)
+        LOG.trace("Retrieved subQueue [{}] with [{}] elements.", subQueue, queue.size)
+        return queue
     }
 
     /**
@@ -165,6 +164,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
         val unassignedMessages = ConcurrentLinkedQueue<QueueMessage>()
         val queue = getSubQueue(subQueue)
         unassignedMessages.addAll(queue.stream().filter { message -> message.assignedTo == null }.collect(Collectors.toList()))
+        LOG.trace("Retrieved [{}] unassigned messages in subQueue [{}].", unassignedMessages.size, subQueue)
         return unassignedMessages
     }
 
@@ -234,6 +234,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
         try
         {
             performHealthCheckInternal()
+            LOG.trace("Health check successful.")
         }
         catch (ex: Exception)
         {
@@ -275,7 +276,9 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      */
     fun clearSubQueue(subQueue: String): Int
     {
-        return clearSubQueueInternal(subQueue)
+        val removedEntries = clearSubQueueInternal(subQueue)
+        LOG.trace("Cleared subQueue [{}], [{}] messages removed.", subQueue, removedEntries)
+        return removedEntries
     }
 
     /**
@@ -291,15 +294,21 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      * This will retrieve **AND** remove the head element of the [Queue].
      *
      * @param subQueue [String] of the [Queue] to poll
-     * @return the head element or `null`
+     * @return the head element or [Optional.EMPTY]
      */
     open fun pollSubQueue(subQueue: String): Optional<QueueMessage>
     {
         val head = pollInternal(subQueue)
         if (head.isPresent)
         {
-            removeInternal(head.get())
-            LOG.debug("Found and removed head element with UUID [{}] from sub-queue [{}].", head.get().uuid, subQueue)
+            if (remove(head.get()))
+            {
+                LOG.debug("Found and removed head element with UUID [{}] from sub-queue [{}].", head.get().uuid, subQueue)
+            }
+            else
+            {
+                LOG.error("Attempted to poll subQueue [{}] and failed to remove head element.", subQueue)
+            }
         }
         else
         {

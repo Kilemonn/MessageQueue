@@ -65,6 +65,7 @@ abstract class MultiQueueAuthenticator: HasLogger
     {
         if (getReservedSubQueues().contains(subQueue))
         {
+            LOG.debug("Denying access to subQueue [{}] because it is marked as a reserved identifier.", subQueue)
             if (throwException)
             {
                 throw MultiQueueAuthorisationException(subQueue, getRestrictionMode())
@@ -74,6 +75,7 @@ abstract class MultiQueueAuthenticator: HasLogger
 
         if (isInNoneMode())
         {
+            LOG.trace("Allowing access to subQueue [{}] because authenticator mode is set to None.", subQueue)
             return true
         }
         else if (isInHybridMode())
@@ -82,12 +84,14 @@ abstract class MultiQueueAuthenticator: HasLogger
             {
                 if (JwtAuthenticationFilter.getSubQueue() == subQueue)
                 {
+                    LOG.trace("Allowing access to subQueue [{}] because authenticator mode is set to Hybrid, the requested subQueue is restricted and the subQueue in the request token matches the requested subQueue.", subQueue)
                     return true
                 }
             }
             else
             {
                 // If we are in hybrid mode and the sub-queue is not restricted we should let it pass
+                LOG.trace("Allowing access to subQueue [{}] because authenticator mode is set to Hybrid, and the requested subQueue is not marked as restricted.", subQueue)
                 return true
             }
         }
@@ -95,10 +99,12 @@ abstract class MultiQueueAuthenticator: HasLogger
         {
             if (isRestricted(subQueue) && JwtAuthenticationFilter.getSubQueue() == subQueue)
             {
+                LOG.trace("Allowing access to subQueue [{}] because authenticator mode is set to Restricted, and the requested subQueue is marked as restricted and the subQueue in the request token matches the requested subQueue.", subQueue)
                 return true
             }
         }
 
+        LOG.error("Denying access to subQueue [{}]. Invalid restriction mode has been detected, it is not, None/Hybrid/Restricted.", subQueue)
         if (throwException)
         {
             throw MultiQueueAuthorisationException(subQueue, getRestrictionMode())
@@ -140,11 +146,14 @@ abstract class MultiQueueAuthenticator: HasLogger
     {
         return if (isInNoneMode())
         {
+            LOG.trace("Skipping restricted check for subQueue [{}] because the authenticator is in None mode.", subQueue)
             false
         }
         else
         {
-            isRestrictedInternal(subQueue)
+            val restricted = isRestrictedInternal(subQueue)
+            LOG.debug("Determined that subQueue [{}] is restricted [{}].", subQueue, restricted)
+            return restricted
         }
     }
 

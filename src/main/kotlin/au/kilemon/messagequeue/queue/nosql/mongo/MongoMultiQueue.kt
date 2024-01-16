@@ -86,10 +86,12 @@ class MongoMultiQueue : MultiQueue(), HasLogger
         val documentMessage = queueMessageRepository.findByUuid(uuid)
         return if (documentMessage.isPresent)
         {
+            LOG.trace("Found message with uuid [{}].", uuid)
             Optional.of(QueueMessage(documentMessage.get()))
         }
         else
         {
+            LOG.trace("No message found with uuid [{}].", uuid)
             Optional.empty()
         }
     }
@@ -167,7 +169,18 @@ class MongoMultiQueue : MultiQueue(), HasLogger
         val largestIdMessage = queueMessageRepository.findTopByOrderByIdDesc()
         return if (largestIdMessage.isPresent)
         {
-            Optional.of(largestIdMessage.get().id?.plus(1) ?: 1)
+            var lastIndex = largestIdMessage.get().id
+            if (lastIndex == null)
+            {
+                LOG.warn("subQueue [{}] is not empty but last index is null. Returning index with value [{}].", subQueue, 1)
+                return Optional.of(1)
+            }
+            else
+            {
+                lastIndex++
+                LOG.trace("Incrementing and returning index for subQueue [{}]. Returning index with value [{}].", subQueue, lastIndex)
+                return Optional.of(lastIndex)
+            }
         }
         else
         {
