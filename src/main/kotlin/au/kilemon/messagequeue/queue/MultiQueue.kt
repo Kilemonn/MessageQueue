@@ -3,10 +3,7 @@ package au.kilemon.messagequeue.queue
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
-import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
-import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
-import au.kilemon.messagequeue.queue.exception.IllegalSubQueueIdentifierException
-import au.kilemon.messagequeue.queue.exception.MessageUpdateException
+import au.kilemon.messagequeue.queue.exception.*
 import lombok.Generated
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -296,6 +293,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      * @param subQueue [String] of the [Queue] to poll
      * @return the head element or [Optional.EMPTY]
      */
+    @Throws(MessageDeleteException::class)
     open fun pollSubQueue(subQueue: String): Optional<QueueMessage>
     {
         val head = pollInternal(subQueue)
@@ -444,18 +442,26 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      */
     abstract fun addInternal(element: QueueMessage): Boolean
 
+    @Throws(MessageDeleteException::class)
     override fun remove(element: QueueMessage): Boolean
     {
-        val wasRemoved = removeInternal(element)
-        if (wasRemoved)
+        try
         {
-            LOG.debug("Removed element with UUID [{}] from sub-queue [{}].", element.uuid, element.subQueue)
+            val wasRemoved = removeInternal(element)
+            if (wasRemoved)
+            {
+                LOG.debug("Removed element with UUID [{}] from sub-queue [{}].", element.uuid, element.subQueue)
+            }
+            else
+            {
+                LOG.error("Failed to remove element with UUID [{}] from sub-queue [{}].", element.uuid, element.subQueue)
+            }
+            return wasRemoved
         }
-        else
+        catch (ex: Exception)
         {
-            LOG.error("Failed to remove element with UUID [{}] from sub-queue [{}].", element.uuid, element.subQueue)
+            throw MessageDeleteException(element.uuid, ex)
         }
-        return wasRemoved
     }
 
     /**

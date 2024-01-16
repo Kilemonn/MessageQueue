@@ -3,6 +3,8 @@ package au.kilemon.messagequeue.rest.response
 import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthenticationException
 import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthorisationException
 import au.kilemon.messagequeue.queue.exception.IllegalSubQueueIdentifierException
+import au.kilemon.messagequeue.queue.exception.MessageDeleteException
+import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ControllerAdvice
@@ -40,5 +42,17 @@ class RestResponseExceptionHandler: ResponseEntityExceptionHandler()
     fun handleIllegalSubQueueIdentifierException(ex: IllegalSubQueueIdentifierException): ResponseEntity<ErrorResponse>
     {
         return ResponseEntity<ErrorResponse>(ErrorResponse(ex.message), HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler(MessageDeleteException::class)
+    fun handleMessageDeleteException(ex: MessageDeleteException): ResponseEntity<ErrorResponse>
+    {
+        return ResponseEntity<ErrorResponse>(ErrorResponse(ex.message), HttpStatus.INTERNAL_SERVER_ERROR)
+    }
+
+    @ExceptionHandler(MessageUpdateException::class)
+    fun handleMessageUpdateException(ex: MessageUpdateException): ResponseEntity<ErrorResponse>
+    {
+        return ResponseEntity<ErrorResponse>(ErrorResponse(ex.message), HttpStatus.INTERNAL_SERVER_ERROR)
     }
 }

@@ -5,6 +5,8 @@ import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthentication
 import au.kilemon.messagequeue.authentication.exception.MultiQueueAuthorisationException
 import au.kilemon.messagequeue.filter.CorrelationIdFilter
 import au.kilemon.messagequeue.queue.exception.IllegalSubQueueIdentifierException
+import au.kilemon.messagequeue.queue.exception.MessageDeleteException
+import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -96,7 +98,7 @@ class RestResponseExceptionHandlerTest
     }
 
     /**
-     * Ensure the [RestResponseExceptionHandler.handleIllegalSubQueueIdentifierException] returns the appropriate reponse
+     * Ensure the [RestResponseExceptionHandler.handleIllegalSubQueueIdentifierException] returns the appropriate response
      * and error message.
      */
     @Test
@@ -111,6 +113,46 @@ class RestResponseExceptionHandlerTest
         Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         Assertions.assertNotNull(response.body)
         Assertions.assertTrue(response.body!!.message!!.contains(subQueue))
+        Assertions.assertEquals(correlationId, response.body!!.correlationId)
+    }
+
+    /**
+     * Ensure the [RestResponseExceptionHandler.handleMessageUpdateException] returns the appropriate response
+     * and error message.
+     */
+    @Test
+    fun testHandleMessageUpdateException()
+    {
+        val correlationId = UUID.randomUUID().toString()
+        MDC.put(CorrelationIdFilter.CORRELATION_ID, correlationId)
+
+        val uuid = UUID.randomUUID().toString()
+        val exception = MessageUpdateException(uuid)
+        val response = responseHandler.handleMessageUpdateException(exception)
+
+        Assertions.assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.statusCode)
+        Assertions.assertNotNull(response.body)
+        Assertions.assertTrue(response.body!!.message!!.contains(uuid))
+        Assertions.assertEquals(correlationId, response.body!!.correlationId)
+    }
+
+    /**
+     * Ensure the [RestResponseExceptionHandler.handleMessageDeleteException] returns the appropriate response
+     * and error message.
+     */
+    @Test
+    fun testHandleMessageDeleteException()
+    {
+        val correlationId = UUID.randomUUID().toString()
+        MDC.put(CorrelationIdFilter.CORRELATION_ID, correlationId)
+
+        val uuid = UUID.randomUUID().toString()
+        val exception = MessageDeleteException(uuid)
+        val response = responseHandler.handleMessageDeleteException(exception)
+
+        Assertions.assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.statusCode)
+        Assertions.assertNotNull(response.body)
+        Assertions.assertTrue(response.body!!.message!!.contains(uuid))
         Assertions.assertEquals(correlationId, response.body!!.correlationId)
     }
 }
