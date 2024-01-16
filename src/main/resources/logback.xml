@@ -42,8 +42,8 @@
         <appender-ref ref="Console" />
     </root>
 
-    <!-- LOG "au.kilemon*" at DEBUG level -->
-    <logger name="au.kilemon" level="debug" additivity="false">
+    <!-- LOG "au.kilemon*" at INFO level -->
+    <logger name="au.kilemon" level="info" additivity="false">
         <appender-ref ref="MessageQueueFile" />
         <appender-ref ref="Console" />
     </logger>

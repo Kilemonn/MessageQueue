@@ -45,6 +45,7 @@ open class InMemoryMultiQueue : MultiQueue(), HasLogger
         {
             index = AtomicLong(1)
             maxQueueIndex[subQueue] = index
+            LOG.trace("Creating new index for subQueue [{}], index starting at [{}].", subQueue, index)
         }
         return Optional.of(index.getAndIncrement())
     }
@@ -75,9 +76,11 @@ open class InMemoryMultiQueue : MultiQueue(), HasLogger
         val subQueue = containsUUID(uuid)
         if (subQueue.isPresent)
         {
+            LOG.trace("Found message with uuid [{}].", uuid)
             val queue: Queue<QueueMessage> = getSubQueue(subQueue.get())
             return queue.stream().filter { message -> message.uuid == uuid }.findFirst()
         }
+        LOG.trace("No message found with uuid [{}].", uuid)
         return Optional.empty()
     }
 
@@ -129,7 +132,7 @@ open class InMemoryMultiQueue : MultiQueue(), HasLogger
 
     override fun remove(element: QueueMessage): Boolean
     {
-        val wasRemoved  = super.remove(element)
+        val wasRemoved = super.remove(element)
         if (wasRemoved)
         {
             uuidMap.remove(element.uuid)
