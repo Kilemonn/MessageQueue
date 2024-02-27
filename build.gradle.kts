@@ -1,6 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val springVersion = "3.2.3"
+val springDocVersion = "2.3.0"
+val testContainersVersion = "1.19.6"
 
 plugins {
     id("org.springframework.boot") version "3.2.1"
@@ -33,9 +35,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb:${springVersion}")
 
     // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.3.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:${springDocVersion}")
     // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocVersion}")
 
     implementation("com.google.code.gson:gson:2.10.1")
 
@@ -58,14 +60,14 @@ dependencies {
 
     // Need to import this module name as lower case even if the repo is upper case
     // https://jitpack.io/#Kilemonn/Mock-All
-    testImplementation("com.github.Kilemonn:mock-all:0.1.2")
+    testImplementation("com.github.Kilemonn:mock-all:0.1.3")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springVersion}")
     // Required to mock MultiQueue objects since they apparently override a final 'remove(Object)' method.
     testImplementation("org.mockito:mockito-inline:5.2.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
-    testImplementation("org.testcontainers:testcontainers:1.19.3")
-    testImplementation("org.testcontainers:junit-jupiter:1.19.3")
+    testImplementation("org.testcontainers:testcontainers:${testContainersVersion}")
+    testImplementation("org.testcontainers:junit-jupiter:${testContainersVersion}")
     testImplementation(kotlin("test"))
 }
 
