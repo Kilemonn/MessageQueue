@@ -1,19 +1,15 @@
 package au.kilemon.messagequeue.queue.inmemory
 
-import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
-import au.kilemon.messagequeue.configuration.QueueConfiguration
-import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.message.QueueMessage
-import au.kilemon.messagequeue.queue.MultiQueue
-import au.kilemon.messagequeue.queue.MultiQueueTest
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
+import au.kilemon.mockall.MockAllExecutionListener
+import au.kilemon.mockall.NotMocked
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
-import org.springframework.boot.test.mock.mockito.SpyBean
-import org.springframework.context.annotation.Import
+import org.springframework.test.context.TestExecutionListeners
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.util.*
 
@@ -21,11 +17,11 @@ import java.util.*
  * A [Mockito] test that is used to simulate hard to cover error cases in calling code for all `MultiQueue` related methods that are hard to test.
  */
 @ExtendWith(SpringExtension::class)
-@Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class] )
+@TestExecutionListeners(MockAllExecutionListener::class)
 class InMemoryMockMultiQueueTest
 {
-    @SpyBean
-    private lateinit var multiQueue: MultiQueue
+    @NotMocked([InMemoryMultiQueue::class])
+    private lateinit var multiQueue: InMemoryMultiQueue
 
     @BeforeEach
     fun setup()
