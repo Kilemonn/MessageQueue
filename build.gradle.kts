@@ -1,6 +1,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val springVersion = "3.2.1"
+val springVersion = "3.2.3"
 
 plugins {
     id("org.springframework.boot") version "3.2.1"
@@ -46,7 +46,7 @@ dependencies {
     // https://mvnrepository.com/artifact/com.mysql/mysql-connector-j
     implementation("com.mysql:mysql-connector-j:8.2.0")
     // https://mvnrepository.com/artifact/org.postgresql/postgresql
-    implementation("org.postgresql:postgresql:42.7.1")
+    implementation("org.postgresql:postgresql:42.7.2")
 
     // JWT token
     // https://mvnrepository.com/artifact/com.auth0/java-jwt
