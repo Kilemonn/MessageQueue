@@ -60,7 +60,7 @@ dependencies {
 
     // Need to import this module name as lower case even if the repo is upper case
     // https://jitpack.io/#Kilemonn/Mock-All
-    testImplementation("com.github.Kilemonn:mock-all:0.1.3")
+    testImplementation("com.github.Kilemonn:mock-all:0.1.4")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springVersion}")
     // Required to mock MultiQueue objects since they apparently override a final 'remove(Object)' method.
@@ -79,6 +79,8 @@ configurations.all {
 
 tasks.test {
     useJUnitPlatform()
+    jvmArgs("--add-opens", "java.base/java.util=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang=ALL-UNNAMED")
     finalizedBy(tasks.jacocoTestReport)
 }
 
