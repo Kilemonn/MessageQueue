@@ -24,9 +24,9 @@ class InMemoryMockMultiQueueTest
     private lateinit var multiQueue: InMemoryMultiQueue
 
     @BeforeEach
-    fun setUp()
+    fun setup()
     {
-        multiQueue.initialiseQueueIndex()
+        multiQueue.clear()
     }
 
     /**
@@ -35,7 +35,7 @@ class InMemoryMockMultiQueueTest
     @Test
     fun testPerformAdd_returnsFalse()
     {
-        val message = QueueMessage(null, "type")
+        val message = QueueMessage(null, "testPerformAdd_returnsFalse")
         Mockito.`when`(multiQueue.addInternal(message)).thenReturn(false)
         Mockito.`when`(multiQueue.containsUUID(message.uuid)).thenReturn(Optional.empty())
         Assertions.assertFalse(multiQueue.add(message))
@@ -54,5 +54,19 @@ class InMemoryMockMultiQueueTest
             multiQueue.performHealthCheck()
         }
         Assertions.assertEquals(wrappedException, thrown.cause)
+    }
+
+    /**
+     * Test [InMemoryMultiQueue.retainAll] and test a specific scenario where we think the entry exists in the queue and
+     * attempt to remove it, but fail to remove it from the queue.
+     */
+    @Test
+    fun testRetainAll_removeFails()
+    {
+        val message = QueueMessage("payload", "testRetainAll_removeFails")
+        Mockito.`when`(multiQueue.remove(message)).thenReturn(false)
+
+        Assertions.assertTrue(multiQueue.add(message))
+        Assertions.assertFalse(multiQueue.retainAll(Collections.emptyList()))
     }
 }
