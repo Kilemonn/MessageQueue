@@ -2,8 +2,8 @@
 <configuration>
     <!-- Properties list for use below -->
     <property name="LOGS" value="./logs"/>
-    <property name="PATTERN" value="%d %p %C{1.} [%t] %m%n"/>
-    <property name="ARCHIVED_FILE_SUFFIX" value="-%d{yyyy-MM-dd}.%i"/>
+    <property name="PATTERN" value="%d %p [%t] [%X{correlationId}] %C{1} - %m%n"/>
+    <property name="ARCHIVED_FILE_SUFFIX" value="%d{yyyy-MM-dd}.%i"/>
 
     <!-- Console appender formatting -->
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
@@ -19,7 +19,7 @@
             <Pattern>${PATTERN}</Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${LOGS}/error${ARCHIVED_FILE_SUFFIX}.log</fileNamePattern>
+            <fileNamePattern>${LOGS}/error-${ARCHIVED_FILE_SUFFIX}.log</fileNamePattern>
             <maxFileSize>10MB</maxFileSize>
         </rollingPolicy>
     </appender>
@@ -31,7 +31,7 @@
             <Pattern>${PATTERN}</Pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${LOGS}/message-queue${ARCHIVED_FILE_SUFFIX}.log</fileNamePattern>
+            <fileNamePattern>${LOGS}/message-queue-${ARCHIVED_FILE_SUFFIX}.log</fileNamePattern>
             <maxFileSize>10MB</maxFileSize>
         </rollingPolicy>
     </appender>
@@ -42,8 +42,8 @@
         <appender-ref ref="Console" />
     </root>
 
-    <!-- LOG "au.kilemon*" at DEBUG level -->
-    <logger name="au.kilemon" level="debug" additivity="false">
+    <!-- LOG "au.kilemon*" at INFO level -->
+    <logger name="au.kilemon" level="info" additivity="false">
         <appender-ref ref="MessageQueueFile" />
         <appender-ref ref="Console" />
     </logger>

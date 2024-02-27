@@ -9,7 +9,6 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicLong
-import java.util.stream.Collectors
 import kotlin.collections.HashMap
 import kotlin.jvm.Throws
 
@@ -19,12 +18,12 @@ import kotlin.jvm.Throws
  *
  * @author github.com/Kilemonn
  */
-open class InMemoryMultiQueue : MultiQueue, HasLogger
+open class InMemoryMultiQueue : MultiQueue(), HasLogger
 {
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     /**
-     * An internal [Map] that holds known [UUID]s (as a [String]) and their related `queueType` to quickly find entries within the [MultiQueue].
+     * An internal [Map] that holds known [UUID]s (as a [String]) and their related `sub-queue` to quickly find entries within the [MultiQueue].
      */
     private val uuidMap: ConcurrentHashMap<String, String> = ConcurrentHashMap()
 
@@ -33,23 +32,38 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
      */
     private val messageQueue: ConcurrentHashMap<String, Queue<QueueMessage>> = ConcurrentHashMap()
 
-    override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
+    private val maxQueueIndex: HashMap<String, AtomicLong> = HashMap()
 
-
-    override fun getQueueForType(queueType: String): Queue<QueueMessage>
+    /**
+     * This index is special compared to the other [au.kilemon.messagequeue.settings.StorageMedium] it will be incremented once retrieved.
+     * So we could be skipping indexes, but it should be fine since it's only used for message ordering.
+     */
+    override fun getNextSubQueueIndex(subQueue: String): Optional<Long>
     {
-        var queueForType: Queue<QueueMessage>? = messageQueue[queueType]
-        if (queueForType == null)
+        var index = maxQueueIndex[subQueue]
+        if (index == null)
         {
-            queueForType = ConcurrentLinkedQueue()
-            LOG.debug("Initialising new queue for type [{}].", queueType)
-            messageQueue[queueType] = queueForType
+            index = AtomicLong(1)
+            maxQueueIndex[subQueue] = index
+            LOG.trace("Creating new index for subQueue [{}], index starting at [{}].", subQueue, index)
+        }
+        return Optional.of(index.getAndIncrement())
+    }
+
+    override fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
+    {
+        var queue: Queue<QueueMessage>? = messageQueue[subQueue]
+        if (queue == null)
+        {
+            queue = ConcurrentLinkedQueue()
+            LOG.debug("Initialising new sub-queue [{}].", subQueue)
+            messageQueue[subQueue] = queue
         }
         else
         {
-            LOG.debug("Found existing queue for type [{}] with size [{}].", queueType, queueForType.size)
+            LOG.debug("Found existing sub-queue [{}] with size [{}].", subQueue, queue.size)
         }
-        return queueForType
+        return queue
     }
 
     override fun performHealthCheckInternal()
@@ -59,32 +73,41 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
 
     override fun getMessageByUUID(uuid: String): Optional<QueueMessage>
     {
-        val queueType = containsUUID(uuid)
-        if (queueType.isPresent)
+        val subQueue = containsUUID(uuid)
+        if (subQueue.isPresent)
         {
-            val queueForType: Queue<QueueMessage> = getQueueForType(queueType.get())
-            return queueForType.stream().filter { message -> message.uuid == uuid }.findFirst()
+            LOG.trace("Found message with uuid [{}].", uuid)
+            val queue: Queue<QueueMessage> = getSubQueue(subQueue.get())
+            return queue.stream().filter { message -> message.uuid == uuid }.findFirst()
         }
+        LOG.trace("No message found with uuid [{}].", uuid)
         return Optional.empty()
     }
 
-    override fun clearForTypeInternal(queueType: String): Int
+    override fun clearSubQueueInternal(subQueue: String): Int
     {
         var amountRemoved = 0
-        val queueForType: Queue<QueueMessage>? = messageQueue[queueType]
-        if (queueForType != null)
+        val queue: Queue<QueueMessage>? = messageQueue[subQueue]
+        maxQueueIndex.remove(subQueue)
+        if (queue != null)
         {
-            amountRemoved = queueForType.size
-            queueForType.forEach { message -> uuidMap.remove(message.uuid) }
-            queueForType.clear()
-            messageQueue.remove(queueType)
-            LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, amountRemoved)
+            amountRemoved = queue.size
+            queue.forEach { message -> uuidMap.remove(message.uuid) }
+            queue.clear()
+            messageQueue.remove(subQueue)
+            LOG.debug("Cleared existing sub-queue [{}]. Removed [{}] message entries.", subQueue, amountRemoved)
         }
         else
         {
-            LOG.debug("Attempting to clear non-existent queue for type [{}]. No messages cleared.", queueType)
+            LOG.debug("Attempting to clear non-existent sub-queue [{}]. No messages cleared.", subQueue)
         }
         return amountRemoved
+    }
+
+    override fun clear()
+    {
+        super.clear()
+        maxQueueIndex.clear()
     }
 
     @Throws(DuplicateMessageException::class)
@@ -93,7 +116,7 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         val wasAdded = super.add(element)
         if (wasAdded)
         {
-            uuidMap[element.uuid] = element.type
+            uuidMap[element.uuid] = element.subQueue
         }
         return wasAdded
     }
@@ -103,13 +126,13 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
      */
     override fun addInternal(element: QueueMessage): Boolean
     {
-        val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
-        return queueForType.add(element)
+        val queue: Queue<QueueMessage> = getSubQueue(element.subQueue)
+        return queue.add(element)
     }
 
     override fun remove(element: QueueMessage): Boolean
     {
-        val wasRemoved  = super.remove(element)
+        val wasRemoved = super.remove(element)
         if (wasRemoved)
         {
             uuidMap.remove(element.uuid)
@@ -122,32 +145,32 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
      */
     override fun removeInternal(element: QueueMessage): Boolean
     {
-        val queueForType: Queue<QueueMessage> = getQueueForType(element.type)
-        return queueForType.remove(element)
+        val queue: Queue<QueueMessage> = getSubQueue(element.subQueue)
+        return queue.remove(element)
     }
 
-    override fun isEmptyForType(queueType: String): Boolean
+    override fun isEmptySubQueue(subQueue: String): Boolean
     {
-        val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
-        return queueForType.isEmpty()
+        val queue: Queue<QueueMessage> = getSubQueue(subQueue)
+        return queue.isEmpty()
     }
 
-    override fun keys(includeEmpty: Boolean): Set<String>
+    override fun keysInternal(includeEmpty: Boolean): HashSet<String>
     {
         if (includeEmpty)
         {
             LOG.debug("Including all empty queue keys in call to keys(). Total queue keys [{}].", messageQueue.keys.size)
-            return messageQueue.keys.toSet()
+            return HashSet(messageQueue.keys)
         }
         else
         {
             val keys = HashSet<String>()
             for (key: String in messageQueue.keys)
             {
-                val queueForType = getQueueForType(key)
-                if (queueForType.isNotEmpty())
+                val queue = getSubQueue(key)
+                if (queue.isNotEmpty())
                 {
-                    LOG.trace("Queue type [{}] is not empty and will be returned in keys() call.", queueForType)
+                    LOG.trace("Sub-queue [{}] is not empty and will be returned in keys() call.", queue)
                     keys.add(key)
                 }
             }
@@ -158,24 +181,24 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
 
     override fun containsUUID(uuid: String): Optional<String>
     {
-        val queueTypeForUUID: String? = uuidMap[uuid]
-        if (queueTypeForUUID.isNullOrBlank())
+        val subQueueID: String? = uuidMap[uuid]
+        if (subQueueID.isNullOrBlank())
         {
-            LOG.debug("No queue type exists for UUID: [{}].", uuid)
+            LOG.debug("No sub-queue exists for UUID: [{}].", uuid)
         }
         else
         {
-            LOG.debug("Found queue type [{}] for UUID: [{}].", queueTypeForUUID, uuid)
+            LOG.debug("Found sub-queue [{}] for UUID: [{}].", subQueueID, uuid)
         }
-        return Optional.ofNullable(queueTypeForUUID)
+        return Optional.ofNullable(subQueueID)
     }
 
     /**
      * Update the [uuidMap] and remove the entry if it is returned (removed).
      */
-    override fun pollForType(queueType: String): Optional<QueueMessage>
+    override fun pollSubQueue(subQueue: String): Optional<QueueMessage>
     {
-        val message = super.pollForType(queueType)
+        val message = super.pollSubQueue(subQueue)
         if (message.isPresent)
         {
             uuidMap.remove(message.get().uuid)
@@ -184,12 +207,12 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
         return message
     }
 
-    override fun pollInternal(queueType: String): Optional<QueueMessage>
+    override fun pollInternal(subQueue: String): Optional<QueueMessage>
     {
-        val queueForType: Queue<QueueMessage> = getQueueForType(queueType)
-        return if (queueForType.isNotEmpty())
+        val queue: Queue<QueueMessage> = getSubQueue(subQueue)
+        return if (queue.isNotEmpty())
         {
-            Optional.of(queueForType.iterator().next())
+            Optional.of(queue.iterator().next())
         }
         else
         {
@@ -200,7 +223,7 @@ open class InMemoryMultiQueue : MultiQueue, HasLogger
     /**
      * Not required, since in-memory object changes are performed immediately and require not further code to persist the change
      */
-    override fun persistMessage(message: QueueMessage)
+    override fun persistMessageInternal(message: QueueMessage)
     {
 
     }

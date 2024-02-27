@@ -4,13 +4,12 @@ import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
-import au.kilemon.messagequeue.queue.sql.repository.QueueMessageRepository
+import au.kilemon.messagequeue.queue.sql.repository.SqlQueueMessageRepository
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * A database backed [MultiQueue]. All operations are performed directly on the database it is the complete source of truth.
@@ -18,42 +17,32 @@ import java.util.concurrent.atomic.AtomicLong
  *
  * @author github.com/Kilemonn
  */
-class SqlMultiQueue : MultiQueue, HasLogger
+class SqlMultiQueue : MultiQueue(), HasLogger
 {
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     @Lazy
     @Autowired
-    private lateinit var queueMessageRepository: QueueMessageRepository
+    private lateinit var queueMessageRepository: SqlQueueMessageRepository
 
-    override lateinit var maxQueueIndex: HashMap<String, AtomicLong>
-
-    /**
-     * Just initialise map, so it's not null, but the SQL [QueueMessage] ID is maintained by the database.
-     */
-    override fun initialiseQueueIndex()
+    override fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
     {
-        maxQueueIndex = HashMap()
-    }
-
-    override fun getQueueForType(queueType: String): Queue<QueueMessage>
-    {
-        val entries = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
+        val entries = queueMessageRepository.findBySubQueueOrderByIdAsc(subQueue)
         return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
     }
 
     /**
      * Overriding since we can filter via the DB query.
      */
-    override fun getAssignedMessagesForType(queueType: String, assignedTo: String?): Queue<QueueMessage>
+    override fun getAssignedMessagesInSubQueue(subQueue: String, assignedTo: String?): Queue<QueueMessage>
     {
         val entries = if (assignedTo == null)
         {
-            queueMessageRepository.findByTypeAndAssignedToIsNotNullOrderByIdAsc(queueType)
+            queueMessageRepository.findBySubQueueAndAssignedToIsNotNullOrderByIdAsc(subQueue)
         }
         else
         {
-            queueMessageRepository.findByTypeAndAssignedToOrderByIdAsc(queueType, assignedTo)
+            queueMessageRepository.findBySubQueueAndAssignedToOrderByIdAsc(subQueue, assignedTo)
         }
 
         return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
@@ -62,9 +51,9 @@ class SqlMultiQueue : MultiQueue, HasLogger
     /**
      * Overriding since we can filter via the DB query.
      */
-    override fun getUnassignedMessagesForType(queueType: String): Queue<QueueMessage>
+    override fun getUnassignedMessagesInSubQueue(subQueue: String): Queue<QueueMessage>
     {
-        val entries = queueMessageRepository.findByTypeAndAssignedToIsNullOrderByIdAsc(queueType)
+        val entries = queueMessageRepository.findBySubQueueAndAssignedToIsNullOrderByIdAsc(subQueue)
         return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
     }
 
@@ -75,24 +64,34 @@ class SqlMultiQueue : MultiQueue, HasLogger
 
     override fun getMessageByUUID(uuid: String): Optional<QueueMessage>
     {
-        return queueMessageRepository.findByUuid(uuid)
+        val message = queueMessageRepository.findByUuid(uuid)
+        return if (message.isPresent)
+        {
+            LOG.trace("Found message with uuid [{}].", uuid)
+            Optional.of(message.get().resolvePayloadObject())
+        }
+        else
+        {
+            LOG.trace("No message found with uuid [{}].", uuid)
+            Optional.empty()
+        }
     }
 
-    override fun clearForTypeInternal(queueType: String): Int
+    override fun clearSubQueueInternal(subQueue: String): Int
     {
-        val amountCleared = queueMessageRepository.deleteByType(queueType)
-        LOG.debug("Cleared existing queue for type [{}]. Removed [{}] message entries.", queueType, amountCleared)
+        val amountCleared = queueMessageRepository.deleteBySubQueue(subQueue)
+        LOG.debug("Cleared existing sub-queue [{}]. Removed [{}] message entries.", subQueue, amountCleared)
         return amountCleared
     }
 
-    override fun isEmptyForType(queueType: String): Boolean
+    override fun isEmptySubQueue(subQueue: String): Boolean
     {
-        return queueMessageRepository.findByTypeOrderByIdAsc(queueType).isEmpty()
+        return queueMessageRepository.findBySubQueueOrderByIdAsc(subQueue).isEmpty()
     }
 
-    override fun pollInternal(queueType: String): Optional<QueueMessage>
+    override fun pollInternal(subQueue: String): Optional<QueueMessage>
     {
-        val messages = queueMessageRepository.findByTypeOrderByIdAsc(queueType)
+        val messages = queueMessageRepository.findBySubQueueOrderByIdAsc(subQueue)
         return if (messages.isNotEmpty())
         {
             return Optional.of(messages[0].resolvePayloadObject())
@@ -106,9 +105,9 @@ class SqlMultiQueue : MultiQueue, HasLogger
     /**
      * The [includeEmpty] value makes no difference it is always effectively `false`.
      */
-    override fun keys(includeEmpty: Boolean): Set<String>
+    override fun keysInternal(includeEmpty: Boolean): HashSet<String>
     {
-        val keySet = queueMessageRepository.findDistinctType().toSet()
+        val keySet = HashSet(queueMessageRepository.findDistinctSubQueue())
         LOG.debug("Total amount of queue keys [{}].", keySet.size)
         return keySet
     }
@@ -119,12 +118,12 @@ class SqlMultiQueue : MultiQueue, HasLogger
         return if (optionalMessage.isPresent)
         {
             val message = optionalMessage.get()
-            LOG.debug("Found queue type [{}] for UUID: [{}].", message.type, uuid)
-            Optional.of(message.type)
+            LOG.debug("Found sub-queue [{}] for message with UUID: [{}].", message.subQueue, uuid)
+            Optional.of(message.subQueue)
         }
         else
         {
-            LOG.debug("No queue type exists for UUID: [{}].", uuid)
+            LOG.debug("No sub-queue found for message with UUID: [{}].", uuid)
             Optional.empty()
         }
     }
@@ -143,7 +142,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
         return removedCount > 0
     }
 
-    override fun persistMessage(message: QueueMessage)
+    override fun persistMessageInternal(message: QueueMessage)
     {
         // We are working with an object from JPA if there is an existing ID
         // If there is no id in the provided message then we will check that the message with the same UUID does exist
@@ -162,7 +161,7 @@ class SqlMultiQueue : MultiQueue, HasLogger
      * Overriding to return [Optional.EMPTY] so that the [MultiQueue.add] does set an `id` into the [QueueMessage]
      * even if the id is `null`.
      */
-    override fun getAndIncrementQueueIndex(queueType: String): Optional<Long>
+    override fun getNextSubQueueIndex(subQueue: String): Optional<Long>
     {
         return Optional.empty()
     }

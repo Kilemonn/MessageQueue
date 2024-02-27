@@ -1,9 +1,9 @@
 package au.kilemon.messagequeue.configuration.cache.redis
 
+import au.kilemon.messagequeue.authentication.AuthenticationMatrix
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.settings.MessageQueueSettings
-import lombok.Generated
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -27,7 +27,7 @@ import java.net.InetSocketAddress
 @Configuration
 class RedisConfiguration: HasLogger
 {
-    override val LOG: Logger = initialiseLogger()
+    override val LOG: Logger = this.initialiseLogger()
 
     companion object
     {
@@ -79,9 +79,7 @@ class RedisConfiguration: HasLogger
     }
 
     @Autowired
-    @get:Generated
-    @set:Generated
-    lateinit var messageQueueSettings: MessageQueueSettings
+    private lateinit var messageQueueSettings: MessageQueueSettings
 
     /**
      * Create the [RedisConnectionFactory] based on the loaded configuration.
@@ -93,7 +91,7 @@ class RedisConfiguration: HasLogger
      * @return the created [RedisConnectionFactory] based on the configured [MessageQueueSettings]
      */
     @Bean
-    @ConditionalOnProperty(name=[MessageQueueSettings.MULTI_QUEUE_TYPE], havingValue="REDIS")
+    @ConditionalOnProperty(name=[MessageQueueSettings.STORAGE_MEDIUM], havingValue="REDIS")
     fun getConnectionFactory(): RedisConnectionFactory
     {
         return if (messageQueueSettings.redisUseSentinels.toBoolean())
@@ -156,15 +154,30 @@ class RedisConfiguration: HasLogger
     }
 
     /**
-     * Create the [RedisTemplate] from [getConnectionFactory].
+     * Create a [RedisTemplate] to interact with [QueueMessage] from the [getConnectionFactory].
      *
      * @return the [RedisTemplate] used to interface with the [RedisTemplate] cache.
      */
     @Bean
-    @ConditionalOnProperty(name=[MessageQueueSettings.MULTI_QUEUE_TYPE], havingValue="REDIS")
-    fun getRedisTemplate(): RedisTemplate<String, QueueMessage>
+    @ConditionalOnProperty(name=[MessageQueueSettings.STORAGE_MEDIUM], havingValue="REDIS")
+    fun getQueueRedisTemplate(): RedisTemplate<String, QueueMessage>
     {
         val template = RedisTemplate<String, QueueMessage>()
+        template.connectionFactory = getConnectionFactory()
+        template.keySerializer = StringRedisSerializer()
+        return template
+    }
+
+    /**
+     * Create a [RedisTemplate] to interact with [AuthenticationMatrix] from the [getConnectionFactory].
+     *
+     * @return the [RedisTemplate] used to interface with the [RedisTemplate] cache.
+     */
+    @Bean
+    @ConditionalOnProperty(name=[MessageQueueSettings.STORAGE_MEDIUM], havingValue="REDIS")
+    fun getAuthMatrixRedisTemplate(): RedisTemplate<String, AuthenticationMatrix>
+    {
+        val template = RedisTemplate<String, AuthenticationMatrix>()
         template.connectionFactory = getConnectionFactory()
         template.keySerializer = StringRedisSerializer()
         return template

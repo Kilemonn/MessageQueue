@@ -2,29 +2,18 @@ package au.kilemon.messagequeue.settings
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
+import io.swagger.v3.oas.annotations.media.Schema
 import lombok.Generated
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.beans.factory.config.ConfigurableBeanFactory
-import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
 
 /**
  * An object that holds application level properties and is set initially on application start up.
  * This will control things such as:
  * - Credentials to external data storage
- * - The type of `MultiQueue` being used
+ * - The storage medium of `MultiQueue` being used
+ * - The restriction mode being used
  * - Other utility configuration for the application to use.
- *
- * This does not hold the dialect and driver information for the database mode.
- * This is the dialect that hibernate will use when interacting with the underlying database.
- * Supported dialects are listed below:
- * - MySQL (e.g. `org.hibernate.dialect.MySQLDialect`)
- * - Postgresql (e.g. `org.hibernate.dialect.PostgreSQLDialect`)
- *
- * Defines the underlying driver which is used to connect to the requested database.
- * Currently supports:
- * - MySQL (e.g. `com.mysql.jdbc.Driver`)
- * - Postgresql (e.g. `org.postgresql.Driver`)
  *
  * When `SQL` is used, the following property must be provided:
  * `spring.jpa.hibernate.ddl-auto=create`
@@ -37,21 +26,23 @@ class MessageQueueSettings
 {
     companion object
     {
-        const val MULTI_QUEUE_TYPE: String = "MULTI_QUEUE_TYPE"
-        const val MULTI_QUEUE_TYPE_DEFAULT: String = "IN_MEMORY"
+        private const val MESSAGE_QUEUE: String = "message-queue"
+
+        const val STORAGE_MEDIUM: String = "$MESSAGE_QUEUE.storage-medium"
+        const val STORAGE_MEDIUM_DEFAULT: String = "IN_MEMORY"
 
         /**
          * Start redis related properties
          */
-        const val REDIS_PREFIX: String = "REDIS_PREFIX"
-
-        const val REDIS_ENDPOINT: String = "REDIS_ENDPOINT"
+        private const val REDIS: String = "redis"
+        const val REDIS_PREFIX: String = "$MESSAGE_QUEUE.$REDIS.prefix"
+        const val REDIS_ENDPOINT: String = "$MESSAGE_QUEUE.$REDIS.endpoint"
         const val REDIS_ENDPOINT_DEFAULT: String = "127.0.0.1"
 
         // Redis sentinel related properties
-        const val REDIS_USE_SENTINELS: String = "REDIS_USE_SENTINELS"
+        const val REDIS_USE_SENTINELS: String = "$MESSAGE_QUEUE.$REDIS.sentinel"
 
-        const val REDIS_MASTER_NAME: String = "REDIS_MASTER_NAME"
+        const val REDIS_MASTER_NAME: String = "$MESSAGE_QUEUE.$REDIS.master-name"
         const val REDIS_MASTER_NAME_DEFAULT: String = "mymaster"
 
         /**
@@ -62,31 +53,78 @@ class MessageQueueSettings
         const val SQL_PASSWORD: String = "spring.datasource.password"
 
         /**
+         * Start MONGO related properties
+         */
+        const val MONGO_HOST: String = "spring.data.mongodb.host"
+        const val MONGO_DATABASE: String = "spring.data.mongodb.database"
+        const val MONGO_PORT: String = "spring.data.mongodb.port"
+        const val MONGO_USERNAME: String = "spring.data.mongodb.username"
+        const val MONGO_PASSWORD: String = "spring.data.mongodb.password"
+        const val MONGO_URI: String = "spring.data.mongodb.uri"
+
+        /**
          * SQL Schema properties
          */
         const val SQL_SCHEMA: String = "SQL_SCHEMA"
         const val SQL_SCHEMA_DEFAULT: String = "public"
+
+        /**
+         * Start authenticated sub-queue properties.
+         */
+        /**
+         * Indicates what authentication mode the `MultiQueue` should be in.
+         */
+        const val RESTRICTION_MODE: String = "$MESSAGE_QUEUE.restriction-mode"
+        const val RESTRICTION_MODE_DEFAULT: String = "NONE"
+
+        /**
+         * A property that is passed through to the [au.kilemon.messagequeue.authentication.token.JwtTokenProvider] and
+         * used as the token generation and verification key. If this is not provided, a new key will be generated each
+         * time the application starts.
+         */
+        const val ACCESS_TOKEN_KEY: String = "$MESSAGE_QUEUE.access-token.key"
     }
 
     /**
-     * `Optional` uses the [MULTI_QUEUE_TYPE] environment variable to determine where
-     * the underlying multi queue is persisted. It can be any value of [MultiQueueType].
-     * Defaults to [MultiQueueType.IN_MEMORY] ([MULTI_QUEUE_TYPE_DEFAULT]).
+     * `Optional` uses the [STORAGE_MEDIUM] environment variable to determine where
+     * the underlying multi queue is persisted. It can be any value of [StorageMedium].
+     * Defaults to [StorageMedium.IN_MEMORY] ([STORAGE_MEDIUM_DEFAULT]).
      */
-    @SerializedName(MULTI_QUEUE_TYPE)
-    @JsonProperty(MULTI_QUEUE_TYPE)
-    @Value("\${$MULTI_QUEUE_TYPE:$MULTI_QUEUE_TYPE_DEFAULT}")
+    @Schema(title = "Storage Medium", example = "IN_MEMORY",
+        description = "The storage entity that will be used to hold and store the QueueMessages.")
+    @SerializedName(STORAGE_MEDIUM)
+    @JsonProperty(STORAGE_MEDIUM)
+    @Value("\${$STORAGE_MEDIUM:$STORAGE_MEDIUM_DEFAULT}")
     @get:Generated
     @set:Generated
-    lateinit var multiQueueType: String
+    lateinit var storageMedium: String
 
     /**
-     * `Optional` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.REDIS].
+     * `Optional` uses the [RESTRICTION_MODE] environment variable to determine whether specific sub-queues
+     * will require authentication or not to create or access. It can be any value of [StorageMedium].
+     * Defaults to [StorageMedium.IN_MEMORY] ([RESTRICTION_MODE_DEFAULT]).
+     */
+    @Schema(title = "Restriction Mode", example = "RESTRICTED",
+        description = "The restriction mode indicates how the MessageQueue can be interacted with. " +
+                "This property will drive whether credentials need to be created and shared for **all** sub-queues, **some** of the sub-queues or **none** of the sub-queues.")
+    @SerializedName(RESTRICTION_MODE)
+    @JsonProperty(RESTRICTION_MODE)
+    @Value("\${$RESTRICTION_MODE:$RESTRICTION_MODE_DEFAULT}")
+    @get:Generated
+    @set:Generated
+    lateinit var restrictionMode: String
+
+
+    /**
+     * `Optional` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
      * Uses the [REDIS_PREFIX] to set a prefix used for all redis entry keys.
      *
      * E.g. if the initial value for the redis entry is "my-key" and no prefix is defined the entries would be stored under "my-key".
      * Using the same scenario if the prefix is "prefix" then the resultant key would be "prefixmy-key".
      */
+    @Schema(title = "Redis Prefix", example = "my-prefix-",
+        description = "Used to remove/reduce the likelihood of any collisions if this is being used in an existing redis instance. " +
+                "The prefix will be added to all entries made in the redis storage medium.")
     @SerializedName(REDIS_PREFIX)
     @JsonProperty(REDIS_PREFIX)
     @Value("\${$REDIS_PREFIX:}")
@@ -95,13 +133,15 @@ class MessageQueueSettings
     lateinit var redisPrefix: String
 
     /**
-     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.REDIS].
+     * `Required` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
      * The input endpoint string which is used for both standalone and the sentinel redis configurations.
      * This supports a comma separated list or single definition of a redis endpoint in the following formats:
      * `<endpoint>:<port>,<endpoint2>:<port2>,<endpoint3>`
      *
      * If not provided [REDIS_ENDPOINT_DEFAULT] will be used by default.
      */
+    @Schema(title = "Redis Endpoint", example = "sentinel1.com:5545,sentinel2.org:9980",
+        description = "The endpoint string which is used for both standalone and the sentinel redis configurations.")
     @SerializedName(REDIS_ENDPOINT)
     @JsonProperty(REDIS_ENDPOINT)
     @Value("\${$REDIS_ENDPOINT:$REDIS_ENDPOINT_DEFAULT}")
@@ -110,11 +150,13 @@ class MessageQueueSettings
     lateinit var redisEndpoint: String
 
     /**
-     * `Optional` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.REDIS].
+     * `Optional` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
      * Indicates whether the `MultiQueue` should connect directly to the redis instance or connect via one or more sentinel instances.
      * If set to `true` the `MultiQueue` will create a sentinel pool connection instead of a direct connection which is what would occur if this is left as `false`.
      * By default, this is `false`.
      */
+    @Schema(title = "Redis Sentinel Mode Enabled", example = "true",
+        description = "Indicates whether the `MultiQueue` should connect directly to the redis instance or connect via one or more sentinel instances.")
     @SerializedName(REDIS_USE_SENTINELS)
     @JsonProperty(REDIS_USE_SENTINELS)
     @Value("\${$REDIS_USE_SENTINELS:false}")
@@ -123,10 +165,12 @@ class MessageQueueSettings
     lateinit var redisUseSentinels: String
 
     /**
-     * `Optional` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.REDIS].
+     * `Optional` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
      * `Required` when [redisUseSentinels] is set to `true`. Is used to indicate the name of the redis master instance.
      * By default, this is [REDIS_MASTER_NAME_DEFAULT].
      */
+    @Schema(title = "Redis Master Name", example = "not-my-master",
+        description = "The name of the redis master instance.")
     @SerializedName(REDIS_MASTER_NAME)
     @JsonProperty(REDIS_MASTER_NAME)
     @Value("\${$REDIS_MASTER_NAME:$REDIS_MASTER_NAME_DEFAULT}")
@@ -135,10 +179,12 @@ class MessageQueueSettings
     lateinit var redisMasterName: String
 
     /**
-     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
+     * `Required` when [STORAGE_MEDIUM] is set to [StorageMedium.SQL].
      * This defines the database connection string e.g:
      * `"jdbc:mysql://localhost:3306/message-queue"`
      */
+    @Schema(title = "SQL Endpoint", example = "postgresql://127.0.0.1:5432/postgres",
+        description = "The database connection string that the application should connect to.")
     @SerializedName(SQL_ENDPOINT)
     @JsonProperty(SQL_ENDPOINT)
     @Value("\${$SQL_ENDPOINT:}")
@@ -147,9 +193,11 @@ class MessageQueueSettings
     lateinit var sqlEndpoint: String
 
     /**
-     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
+     * `Required` when [STORAGE_MEDIUM] is set to [StorageMedium.SQL].
      * This is the username/account name used to access the database defined in [SQL_ENDPOINT].
      */
+    @Schema(title = "SQL Username", example = "postgres",
+        description = "The username/account name used to access the database at the configured endpoint.")
     @SerializedName(SQL_USERNAME)
     @JsonProperty(SQL_USERNAME)
     @Value("\${$SQL_USERNAME:}")
@@ -158,7 +206,7 @@ class MessageQueueSettings
     lateinit var sqlUsername: String
 
     /**
-     * `Required` when [MULTI_QUEUE_TYPE] is set to [MultiQueueType.SQL].
+     * `Required` when [STORAGE_MEDIUM] is set to [StorageMedium.SQL].
      * This is the password used to access the database defined in [SQL_ENDPOINT].
      */
     // TODO: Commenting out since it is unused and returned in the settings endpoint without masking
@@ -167,4 +215,80 @@ class MessageQueueSettings
     // @JsonProperty(SQL_PASSWORD)
     // @Value("\${$SQL_PASSWORD:}")
     // lateinit var sqlPassword: String
+
+    /**
+     * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
+     * It specifies the host name that the mongo db is available at.
+     */
+    @Schema(title = "MongoDB Endpoint", example = "mongodb://127.0.0.1",
+        description = "The endpoint url that is used to connect to the MongoDB instance.")
+    @SerializedName(MONGO_HOST)
+    @JsonProperty(MONGO_HOST)
+    @Value("\${$MONGO_HOST:}")
+    @get:Generated
+    @set:Generated
+    lateinit var mongoHost: String
+
+    /**
+     * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
+     * It specifies the port that the mongo db is available on.
+     */
+    @Schema(title = "MongoDB Port", example = "27017",
+        description = "The port that the MongoDB has exposed.")
+    @SerializedName(MONGO_PORT)
+    @JsonProperty(MONGO_PORT)
+    @Value("\${$MONGO_PORT:}")
+    @get:Generated
+    @set:Generated
+    lateinit var mongoPort: String
+
+    /**
+     * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
+     * It specifies the database you wish to connect to.
+     */
+    @Schema(title = "MongoDB Database", example = "my-table",
+        description = "The database that should be connected to and where the QueueMessage documents will be created.")
+    @SerializedName(MONGO_DATABASE)
+    @JsonProperty(MONGO_DATABASE)
+    @Value("\${$MONGO_DATABASE:}")
+    @get:Generated
+    @set:Generated
+    lateinit var mongoDatabase: String
+
+    /**
+     * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
+     * It specifies the username that you wish to connect with.
+     */
+    @Schema(title = "MongoDB Username", example = "my-username",
+        description = "This is the username/account name used to access the database at the configured endpoint.")
+    @SerializedName(MONGO_USERNAME)
+    @JsonProperty(MONGO_USERNAME)
+    @Value("\${$MONGO_USERNAME:}")
+    @get:Generated
+    @set:Generated
+    lateinit var mongoUsername: String
+
+    /**
+     * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
+     * It specifies the password for the user that you wish to connect with.
+     */
+    // TODO: Commenting out since it is unused and returned in the settings endpoint without masking
+    // @JsonIgnore
+    // @SerializedName(MONGO_PASSWORD)
+    // @JsonProperty(MONGO_PASSWORD)
+    // @Value("\${MONGO_PASSWORD:}")
+    // lateinit var mongoPassword: String
+
+    /**
+     * Required when [StorageMedium.MONGO] is used and the above mongo properties are empty.
+     * It specifies all properties of the mongo connection in the format of `mongodb://<username>:<password>@<host>:<port>/<database>`.
+     */
+    @Schema(title = "MongoDB URI", example = "mongodb://root:password@mongo:27017/messagequeue?authSource=admin",
+        description = "The whole connection url that is used to connect to the MongoDB instance.")
+    @SerializedName(MONGO_URI)
+    @JsonProperty(MONGO_URI)
+    @Value("\${$MONGO_URI:}")
+    @get:Generated
+    @set:Generated
+    lateinit var mongoUri: String
 }
