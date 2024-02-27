@@ -17,7 +17,9 @@ java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
     mavenCentral()
-    mavenLocal()
+    maven {
+        url = uri("https://jitpack.io")
+    }
 }
 
 dependencies {
@@ -52,8 +54,11 @@ dependencies {
     // https://mvnrepository.com/artifact/com.auth0/java-jwt
     implementation("com.auth0:java-jwt:4.4.0")
 
-    // Test dependencies
-    testImplementation("au.kilemon:mock-all:0.1.0")
+    /* Test dependencies */
+
+    // Need to import this module name as lower case even if the repo is upper case
+    // https://jitpack.io/#Kilemonn/Mock-All
+    testImplementation("com.github.Kilemonn:mock-all:0.1.2")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springVersion}")
     // Required to mock MultiQueue objects since they apparently override a final 'remove(Object)' method.
@@ -62,6 +67,12 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers:1.19.3")
     testImplementation("org.testcontainers:junit-jupiter:1.19.3")
     testImplementation(kotlin("test"))
+}
+
+// If we provide a `com.github.X:Artifact:...-SNAPSHOT` dependency this setting will make sure the snapshot
+// Is not cache so we always get the latest
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
 }
 
 tasks.test {
