@@ -60,7 +60,7 @@ dependencies {
 
     // Need to import this module name as lower case even if the repo is upper case
     // https://jitpack.io/#Kilemonn/Mock-All
-    testImplementation("com.github.Kilemonn:mock-all:0.1.4")
+    testImplementation("com.github.Kilemonn:mock-all:0.1.5")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springVersion}")
     // Required to mock MultiQueue objects since they apparently override a final 'remove(Object)' method.
@@ -72,7 +72,7 @@ dependencies {
 }
 
 // If we provide a `com.github.X:Artifact:...-SNAPSHOT` dependency this setting will make sure the snapshot
-// Is not cache so we always get the latest
+// Is not cached, so we always get the latest
 configurations.all {
     resolutionStrategy.cacheChangingModulesFor(0, "seconds")
 }
