@@ -1,20 +1,20 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val springVersion = "3.2.3"
-val springDocVersion = "2.3.0"
-val testContainersVersion = "1.19.6"
+val springVersion = "3.3.0"
+val springDocVersion = "2.5.0"
+val testContainersVersion = "1.19.8"
 
 plugins {
-    id("org.springframework.boot") version "3.2.1"
-    id("io.spring.dependency-management") version "1.1.4"
-    kotlin("jvm") version "1.9.21"
-    kotlin("plugin.spring") version "1.9.21"
+    id("org.springframework.boot") version "3.3.0"
+    id("io.spring.dependency-management") version "1.1.5"
+    kotlin("jvm") version "2.0.0"
+    kotlin("plugin.spring") version "2.0.0"
     jacoco
 }
 
 group = "au.kilemon"
 // Make sure version matches version defined in MessageQueueApplication
-version = "0.3.1"
+version = "0.3.2"
 java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
@@ -39,18 +39,18 @@ dependencies {
     // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocVersion}")
 
-    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.google.code.gson:gson:2.11.0")
 
-    compileOnly("org.projectlombok:lombok:1.18.30")
+    compileOnly("org.projectlombok:lombok:1.18.32")
 
     // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-reflect
-    runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.21")
+    runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:2.0.0")
 
     // Database drivers
     // https://mvnrepository.com/artifact/com.mysql/mysql-connector-j
-    implementation("com.mysql:mysql-connector-j:8.2.0")
+    implementation("com.mysql:mysql-connector-j:8.4.0")
     // https://mvnrepository.com/artifact/org.postgresql/postgresql
-    implementation("org.postgresql:postgresql:42.7.2")
+    implementation("org.postgresql:postgresql:42.7.3")
 
     // JWT token
     // https://mvnrepository.com/artifact/com.auth0/java-jwt
@@ -65,7 +65,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springVersion}")
     // Required to mock MultiQueue objects since they apparently override a final 'remove(Object)' method.
     testImplementation("org.mockito:mockito-inline:5.2.0")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.2")
     testImplementation("org.testcontainers:testcontainers:${testContainersVersion}")
     testImplementation("org.testcontainers:junit-jupiter:${testContainersVersion}")
     testImplementation(kotlin("test"))
@@ -89,7 +89,7 @@ tasks.withType<KotlinCompile> {
 }
 
 jacoco {
-    toolVersion = "0.8.11"
+    toolVersion = "0.8.12"
 }
 
 tasks.jacocoTestReport {
