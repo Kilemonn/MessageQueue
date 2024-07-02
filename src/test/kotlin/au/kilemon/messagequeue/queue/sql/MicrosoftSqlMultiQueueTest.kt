@@ -74,6 +74,8 @@ class MicrosoftSqlMultiQueueTest: SqlMultiQueueTest()
                 "spring.datasource.username=$username",
                 "spring.datasource.password=$password",
 
+                // We have to explicitly set the dialect here since without it spring is unable to determine
+                // the dialect to use when we run all tests.
                 "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.SQLServerDialect"
             ).applyTo(configurableApplicationContext.environment)
         }
