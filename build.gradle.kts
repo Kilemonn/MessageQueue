@@ -30,9 +30,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis:${springVersion}")
     // JPA dependency
     implementation("org.springframework.boot:spring-boot-starter-data-jpa:${springVersion}")
-    // No SQL drivers
-    // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-data-mongodb
-    implementation("org.springframework.boot:spring-boot-starter-data-mongodb:${springVersion}")
 
     // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:${springDocVersion}")
@@ -51,6 +48,13 @@ dependencies {
     implementation("com.mysql:mysql-connector-j:8.4.0")
     // https://mvnrepository.com/artifact/org.postgresql/postgresql
     implementation("org.postgresql:postgresql:42.7.3")
+    // https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc
+    implementation("com.microsoft.sqlserver:mssql-jdbc:12.6.3.jre11")
+//    implementation("com.microsoft.sqlserver:mssql-jdbc:12.7.0")
+
+    // No SQL drivers
+    // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-data-mongodb
+    implementation("org.springframework.boot:spring-boot-starter-data-mongodb:${springVersion}")
 
     // JWT token
     // https://mvnrepository.com/artifact/com.auth0/java-jwt
