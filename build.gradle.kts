@@ -50,7 +50,6 @@ dependencies {
     implementation("org.postgresql:postgresql:42.7.3")
     // https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc
     implementation("com.microsoft.sqlserver:mssql-jdbc:12.6.3.jre11")
-//    implementation("com.microsoft.sqlserver:mssql-jdbc:12.7.0")
 
     // No SQL drivers
     // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-data-mongodb

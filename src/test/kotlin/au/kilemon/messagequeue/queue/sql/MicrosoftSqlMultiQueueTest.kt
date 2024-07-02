@@ -66,13 +66,15 @@ class MicrosoftSqlMultiQueueTest: SqlMultiQueueTest()
                 .withExposedPorts(MS_CONTAINER_PORT).withReuse(false).withEnv(envMap)
             database.start()
 
-            // "jdbc:sqlserver://localhost:1433;databaseName=dbname;user=username;password=*****;"
-            val endpoint = "jdbc:sqlserver://${database.host}:${database.getMappedPort(MS_CONTAINER_PORT)};encrypt=false"
+            // "jdbc:sqlserver://localhost:1433;databaseName=dbname;encrypt=false"
+            val endpoint = "jdbc:sqlserver://${database.host}:${database.getMappedPort(MS_CONTAINER_PORT)};encrypt=true;trustServerCertificate=true"
 
             TestPropertyValues.of(
                 "spring.datasource.url=$endpoint",
                 "spring.datasource.username=$username",
-                "spring.datasource.password=$password"
+                "spring.datasource.password=$password",
+
+                "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.SQLServerDialect"
             ).applyTo(configurableApplicationContext.environment)
         }
     }
