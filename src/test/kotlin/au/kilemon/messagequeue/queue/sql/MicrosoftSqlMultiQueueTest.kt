@@ -72,8 +72,7 @@ class MicrosoftSqlMultiQueueTest: SqlMultiQueueTest()
             TestPropertyValues.of(
                 "spring.datasource.url=$endpoint",
                 "spring.datasource.username=$username",
-                "spring.datasource.password=$password",
-                "hibernate.dialect=org.hibernate.dialect.SQLServerDialect"
+                "spring.datasource.password=$password"
             ).applyTo(configurableApplicationContext.environment)
         }
     }
