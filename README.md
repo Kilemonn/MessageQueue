@@ -7,7 +7,7 @@ A message queue service, which can receive, hold and provide messages that are s
 A storage mechanism can be used to persist messages and sub queues can be restricted so only correctly provided credentials
 can interact with such queues.
 
-### More detailed documentation can be found in the Wiki!
+### More detailed documentation can be found in the [Wiki](https://github.com/Kilemonn/MessageQueue/wiki)!
 
 ## Quick Start
 
