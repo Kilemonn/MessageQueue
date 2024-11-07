@@ -11,8 +11,10 @@ import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
+import au.kilemon.messagequeue.rest.response.KeysResponse
 import au.kilemon.messagequeue.rest.response.MessageListResponse
 import au.kilemon.messagequeue.rest.response.MessageResponse
+import au.kilemon.messagequeue.rest.response.OwnersMapResponse
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -407,10 +409,10 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
-        val keys = gson.fromJson(mvcResult.response.contentAsString, List::class.java)
-        Assertions.assertFalse(keys.isNullOrEmpty())
-        Assertions.assertEquals(entries.second.size, keys.size)
-        entries.second.forEach { subQueue -> Assertions.assertTrue(keys.contains(subQueue)) }
+        val keys = gson.fromJson(mvcResult.response.contentAsString, KeysResponse::class.java)
+        Assertions.assertFalse(keys.keys.isEmpty())
+        Assertions.assertEquals(entries.second.size, keys.keys.size)
+        entries.second.forEach { subQueue -> Assertions.assertTrue(keys.keys.contains(subQueue)) }
 
         val mapKeys = multiQueue.keys(true)
         Assertions.assertFalse(mapKeys.isEmpty())
@@ -437,10 +439,10 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
-        val keys = gson.fromJson(mvcResult.response.contentAsString, List::class.java)
-        Assertions.assertFalse(keys.isNullOrEmpty())
-        Assertions.assertEquals(2, keys.size)
-        entries.second.subList(2, 3).forEach { subQueue -> Assertions.assertTrue(keys.contains(subQueue)) }
+        val keys = gson.fromJson(mvcResult.response.contentAsString, KeysResponse::class.java)
+        Assertions.assertFalse(keys.keys.isEmpty())
+        Assertions.assertEquals(2, keys.keys.size)
+        entries.second.subList(2, 3).forEach { subQueue -> Assertions.assertTrue(keys.keys.contains(subQueue)) }
 
         val mapKeys = multiQueue.keys(false)
         Assertions.assertFalse(mapKeys.isEmpty())
@@ -1309,19 +1311,19 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
-        val owners = gson.fromJson(mvcResult.response.contentAsString, Map::class.java)
-        Assertions.assertNotNull(owners)
-        Assertions.assertEquals(2, owners.size)
-        Assertions.assertTrue(owners.keys.toList().contains(assignedTo))
-        Assertions.assertTrue(owners.keys.toList().contains(assignedTo2))
+        val owners = gson.fromJson(mvcResult.response.contentAsString, OwnersMapResponse::class.java)
+        Assertions.assertNotNull(owners.owners)
+        Assertions.assertEquals(2, owners.owners.size)
+        Assertions.assertTrue(owners.owners.keys.toList().contains(assignedTo))
+        Assertions.assertTrue(owners.owners.keys.toList().contains(assignedTo2))
 
-        val valuesInAssignedTo = owners[assignedTo]
-        Assertions.assertTrue(valuesInAssignedTo is ArrayList<*>)
-        Assertions.assertTrue((valuesInAssignedTo as ArrayList<*>).contains(subQueue))
+        val valuesInAssignedTo = owners.owners[assignedTo]
+        Assertions.assertNotNull(valuesInAssignedTo)
+        Assertions.assertTrue(valuesInAssignedTo!!.contains(subQueue))
 
-        val valuesInAssignedTo2 = owners[assignedTo2]
-        Assertions.assertTrue(valuesInAssignedTo2 is ArrayList<*>)
-        Assertions.assertTrue((valuesInAssignedTo2 as ArrayList<*>).contains(subQueue))
+        val valuesInAssignedTo2 = owners.owners[assignedTo2]
+        Assertions.assertNotNull(valuesInAssignedTo2)
+        Assertions.assertTrue(valuesInAssignedTo2!!.contains(subQueue))
     }
 
     /**
@@ -1352,20 +1354,20 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
-        val owners = gson.fromJson(mvcResult.response.contentAsString, Map::class.java)
-        Assertions.assertNotNull(owners)
-        Assertions.assertEquals(2, owners.size)
-        Assertions.assertTrue(owners.keys.toList().contains(assignedTo))
-        Assertions.assertTrue(owners.keys.toList().contains(assignedTo2))
+        val owners = gson.fromJson(mvcResult.response.contentAsString, OwnersMapResponse::class.java)
+        Assertions.assertNotNull(owners.owners)
+        Assertions.assertEquals(2, owners.owners.size)
+        Assertions.assertTrue(owners.owners.keys.toList().contains(assignedTo))
+        Assertions.assertTrue(owners.owners.keys.toList().contains(assignedTo2))
 
-        val valuesInAssignedTo = owners[assignedTo]
-        Assertions.assertTrue(valuesInAssignedTo is ArrayList<*>)
-        Assertions.assertTrue((valuesInAssignedTo as ArrayList<*>).contains(subQueue))
+        val valuesInAssignedTo = owners.owners[assignedTo]
+        Assertions.assertNotNull(valuesInAssignedTo)
+        Assertions.assertTrue(valuesInAssignedTo!!.contains(subQueue))
         Assertions.assertTrue(valuesInAssignedTo.contains(subQueue2))
 
-        val valuesInAssignedTo2 = owners[assignedTo2]
-        Assertions.assertTrue(valuesInAssignedTo2 is ArrayList<*>)
-        Assertions.assertTrue((valuesInAssignedTo2 as ArrayList<*>).contains(subQueue2))
+        val valuesInAssignedTo2 = owners.owners[assignedTo2]
+        Assertions.assertNotNull(valuesInAssignedTo2)
+        Assertions.assertTrue(valuesInAssignedTo2!!.contains(subQueue2))
     }
 
     /**
@@ -1400,9 +1402,8 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isCreated)
             .andReturn()
 
-        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertNotNull(messageResponse.correlationId)
-        Assertions.assertEquals(UUID.fromString(messageResponse.correlationId).toString(), messageResponse.correlationId)
+        val correlationIdHeader = mvcResult.response.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)
+        Assertions.assertNotNull(correlationIdHeader)
     }
 
     /**
@@ -1424,8 +1425,9 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isCreated)
             .andReturn()
 
-        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertEquals(correlationId, messageResponse.correlationId)
+        val correlationIdHeader = mvcResult.response.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)
+        Assertions.assertNotNull(correlationIdHeader)
+        Assertions.assertEquals(correlationId, correlationIdHeader)
     }
 
     /**
@@ -1454,6 +1456,10 @@ class MessageQueueControllerTest
         val correlationId = messageResponse[CorrelationIdFilter.CORRELATION_ID]
         Assertions.assertTrue(correlationId is String)
         Assertions.assertEquals(correlationId, UUID.fromString(correlationId as String).toString())
+
+        val correlationIdHeader = mvcResult.response.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)
+        Assertions.assertNotNull(correlationIdHeader)
+        Assertions.assertEquals(correlationId, correlationIdHeader)
     }
 
     /**
