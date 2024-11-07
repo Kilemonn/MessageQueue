@@ -17,6 +17,8 @@ import java.util.*
  * generates a new [UUID] that is used as the [CORRELATION_ID] for this request.
  * This [CORRELATION_ID] is removed from the [MDC] when the request is returned to the caller.
  *
+ * This also ensures that [CORRELATION_ID_HEADER] is set into the response headers too.
+ *
  * @author github.com/Kilemonn
  */
 @Component
@@ -40,6 +42,7 @@ class CorrelationIdFilter: OncePerRequestFilter(), HasLogger
             setCorrelationId(request.getHeader(CORRELATION_ID_HEADER))
 
             filterChain.doFilter(request, response)
+            response.setHeader(CORRELATION_ID_HEADER, MDC.get(CORRELATION_ID))
         }
         finally
         {
