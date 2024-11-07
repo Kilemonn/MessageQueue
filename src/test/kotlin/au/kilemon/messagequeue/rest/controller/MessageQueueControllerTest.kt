@@ -1402,13 +1402,8 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isCreated)
             .andReturn()
 
-        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertNotNull(messageResponse.correlationId)
-        Assertions.assertEquals(UUID.fromString(messageResponse.correlationId).toString(), messageResponse.correlationId)
-
         val correlationIdHeader = mvcResult.response.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)
         Assertions.assertNotNull(correlationIdHeader)
-        Assertions.assertEquals(messageResponse.correlationId, correlationIdHeader)
     }
 
     /**
@@ -1433,9 +1428,6 @@ class MessageQueueControllerTest
         val correlationIdHeader = mvcResult.response.getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER)
         Assertions.assertNotNull(correlationIdHeader)
         Assertions.assertEquals(correlationId, correlationIdHeader)
-
-        val messageResponse = gson.fromJson(mvcResult.response.contentAsString, MessageResponse::class.java)
-        Assertions.assertEquals(correlationId, messageResponse.correlationId)
     }
 
     /**

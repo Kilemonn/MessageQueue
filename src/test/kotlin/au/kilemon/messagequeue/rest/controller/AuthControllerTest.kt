@@ -173,7 +173,6 @@ class AuthControllerTest
 
         val authResponse = gson.fromJson(mvcResult.response.contentAsString, AuthResponse::class.java)
         Assertions.assertNotNull(authResponse.token)
-        Assertions.assertNotNull(authResponse.correlationId)
         Assertions.assertEquals(subQueue, authResponse.subQueue)
     }
 
@@ -198,7 +197,6 @@ class AuthControllerTest
 
         val authResponse = gson.fromJson(mvcResult.response.contentAsString, AuthResponse::class.java)
         Assertions.assertNotNull(authResponse.token)
-        Assertions.assertNotNull(authResponse.correlationId)
         Assertions.assertEquals(subQueue, authResponse.subQueue)
     }
 

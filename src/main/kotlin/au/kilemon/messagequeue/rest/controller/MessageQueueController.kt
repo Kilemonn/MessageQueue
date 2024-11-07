@@ -7,7 +7,6 @@ import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.cache.redis.RedisMultiQueue
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
-import au.kilemon.messagequeue.rest.response.CorrelationIdResponse
 import au.kilemon.messagequeue.rest.response.KeysResponse
 import au.kilemon.messagequeue.rest.response.MessageListResponse
 import au.kilemon.messagequeue.rest.response.MessageResponse
@@ -155,18 +154,18 @@ open class MessageQueueController : HasLogger
         ApiResponse(responseCode = "200", description = "Application health check has passed"),
         ApiResponse(responseCode = "500", description = "There was an error performing the health check, the application is not in an operational state.")
     )
-    fun getHealthCheck(): ResponseEntity<CorrelationIdResponse>
+    fun getHealthCheck(): ResponseEntity<Void>
     {
         return try
         {
             messageQueue.performHealthCheck()
             LOG.trace("Health check passed.")
-            ResponseEntity.ok(CorrelationIdResponse())
+            ResponseEntity.ok().build()
         }
         catch(ex: HealthCheckFailureException)
         {
             LOG.error("Health check failed.", ex)
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(CorrelationIdResponse())
+            ResponseEntity.internalServerError().build()
         }
     }
 
@@ -275,14 +274,14 @@ open class MessageQueueController : HasLogger
         ApiResponse(responseCode = "206", description = "Successfully cleared the sub-queues that are unrestricted. Restricted sub-queues needs to be created with a valid token.")
     )
     fun deleteKeys(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "The sub-queue to clear. If it is not provided, all sub-queues will be cleared.")
-                @RequestParam(required = false, name = RestParameters.SUB_QUEUE) subQueue: String?): ResponseEntity<CorrelationIdResponse>
+                @RequestParam(required = false, name = RestParameters.SUB_QUEUE) subQueue: String?): ResponseEntity<Void>
     {
         if (subQueue != null)
         {
             authenticator.canAccessSubQueue(subQueue)
             messageQueue.clearSubQueue(subQueue)
             LOG.info("Cleared queue with key [{}]", subQueue)
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(CorrelationIdResponse())
+            return ResponseEntity.noContent().build()
         }
         else
         {
@@ -309,11 +308,11 @@ open class MessageQueueController : HasLogger
             return if (anyAreNotCleared)
             {
                 LOG.info("Retained queues with keys: [{}]", retainedKeys)
-                ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).body(CorrelationIdResponse())
+                ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).build()
             }
             else
             {
-                ResponseEntity.status(HttpStatus.NO_CONTENT).body(CorrelationIdResponse())
+                ResponseEntity.noContent().build()
             }
         }
     }
@@ -542,7 +541,7 @@ open class MessageQueueController : HasLogger
         ApiResponse(responseCode = "403", description = "The provided identifier does not match the message's current assignee so it cannot be removed.", content = [Content()])
     )
     fun removeMessage(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The UUID of the message to remove.") @PathVariable(required = true, name = RestParameters.UUID) uuid: String,
-                      @Parameter(`in` = ParameterIn.QUERY, required = false, description = "If provided, the message will only be removed if it is assigned to an identifier that matches this value.") @RequestParam(required = false, name = RestParameters.ASSIGNED_TO) assignedTo: String?): ResponseEntity<CorrelationIdResponse>
+                      @Parameter(`in` = ParameterIn.QUERY, required = false, description = "If provided, the message will only be removed if it is assigned to an identifier that matches this value.") @RequestParam(required = false, name = RestParameters.ASSIGNED_TO) assignedTo: String?): ResponseEntity<Void>
     {
         val message = messageQueue.getMessageByUUID(uuid)
         if (message.isPresent)
@@ -561,7 +560,7 @@ open class MessageQueueController : HasLogger
         }
 
         LOG.debug("Could not find message to remove with UUID [{}].", uuid)
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(CorrelationIdResponse())
+        return ResponseEntity.noContent().build()
     }
 
     /**

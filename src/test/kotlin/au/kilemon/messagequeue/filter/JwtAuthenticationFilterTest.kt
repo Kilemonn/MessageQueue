@@ -57,8 +57,6 @@ class JwtAuthenticationFilterTest
     @Autowired
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-
-
     @BeforeEach
     fun setUp()
     {
