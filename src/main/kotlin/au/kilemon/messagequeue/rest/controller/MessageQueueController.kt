@@ -7,6 +7,7 @@ import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.cache.redis.RedisMultiQueue
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
+import au.kilemon.messagequeue.rest.response.MessageListResponse
 import au.kilemon.messagequeue.rest.response.MessageResponse
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
@@ -368,14 +369,13 @@ open class MessageQueueController : HasLogger
     fun getOwned(@Parameter(`in` = ParameterIn.QUERY, required = true, description = "The identifier that must match the message's `assigned` property in order to be returned.")
                  @RequestParam(required = true, name = RestParameters.ASSIGNED_TO) assignedTo: String,
                  @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The sub-queue to search for the assigned messages.")
-                 @RequestParam(required = true, name = RestParameters.SUB_QUEUE) subQueue: String): ResponseEntity<List<MessageResponse>>
+                 @RequestParam(required = true, name = RestParameters.SUB_QUEUE) subQueue: String): ResponseEntity<MessageListResponse>
     {
         authenticator.canAccessSubQueue(subQueue)
 
         val assignedMessages: Queue<QueueMessage> = messageQueue.getAssignedMessagesInSubQueue(subQueue, assignedTo)
-        val ownedMessages = assignedMessages.stream().map { message -> MessageResponse(message) }.collect(Collectors.toList())
-        LOG.debug("Found [{}] owned entries within sub-queue [{}] for user with identifier [{}].", ownedMessages.size, subQueue, assignedTo)
-        return ResponseEntity.ok(ownedMessages)
+        LOG.debug("Found [{}] owned entries within sub-queue [{}] for user with identifier [{}].", assignedMessages.size, subQueue, assignedTo)
+        return ResponseEntity.ok(MessageListResponse(assignedMessages.stream().toList()))
     }
 
     /**

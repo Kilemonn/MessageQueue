@@ -11,6 +11,7 @@ import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
+import au.kilemon.messagequeue.rest.response.MessageListResponse
 import au.kilemon.messagequeue.rest.response.MessageResponse
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import com.google.gson.Gson
@@ -627,9 +628,8 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
-        val listType = object : TypeToken<List<MessageResponse>>() {}.type
-        val owned = gson.fromJson<List<MessageResponse>>(mvcResult.response.contentAsString, listType)
-        Assertions.assertTrue(owned.isEmpty())
+        val owned = gson.fromJson<MessageListResponse>(mvcResult.response.contentAsString, MessageListResponse::class.java)
+        Assertions.assertTrue(owned.messages.isEmpty())
     }
 
     /**
@@ -656,13 +656,12 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
-        val listType = object : TypeToken<List<MessageResponse>>() {}.type
-        val owned = gson.fromJson<List<MessageResponse>>(mvcResult.response.contentAsString, listType)
-        Assertions.assertTrue(owned.isNotEmpty())
-        owned.forEach { message ->
-            Assertions.assertTrue(message.message.uuid == message1.uuid || message.message.uuid == message2.uuid)
-            Assertions.assertEquals(subQueue, message.message.subQueue)
-            Assertions.assertEquals(assignedTo, message.message.assignedTo)
+        val owned = gson.fromJson<MessageListResponse>(mvcResult.response.contentAsString, MessageListResponse::class.java)
+        Assertions.assertTrue(owned.messages.isNotEmpty())
+        owned.messages.forEach { message ->
+            Assertions.assertTrue(message.uuid == message1.uuid || message.uuid == message2.uuid)
+            Assertions.assertEquals(subQueue, message.subQueue)
+            Assertions.assertEquals(assignedTo, message.assignedTo)
         }
     }
 
@@ -704,13 +703,12 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
 
-        val listType = object : TypeToken<List<MessageResponse>>() {}.type
-        val owned = gson.fromJson<List<MessageResponse>>(mvcResult.response.contentAsString, listType)
-        Assertions.assertTrue(owned.isNotEmpty())
-        owned.forEach { message ->
-            Assertions.assertTrue(message.message.uuid == message1.uuid || message.message.uuid == message2.uuid)
-            Assertions.assertEquals(subQueue, message.message.subQueue)
-            Assertions.assertEquals(assignedTo, message.message.assignedTo)
+        val owned = gson.fromJson<MessageListResponse>(mvcResult.response.contentAsString, MessageListResponse::class.java)
+        Assertions.assertTrue(owned.messages.isNotEmpty())
+        owned.messages.forEach { message ->
+            Assertions.assertTrue(message.uuid == message1.uuid || message.uuid == message2.uuid)
+            Assertions.assertEquals(subQueue, message.subQueue)
+            Assertions.assertEquals(assignedTo, message.assignedTo)
         }
     }
 
