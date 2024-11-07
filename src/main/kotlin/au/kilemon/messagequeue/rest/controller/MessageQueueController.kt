@@ -7,8 +7,11 @@ import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.cache.redis.RedisMultiQueue
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
+import au.kilemon.messagequeue.rest.response.CorrelationIdResponse
+import au.kilemon.messagequeue.rest.response.KeysResponse
 import au.kilemon.messagequeue.rest.response.MessageListResponse
 import au.kilemon.messagequeue.rest.response.MessageResponse
+import au.kilemon.messagequeue.rest.response.OwnersMapResponse
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -152,18 +155,18 @@ open class MessageQueueController : HasLogger
         ApiResponse(responseCode = "200", description = "Application health check has passed"),
         ApiResponse(responseCode = "500", description = "There was an error performing the health check, the application is not in an operational state.")
     )
-    fun getHealthCheck(): ResponseEntity<Void>
+    fun getHealthCheck(): ResponseEntity<CorrelationIdResponse>
     {
         return try
         {
             messageQueue.performHealthCheck()
             LOG.trace("Health check passed.")
-            ResponseEntity.ok().build()
+            ResponseEntity.ok(CorrelationIdResponse())
         }
         catch(ex: HealthCheckFailureException)
         {
             LOG.error("Health check failed.", ex)
-            ResponseEntity.internalServerError().build()
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(CorrelationIdResponse())
         }
     }
 
@@ -255,14 +258,14 @@ open class MessageQueueController : HasLogger
     @GetMapping(ENDPOINT_KEYS, produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponse(responseCode = "200", description = "Successfully returns the list of keys.")
     fun getKeys(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "Indicates whether to include keys that currently have zero entries (but have had entries previously). Is true by default.")
-                @RequestParam(required = false, name = RestParameters.INCLUDE_EMPTY) includeEmpty: Boolean?): ResponseEntity<Set<String>>
+                @RequestParam(required = false, name = RestParameters.INCLUDE_EMPTY) includeEmpty: Boolean?): ResponseEntity<KeysResponse>
     {
-        val keys = messageQueue.keys(includeEmpty ?: true)
+        val keys = messageQueue.keys(includeEmpty != false)
         if (messageQueue is RedisMultiQueue)
         {
-            return ResponseEntity.ok((messageQueue as RedisMultiQueue).removePrefix(keys))
+            return ResponseEntity.ok(KeysResponse((messageQueue as RedisMultiQueue).removePrefix(keys)))
         }
-        return ResponseEntity.ok(keys)
+        return ResponseEntity.ok(KeysResponse(keys))
     }
 
     @Operation(summary = "Delete a keys or all keys, in turn clearing that sub-queue.", description = "Delete the sub-queue that matches the provided key. If no key is provided, all sub-queues will be cleared.")
@@ -272,14 +275,14 @@ open class MessageQueueController : HasLogger
         ApiResponse(responseCode = "206", description = "Successfully cleared the sub-queues that are unrestricted. Restricted sub-queues needs to be created with a valid token.")
     )
     fun deleteKeys(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "The sub-queue to clear. If it is not provided, all sub-queues will be cleared.")
-                @RequestParam(required = false, name = RestParameters.SUB_QUEUE) subQueue: String?): ResponseEntity<Void>
+                @RequestParam(required = false, name = RestParameters.SUB_QUEUE) subQueue: String?): ResponseEntity<CorrelationIdResponse>
     {
         if (subQueue != null)
         {
             authenticator.canAccessSubQueue(subQueue)
             messageQueue.clearSubQueue(subQueue)
             LOG.info("Cleared queue with key [{}]", subQueue)
-            return ResponseEntity.noContent().build()
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(CorrelationIdResponse())
         }
         else
         {
@@ -306,11 +309,11 @@ open class MessageQueueController : HasLogger
             return if (anyAreNotCleared)
             {
                 LOG.info("Retained queues with keys: [{}]", retainedKeys)
-                ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).build()
+                ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).body(CorrelationIdResponse())
             }
             else
             {
-                ResponseEntity.noContent().build()
+                ResponseEntity.status(HttpStatus.NO_CONTENT).body(CorrelationIdResponse())
             }
         }
     }
@@ -539,7 +542,7 @@ open class MessageQueueController : HasLogger
         ApiResponse(responseCode = "403", description = "The provided identifier does not match the message's current assignee so it cannot be removed.", content = [Content()])
     )
     fun removeMessage(@Parameter(`in` = ParameterIn.PATH, required = true, description = "The UUID of the message to remove.") @PathVariable(required = true, name = RestParameters.UUID) uuid: String,
-                      @Parameter(`in` = ParameterIn.QUERY, required = false, description = "If provided, the message will only be removed if it is assigned to an identifier that matches this value.") @RequestParam(required = false, name = RestParameters.ASSIGNED_TO) assignedTo: String?): ResponseEntity<Void>
+                      @Parameter(`in` = ParameterIn.QUERY, required = false, description = "If provided, the message will only be removed if it is assigned to an identifier that matches this value.") @RequestParam(required = false, name = RestParameters.ASSIGNED_TO) assignedTo: String?): ResponseEntity<CorrelationIdResponse>
     {
         val message = messageQueue.getMessageByUUID(uuid)
         if (message.isPresent)
@@ -558,7 +561,7 @@ open class MessageQueueController : HasLogger
         }
 
         LOG.debug("Could not find message to remove with UUID [{}].", uuid)
-        return ResponseEntity.noContent().build()
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(CorrelationIdResponse())
     }
 
     /**
@@ -577,8 +580,8 @@ open class MessageQueueController : HasLogger
     @GetMapping(ENDPOINT_OWNERS, produces = [MediaType.APPLICATION_JSON_VALUE])
     @ApiResponse(responseCode = "200", description = "Successfully returns the map of owner identifiers mapped to all the sub-queues that they have one or more assigned messages in.")
     fun getOwners(@Parameter(`in` = ParameterIn.QUERY, required = false, description = "The sub-queue to search for the owner identifiers.")
-                  @RequestParam(required = false, name = RestParameters.SUB_QUEUE) subQueue: String?): ResponseEntity<Map<String, HashSet<String>>>
+                  @RequestParam(required = false, name = RestParameters.SUB_QUEUE) subQueue: String?): ResponseEntity<OwnersMapResponse>
     {
-        return ResponseEntity.ok(messageQueue.getOwnersAndKeysMap(subQueue))
+        return ResponseEntity.ok(OwnersMapResponse(messageQueue.getOwnersAndKeysMap(subQueue)))
     }
 }
