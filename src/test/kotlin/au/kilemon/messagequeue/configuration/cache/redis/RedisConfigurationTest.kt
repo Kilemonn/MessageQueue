@@ -133,9 +133,9 @@ class RedisConfigurationTest
     fun testGetConnectionFactory_sentinelWithNoEndpoints()
     {
         messageQueueSettings.redisUseSentinels = "true"
-        messageQueueSettings.redisEndpoint = ""
+        messageQueueSettings.cacheEndpoint = ""
         Assertions.assertTrue(messageQueueSettings.redisUseSentinels.toBoolean())
-        Assertions.assertEquals("", messageQueueSettings.redisEndpoint)
+        Assertions.assertEquals("", messageQueueSettings.cacheEndpoint)
         Assertions.assertThrows(RedisInitialisationException::class.java) {
             redisConfiguration.getSentinelConfiguration()
         }
@@ -148,9 +148,9 @@ class RedisConfigurationTest
     fun testGetConnectionFactory_standAloneWithNoEndpoints()
     {
         messageQueueSettings.redisUseSentinels = "false"
-        messageQueueSettings.redisEndpoint = ""
+        messageQueueSettings.cacheEndpoint = ""
         Assertions.assertFalse(messageQueueSettings.redisUseSentinels.toBoolean())
-        Assertions.assertEquals("", messageQueueSettings.redisEndpoint)
+        Assertions.assertEquals("", messageQueueSettings.cacheEndpoint)
         Assertions.assertThrows(RedisInitialisationException::class.java) {
             redisConfiguration.getStandAloneConfiguration()
         }
@@ -168,9 +168,9 @@ class RedisConfigurationTest
         val endpoint1 = "$endpoint1Host:$endpoint1Port"
         val endpoint2 = "redis:6789"
         val endpoints = "$endpoint1,$endpoint2"
-        messageQueueSettings.redisEndpoint = endpoints
+        messageQueueSettings.cacheEndpoint = endpoints
         Assertions.assertFalse(messageQueueSettings.redisUseSentinels.toBoolean())
-        Assertions.assertEquals(endpoints, messageQueueSettings.redisEndpoint)
+        Assertions.assertEquals(endpoints, messageQueueSettings.cacheEndpoint)
         val standAloneConfiguration = redisConfiguration.getStandAloneConfiguration()
         Assertions.assertEquals(endpoint1Host, standAloneConfiguration.hostName)
         Assertions.assertEquals(endpoint1Port.toInt(), standAloneConfiguration.port)

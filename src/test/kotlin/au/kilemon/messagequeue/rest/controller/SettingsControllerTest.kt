@@ -77,8 +77,8 @@ class SettingsControllerTest
         Assertions.assertEquals(StorageMedium.IN_MEMORY.toString(), settings.storageMedium)
         Assertions.assertEquals(RestrictionMode.NONE.toString(), settings.restrictionMode)
 
-        Assertions.assertTrue(settings.redisPrefix.isEmpty())
-        Assertions.assertEquals(MessageQueueSettings.REDIS_ENDPOINT_DEFAULT, settings.redisEndpoint)
+        Assertions.assertTrue(settings.cachePrefix.isEmpty())
+        Assertions.assertEquals(MessageQueueSettings.CACHE_ENDPOINT_DEFAULT, settings.cacheEndpoint)
         Assertions.assertEquals("false", settings.redisUseSentinels)
         Assertions.assertEquals(MessageQueueSettings.REDIS_MASTER_NAME_DEFAULT, settings.redisMasterName)
 

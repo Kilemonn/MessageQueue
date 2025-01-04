@@ -6,6 +6,7 @@ import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.slf4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ScanOptions
 import java.util.*
@@ -20,15 +21,18 @@ import kotlin.collections.HashSet
  *
  * @author github.com/Kilemonn
  */
-class RedisMultiQueue(private val prefix: String = "", private val redisTemplate: RedisTemplate<String, QueueMessage>) : MultiQueue(), HasLogger
+class RedisMultiQueue(private val prefix: String = "") : MultiQueue(), HasLogger
 {
     override val LOG: Logger = this.initialiseLogger()
 
+    @Autowired
+    private lateinit var redisTemplate: RedisTemplate<String, QueueMessage>
+
     /**
-     * Append the [MessageQueueSettings.redisPrefix] to the provided [subQueue] [String].
+     * Append the [MessageQueueSettings.cachePrefix] to the provided [subQueue] [String].
      *
      * @param subQueue the [String] to add the prefix to
-     * @return a [String] with the provided [subQueue] with the [MessageQueueSettings.redisPrefix] appended to the beginning.
+     * @return a [String] with the provided [subQueue] with the [MessageQueueSettings.cachePrefix] appended to the beginning.
      */
     private fun appendPrefix(subQueue: String): String
     {
@@ -74,7 +78,7 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
     }
 
     /**
-     * Attempts to append the prefix before requesting the underlying redis entry if the provided [subQueue] is not prefixed with [MessageQueueSettings.redisPrefix].
+     * Attempts to append the prefix before requesting the underlying redis entry if the provided [subQueue] is not prefixed with [MessageQueueSettings.cachePrefix].
      */
     override fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
     {

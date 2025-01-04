@@ -35,9 +35,11 @@ class MessageQueueSettings
          * Start redis related properties
          */
         private const val REDIS: String = "redis"
-        const val REDIS_PREFIX: String = "$MESSAGE_QUEUE.$REDIS.prefix"
-        const val REDIS_ENDPOINT: String = "$MESSAGE_QUEUE.$REDIS.endpoint"
-        const val REDIS_ENDPOINT_DEFAULT: String = "127.0.0.1"
+        // Used by memcached
+        const val CACHE_PREFIX: String = "$MESSAGE_QUEUE.cache.prefix"
+        // Used by memcached
+        const val CACHE_ENDPOINT: String = "$MESSAGE_QUEUE.cache.endpoint"
+        const val CACHE_ENDPOINT_DEFAULT: String = "127.0.0.1"
 
         // Redis sentinel related properties
         const val REDIS_USE_SENTINELS: String = "$MESSAGE_QUEUE.$REDIS.sentinel"
@@ -116,38 +118,37 @@ class MessageQueueSettings
 
 
     /**
-     * `Optional` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
-     * Uses the [REDIS_PREFIX] to set a prefix used for all redis entry keys.
+     * `Optional` when [STORAGE_MEDIUM] is set to [StorageMedium.MEMCACHED].
+     * Uses the [CACHE_PREFIX] to set a prefix used for all cache entry keys.
      *
-     * E.g. if the initial value for the redis entry is "my-key" and no prefix is defined the entries would be stored under "my-key".
+     * E.g. if the initial value for the cache entry is "my-key" and no prefix is defined the entries would be stored under "my-key".
      * Using the same scenario if the prefix is "prefix" then the resultant key would be "prefixmy-key".
      */
-    @Schema(title = "Redis Prefix", example = "my-prefix-",
-        description = "Used to remove/reduce the likelihood of any collisions if this is being used in an existing redis instance. " +
-                "The prefix will be added to all entries made in the redis storage medium.")
-    @SerializedName(REDIS_PREFIX)
-    @JsonProperty(REDIS_PREFIX)
-    @Value("\${$REDIS_PREFIX:}")
+    @Schema(title = "Cache Prefix", example = "my-prefix-",
+        description = "Used to remove/reduce the likelihood of any collisions if this is being used in an existing cache instance. " +
+                "The prefix will be added to all entries made in the cache storage medium.")
+    @SerializedName(CACHE_PREFIX)
+    @JsonProperty(CACHE_PREFIX)
+    @Value("\${$CACHE_PREFIX:}")
     @get:Generated
     @set:Generated
-    lateinit var redisPrefix: String
+    lateinit var cachePrefix: String
 
     /**
-     * `Required` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
-     * The input endpoint string which is used for both standalone and the sentinel redis configurations.
-     * This supports a comma separated list or single definition of a redis endpoint in the following formats:
+     * `Required` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS] OR [StorageMedium.MEMCACHED].
+     * This supports a comma separated list or single definition of a endpoints in the following formats:
      * `<endpoint>:<port>,<endpoint2>:<port2>,<endpoint3>`
      *
-     * If not provided [REDIS_ENDPOINT_DEFAULT] will be used by default.
+     * If not provided [CACHE_ENDPOINT_DEFAULT] will be used by default.
      */
-    @Schema(title = "Redis Endpoint", example = "sentinel1.com:5545,sentinel2.org:9980",
-        description = "The endpoint string which is used for both standalone and the sentinel redis configurations.")
-    @SerializedName(REDIS_ENDPOINT)
-    @JsonProperty(REDIS_ENDPOINT)
-    @Value("\${$REDIS_ENDPOINT:$REDIS_ENDPOINT_DEFAULT}")
+    @Schema(title = "Cache Endpoint", example = "sentinel1.com:5545,sentinel2.org:9980",
+        description = "The endpoint string which can contain multiple comma separated endpoints and ports.")
+    @SerializedName(CACHE_ENDPOINT)
+    @JsonProperty(CACHE_ENDPOINT)
+    @Value("\${$CACHE_ENDPOINT:$CACHE_ENDPOINT_DEFAULT}")
     @get:Generated
     @set:Generated
-    lateinit var redisEndpoint: String
+    lateinit var cacheEndpoint: String
 
     /**
      * `Optional` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].

@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val springVersion = "3.4.1"
 val springDocVersion = "2.7.0"
@@ -89,6 +91,10 @@ tasks.test {
     jvmArgs("--add-opens", "java.base/java.util=ALL-UNNAMED",
         "--add-opens", "java.base/java.lang=ALL-UNNAMED")
     finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.withType<KotlinCompile> {
+    compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
 }
 
 jacoco {
