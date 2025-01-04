@@ -31,6 +31,10 @@ dependencies {
     // JPA dependency
     implementation("org.springframework.boot:spring-boot-starter-data-jpa:${springVersion}")
 
+    // Memcached
+    // https://mvnrepository.com/artifact/com.googlecode.xmemcached/xmemcached
+    implementation("com.googlecode.xmemcached:xmemcached:2.4.8")
+
     // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:${springDocVersion}")
     // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui
