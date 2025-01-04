@@ -18,8 +18,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 @ExtendWith(SpringExtension::class)
 @TestPropertySource(properties = [
     "${MessageQueueSettings.STORAGE_MEDIUM}=REDIS",
-    "${MessageQueueSettings.REDIS_ENDPOINT}=123.123.123.123",
-    "${MessageQueueSettings.REDIS_PREFIX}=redis",
+    "${MessageQueueSettings.CACHE_ENDPOINT}=123.123.123.123",
+    "${MessageQueueSettings.CACHE_PREFIX}=redis",
     "${MessageQueueSettings.REDIS_MODE}=SENTINEL",
     "${MessageQueueSettings.REDIS_MASTER_NAME}=master"
 ])
@@ -52,8 +52,8 @@ class MessageQueueSettingsTest
     {
         Assertions.assertNotNull(messageQueueSettings)
         Assertions.assertEquals("REDIS", messageQueueSettings.storageMedium)
-        Assertions.assertEquals("123.123.123.123", messageQueueSettings.redisEndpoint)
-        Assertions.assertEquals("redis", messageQueueSettings.redisPrefix)
+        Assertions.assertEquals("123.123.123.123", messageQueueSettings.cacheEndpoint)
+        Assertions.assertEquals("redis", messageQueueSettings.cachePrefix)
         Assertions.assertEquals("master", messageQueueSettings.redisMasterName)
         Assertions.assertEquals("SENTINEL", messageQueueSettings.redisMode)
     }

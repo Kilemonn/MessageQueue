@@ -13,6 +13,7 @@ import au.kilemon.messagequeue.logging.Messages
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.cache.CacheKeyManager
+import au.kilemon.messagequeue.queue.cache.memcached.MemcachedMultiQueue
 import au.kilemon.messagequeue.queue.cache.redis.RedisMultiQueue
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
 import au.kilemon.messagequeue.queue.nosql.mongo.MongoMultiQueue
@@ -58,13 +59,16 @@ class QueueConfiguration : HasLogger
         var queue: MultiQueue = InMemoryMultiQueue()
         when (messageQueueSettings.storageMedium.uppercase()) {
             StorageMedium.REDIS.toString() -> {
-                queue = RedisMultiQueue(messageQueueSettings.redisPrefix)
+                queue = RedisMultiQueue(messageQueueSettings.cachePrefix)
             }
             StorageMedium.SQL.toString() -> {
                 queue = SqlMultiQueue()
             }
             StorageMedium.MONGO.toString() -> {
                 queue = MongoMultiQueue()
+            }
+            StorageMedium.MEMCACHED.toString() -> {
+                queue = MemcachedMultiQueue(messageQueueSettings.cachePrefix)
             }
         }
 
@@ -115,7 +119,7 @@ class QueueConfiguration : HasLogger
         var authenticator: MultiQueueAuthenticator = InMemoryAuthenticator()
         when (messageQueueSettings.storageMedium.uppercase()) {
             StorageMedium.REDIS.toString() -> {
-                authenticator = RedisAuthenticator(messageQueueSettings.redisPrefix)
+                authenticator = RedisAuthenticator(messageQueueSettings.cachePrefix)
             }
             StorageMedium.SQL.toString() -> {
                 authenticator = SqlAuthenticator()

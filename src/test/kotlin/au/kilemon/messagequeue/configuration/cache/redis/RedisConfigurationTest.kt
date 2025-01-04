@@ -134,8 +134,8 @@ class RedisConfigurationTest
     fun testGetConnectionFactory_sentinelWithNoEndpoints()
     {
         messageQueueSettings.redisMode = RedisMode.SENTINEL.name
-        messageQueueSettings.redisEndpoint = ""
-        Assertions.assertEquals("", messageQueueSettings.redisEndpoint)
+        messageQueueSettings.cacheEndpoint = ""
+        Assertions.assertEquals("", messageQueueSettings.cacheEndpoint)
         Assertions.assertThrows(RedisInitialisationException::class.java) {
             redisConfiguration.getSentinelConfiguration()
         }
@@ -148,8 +148,8 @@ class RedisConfigurationTest
     fun testGetConnectionFactory_standAloneWithNoEndpoints()
     {
         messageQueueSettings.redisMode = RedisMode.STANDALONE.name
-        messageQueueSettings.redisEndpoint = ""
-        Assertions.assertEquals("", messageQueueSettings.redisEndpoint)
+        messageQueueSettings.cacheEndpoint = ""
+        Assertions.assertEquals("", messageQueueSettings.cacheEndpoint)
         Assertions.assertThrows(RedisInitialisationException::class.java) {
             redisConfiguration.getStandAloneConfiguration()
         }
@@ -167,8 +167,9 @@ class RedisConfigurationTest
         val endpoint1 = "$endpoint1Host:$endpoint1Port"
         val endpoint2 = "redis:6789"
         val endpoints = "$endpoint1,$endpoint2"
-        messageQueueSettings.redisEndpoint = endpoints
-        Assertions.assertEquals(endpoints, messageQueueSettings.redisEndpoint)
+
+        messageQueueSettings.cacheEndpoint = endpoints
+        Assertions.assertEquals(endpoints, messageQueueSettings.cacheEndpoint)
         val standAloneConfiguration = redisConfiguration.getStandAloneConfiguration()
         Assertions.assertEquals(endpoint1Host, standAloneConfiguration.hostName)
         Assertions.assertEquals(endpoint1Port.toInt(), standAloneConfiguration.port)

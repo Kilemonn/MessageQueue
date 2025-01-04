@@ -116,7 +116,11 @@ class RedisConfiguration: HasLogger
 
     /**
      * Create the [RedisConnectionFactory] based on the loaded configuration.
+<<<<<<< HEAD
      * If [MessageQueueSettings.redisMode] is `true` then multiple endpoints are expected in [MessageQueueSettings.redisEndpoint] and will attempt to be parsed out
+=======
+     * If [MessageQueueSettings.redisUseSentinels] is `true` then multiple endpoints are expected in [MessageQueueSettings.cacheEndpoint] and will attempt to be parsed out
+>>>>>>> 36e6084 (Work through adding memcached support. Implementing most methods the same way redis is implemented for now.)
      * and set into the [RedisSentinelConfiguration].
      *
      * Otherwise, the first endpoint and port provided will be used to create a [RedisStandaloneConfiguration].
@@ -148,10 +152,11 @@ class RedisConfiguration: HasLogger
     fun getSentinelConfiguration(): RedisSentinelConfiguration
     {
         LOG.info("Initialising redis sentinel configuration with the following configuration: Endpoints {}, master {}. With prefix {}.",
-            messageQueueSettings.redisEndpoint, messageQueueSettings.redisMasterName, messageQueueSettings.redisPrefix)
+            messageQueueSettings.cacheEndpoint, messageQueueSettings.redisMasterName, messageQueueSettings.cachePrefix)
+
         val redisSentinelConfiguration = RedisSentinelConfiguration()
         redisSentinelConfiguration.master(messageQueueSettings.redisMasterName)
-        val sentinelEndpoints = stringToInetSocketAddresses(messageQueueSettings.redisEndpoint, REDIS_SENTINEL_DEFAULT_PORT)
+        val sentinelEndpoints = stringToInetSocketAddresses(messageQueueSettings.cacheEndpoint, REDIS_SENTINEL_DEFAULT_PORT)
 
         if (sentinelEndpoints.isEmpty())
         {
@@ -173,9 +178,10 @@ class RedisConfiguration: HasLogger
     fun getStandAloneConfiguration(): RedisStandaloneConfiguration
     {
         LOG.info("Initialising redis standalone configuration with the following configuration: Endpoint [{}], prefix [{}].",
-            messageQueueSettings.redisEndpoint, messageQueueSettings.redisPrefix)
+            messageQueueSettings.cacheEndpoint, messageQueueSettings.cachePrefix)
+
         val redisConfiguration = RedisStandaloneConfiguration()
-        val redisEndpoints = stringToInetSocketAddresses(messageQueueSettings.redisEndpoint, REDIS_DEFAULT_PORT)
+        val redisEndpoints = stringToInetSocketAddresses(messageQueueSettings.cacheEndpoint, REDIS_DEFAULT_PORT)
         if (redisEndpoints.isEmpty())
         {
             LOG.error("No redis endpoints defined for standalone configuration. Unable to initialise redis configuration.")
@@ -194,10 +200,10 @@ class RedisConfiguration: HasLogger
     fun getClusterConfiguration(): RedisClusterConfiguration
     {
         LOG.info("Initialising redis cluster configuration with the following configuration: Endpoint [{}], prefix [{}].",
-            messageQueueSettings.redisEndpoint, messageQueueSettings.redisPrefix)
+            messageQueueSettings.cacheEndpoint, messageQueueSettings.cachePrefix)
 
         val configuration = RedisClusterConfiguration()
-        val nodes = endpointToNodes(messageQueueSettings.redisEndpoint)
+        val nodes = endpointToNodes(messageQueueSettings.cacheEndpoint)
         configuration.setClusterNodes(nodes)
 
         return configuration

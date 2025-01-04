@@ -43,9 +43,6 @@ class RedisMultiQueue(private val prefix: String) : MultiQueue(), HasLogger, Cac
         return prefix
     }
 
-    /**
-     * Attempts to append the prefix before requesting the underlying redis entry if the provided [subQueue] is not prefixed with [MessageQueueSettings.redisPrefix].
-     */
     override fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
     {
         val queue = ConcurrentLinkedQueue<QueueMessage>()
