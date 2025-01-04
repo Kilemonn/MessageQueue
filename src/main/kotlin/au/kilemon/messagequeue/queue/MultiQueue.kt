@@ -7,6 +7,8 @@ import au.kilemon.messagequeue.queue.exception.*
 import lombok.Generated
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.stream.Collectors
@@ -133,7 +135,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      * @param assignedTo to further filter the messages returned this can be provided
      * @return a limited version of the [Queue] containing only assigned messages
      */
-    open fun getAssignedMessagesInSubQueue(subQueue: String, assignedTo: String?): Queue<QueueMessage>
+    open fun getAssignedMessagesInSubQueue(subQueue: String, assignedTo: String?, page: PageRequest): Queue<QueueMessage>
     {
         val assignedMessages = ConcurrentLinkedQueue<QueueMessage>()
         val queue = getSubQueue(subQueue)
@@ -200,7 +202,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      */
     fun getOwnersAndKeysMapForSubQueue(subQueue: String, responseMap: HashMap<String, HashSet<String>>)
     {
-        val queue: Queue<QueueMessage> = getAssignedMessagesInSubQueue(subQueue, null)
+        val queue: Queue<QueueMessage> = getAssignedMessagesInSubQueue(subQueue, null, PageRequest.of(0, 1000))
         queue.forEach { message ->
             val subQueueID = message.subQueue
             val assigned = message.assignedTo

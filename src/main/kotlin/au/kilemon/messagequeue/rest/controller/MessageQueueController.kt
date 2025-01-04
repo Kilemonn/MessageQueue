@@ -8,7 +8,6 @@ import au.kilemon.messagequeue.queue.cache.redis.RedisMultiQueue
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
 import au.kilemon.messagequeue.rest.response.KeysResponse
-import au.kilemon.messagequeue.rest.response.MessageListResponse
 import au.kilemon.messagequeue.rest.response.MessageResponse
 import au.kilemon.messagequeue.rest.response.OwnersMapResponse
 import io.swagger.v3.oas.annotations.Hidden
@@ -22,6 +21,9 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -29,7 +31,6 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
 import java.util.*
 import java.util.stream.Collectors
-import kotlin.collections.HashSet
 
 /**
  * The REST controller for the [MultiQueue]. It exposes endpoints to access and manipulate the queue and the messages inside it.
@@ -371,13 +372,17 @@ open class MessageQueueController : HasLogger
     fun getOwned(@Parameter(`in` = ParameterIn.QUERY, required = true, description = "The identifier that must match the message's `assigned` property in order to be returned.")
                  @RequestParam(required = true, name = RestParameters.ASSIGNED_TO) assignedTo: String,
                  @Parameter(`in` = ParameterIn.QUERY, required = true, description = "The sub-queue to search for the assigned messages.")
-                 @RequestParam(required = true, name = RestParameters.SUB_QUEUE) subQueue: String): ResponseEntity<MessageListResponse>
+                 @RequestParam(required = true, name = RestParameters.SUB_QUEUE) subQueue: String,
+                 @Parameter(`in` = ParameterIn.QUERY, required = false, description = "Paging parameter: page number. Default is page 1.")
+                 @RequestParam(required = false, name = RestParameters.PAGE) pageNum: Int = RestParameters.DEFAULT_PAGE_NUMBER,
+                 @Parameter(`in` = ParameterIn.QUERY, required = false, description = "Paging parameter: page size. Default is 100")
+                 @RequestParam(required = false, name = RestParameters.PAGE_SIZE) pageSize: Int = RestParameters.DEFAULT_PAGE_SIZE): ResponseEntity<Page<QueueMessage>>
     {
         authenticator.canAccessSubQueue(subQueue)
-
-        val assignedMessages: Queue<QueueMessage> = messageQueue.getAssignedMessagesInSubQueue(subQueue, assignedTo)
+        val page = PageRequest.of(RestParameters.getPageNumber(pageNum), RestParameters.getPageSize(pageSize), Sort.Direction.ASC, "id")
+        val assignedMessages: Queue<QueueMessage> = messageQueue.getAssignedMessagesInSubQueue(subQueue, assignedTo, page)
         LOG.debug("Found [{}] owned entries within sub-queue [{}] for user with identifier [{}].", assignedMessages.size, subQueue, assignedTo)
-        return ResponseEntity.ok(MessageListResponse(assignedMessages.stream().toList()))
+        return ResponseEntity.ok(assignedMessages.stream().toList())
     }
 
     /**
