@@ -1,13 +1,12 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val springVersion = "3.3.0"
-val springDocVersion = "2.5.0"
-val testContainersVersion = "1.19.8"
+val springVersion = "3.4.1"
+val springDocVersion = "2.7.0"
+val testContainersVersion = "1.20.4"
 
 plugins {
-    id("org.springframework.boot") version "3.3.0"
-    id("io.spring.dependency-management") version "1.1.5"
-    kotlin("jvm") version "2.0.0"
+    id("org.springframework.boot") version "3.3.0" // Upgrading this requires java 21+?
+    id("io.spring.dependency-management") version "1.1.7"
+    kotlin("jvm") version "2.0.21"
     kotlin("plugin.spring") version "2.0.0"
     jacoco
 }
@@ -16,6 +15,7 @@ group = "au.kilemon"
 // Make sure version matches version defined in MessageQueueApplication
 version = "0.3.3"
 java.sourceCompatibility = JavaVersion.VERSION_17
+java.targetCompatibility = JavaVersion.VERSION_17
 
 repositories {
     mavenCentral()
@@ -89,10 +89,6 @@ tasks.test {
     jvmArgs("--add-opens", "java.base/java.util=ALL-UNNAMED",
         "--add-opens", "java.base/java.lang=ALL-UNNAMED")
     finalizedBy(tasks.jacocoTestReport)
-}
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "17"
 }
 
 jacoco {
