@@ -102,24 +102,19 @@ class MemcachedMultiQueue(private val prefix: String = ""): MultiQueue(), HasLog
 
     override fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
     {
-        val queue = ConcurrentLinkedQueue<QueueMessage>()
-        var set: Set<QueueMessage>? = client.get<Set<QueueMessage>?>(appendPrefix(subQueue))
-        if (set == null)
+        var queue: Queue<QueueMessage>? = client.get<Queue<QueueMessage>?>(appendPrefix(subQueue))
+        if (queue == null)
         {
-            set = HashSet<QueueMessage>()
-            client.set(appendPrefix(subQueue), 0, set)
+            queue = ConcurrentLinkedQueue<QueueMessage>()
+            client.set(appendPrefix(subQueue), 0, queue)
         }
 
-        if (set.isNotEmpty())
-        {
-            queue.addAll(set.toSortedSet { message1, message2 -> (message1.id ?: 0).minus(message2.id ?: 0).toInt() })
-        }
         return queue
     }
 
     override fun performHealthCheckInternal()
     {
-        client.get<Any?>("")
+        client.get<Any?>("health-check-key")
     }
 
     override fun getMessageByUUID(uuid: String): Optional<QueueMessage>
@@ -169,7 +164,8 @@ class MemcachedMultiQueue(private val prefix: String = ""): MultiQueue(), HasLog
 
     override fun keysInternal(includeEmpty: Boolean): HashSet<String>
     {
-        TODO("Not yet implemented")
+        // TODO
+        return HashSet()
     }
 
     override fun containsUUID(uuid: String): Optional<String>
