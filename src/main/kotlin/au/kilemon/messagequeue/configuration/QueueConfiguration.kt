@@ -3,6 +3,7 @@ package au.kilemon.messagequeue.configuration
 import au.kilemon.messagequeue.MessageQueueApplication
 import au.kilemon.messagequeue.authentication.RestrictionMode
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
+import au.kilemon.messagequeue.authentication.authenticator.cache.memcached.MemcachedAuthenticator
 import au.kilemon.messagequeue.authentication.authenticator.cache.redis.RedisAuthenticator
 import au.kilemon.messagequeue.authentication.authenticator.inmemory.InMemoryAuthenticator
 import au.kilemon.messagequeue.authentication.authenticator.nosql.mongo.MongoAuthenticator
@@ -124,6 +125,9 @@ class QueueConfiguration : HasLogger
             }
             StorageMedium.MONGO.toString() -> {
                 authenticator = MongoAuthenticator()
+            }
+            StorageMedium.MEMCACHED.toString() -> {
+                authenticator = MemcachedAuthenticator()
             }
         }
 
