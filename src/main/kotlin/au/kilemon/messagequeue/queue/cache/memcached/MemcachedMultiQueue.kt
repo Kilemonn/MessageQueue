@@ -165,6 +165,22 @@ class MemcachedMultiQueue(private val prefix: String = ""): MultiQueue(), HasLog
     override fun keysInternal(includeEmpty: Boolean): HashSet<String>
     {
         // TODO
+        try
+        {
+            // TODO: Add "wsl -- " only for windows
+            val command = "wsl --% sh -c \"echo \"\"stats cachedump 10 0\"\" | nc ${client.availableServers.first().address.toString().split("/")[0]} ${client.availableServers.first().port}\""
+            // val parts = command.split("\\s".toRegex())
+            val proc = ProcessBuilder(command)
+                .start()
+
+            proc.waitFor(2, TimeUnit.SECONDS)
+            val result = proc.inputStream.bufferedReader().readText()
+            println(result)
+        }
+        catch(e: IOException)
+        {
+            e.printStackTrace()
+        }
         return HashSet()
     }
 
