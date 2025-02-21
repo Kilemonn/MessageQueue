@@ -8,10 +8,12 @@ import au.kilemon.messagequeue.settings.MessageQueueSettings
 import net.rubyeye.xmemcached.MemcachedClient
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
+import java.io.IOException
 import java.util.HashSet
 import java.util.Optional
 import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.TimeUnit
 
 /**
  * A `Memcached` specific implementation of the [MultiQueue].
@@ -26,6 +28,16 @@ class MemcachedMultiQueue(private val prefix: String = ""): MultiQueue(), HasLog
 
     @Autowired
     private lateinit var client: MemcachedClient
+
+    /**
+     * Getting the size from the underlying cache stats.
+     */
+    override val size: Int
+        get() {
+            val stats = client.stats
+            //return client.stats.values[0]["curr_items"].toInt()
+            return 0
+        }
 
     /**
      * Append the [MessageQueueSettings.cachePrefix] to the provided [subQueue] [String].
