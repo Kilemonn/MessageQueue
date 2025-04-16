@@ -1,14 +1,14 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val springVersion = "3.3.0"
-val springDocVersion = "2.5.0"
-val testContainersVersion = "1.19.8"
+val springVersion = "3.4.2"
+val springDocVersion = "2.6.0" // Version 2.7+ requires spring v3.4+
+val testContainersVersion = "1.20.4"
 
 plugins {
-    id("org.springframework.boot") version "3.3.0"
-    id("io.spring.dependency-management") version "1.1.5"
-    kotlin("jvm") version "2.0.0"
-    kotlin("plugin.spring") version "2.0.0"
+    id("org.springframework.boot") version "3.3.0" // Upgrading this requires java 21+ which is not supported by Kotlin yet or Gradle (because of Kotlin)
+    id("io.spring.dependency-management") version "1.1.7"
+    kotlin("jvm") version "2.1.10"
+    kotlin("plugin.spring") version "2.1.10"
     jacoco
 }
 
@@ -41,7 +41,7 @@ dependencies {
     compileOnly("org.projectlombok:lombok:1.18.32")
 
     // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-reflect
-    runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:2.0.0")
+    runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:2.1.10")
 
     // Database drivers
     // https://mvnrepository.com/artifact/com.mysql/mysql-connector-j

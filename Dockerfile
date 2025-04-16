@@ -5,7 +5,7 @@
 # Push image to remote
 # docker push kilemon/message-queue:0.1.5
 
-FROM gradle:8.7.0-jdk17-alpine as builder
+FROM gradle:8.12.1-jdk17-alpine as builder
 
 WORKDIR /builder
 
