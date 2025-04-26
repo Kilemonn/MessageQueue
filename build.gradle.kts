@@ -50,6 +50,12 @@ dependencies {
     implementation("org.postgresql:postgresql:42.7.3")
     // https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc
     implementation("com.microsoft.sqlserver:mssql-jdbc:12.6.3.jre11")
+    // https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc
+    implementation("org.xerial:sqlite-jdbc:3.49.1.0")
+
+    // DB Dialects (Needed for SQLLite)
+    // https://mvnrepository.com/artifact/org.hibernate.orm/hibernate-community-dialects
+    implementation("org.hibernate.orm:hibernate-community-dialects:6.6.13.Final")
 
     // No SQL drivers
     // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-data-mongodb
