@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Lob
 import jakarta.persistence.Table
+import jakarta.persistence.Transient
 import org.springframework.util.SerializationUtils
 import java.io.Serializable
 import java.util.*
@@ -42,7 +43,7 @@ class QueueMessage: Serializable
     var assignedTo: String? = null
 
     @Schema(description = "The message payload, this can be any type of complex or simple object that you wish.")
-    @jakarta.persistence.Transient
+    @Transient
     var payload: Any? = null
         set(value)
         {
@@ -61,7 +62,7 @@ class QueueMessage: Serializable
     var id: Long? = null
 
     @JsonIgnore
-    @Lob
+    // @Lob - Needed to remove to support SQLLite, seems like it was not required
     @Column(length = 50000)
     var payloadBytes: ByteArray? = SerializationUtils.serialize(payload)
 
