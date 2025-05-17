@@ -368,7 +368,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
     {
         val keysSet = keysInternal(includeEmpty)
 
-        // Remove the restricted key(s)
+        // Remove the reserved key(s)
         multiQueueAuthenticator.getReservedSubQueues().forEach { reservedSubQueue -> keysSet.remove(reservedSubQueue) }
         return keysSet
     }

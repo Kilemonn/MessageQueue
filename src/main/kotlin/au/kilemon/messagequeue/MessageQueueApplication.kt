@@ -17,7 +17,7 @@ open class MessageQueueApplication
         /**
          * Application version number, make sure this matches what is defined in `build.gradle.kts`.
          */
-        const val VERSION: String = "0.3.3"
+        const val VERSION: String = "0.4.0"
     }
 }
 
