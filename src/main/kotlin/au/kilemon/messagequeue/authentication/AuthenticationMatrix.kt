@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import lombok.Generated
 import java.io.Serializable
 
 /**
@@ -26,6 +27,8 @@ class AuthenticationMatrix(@Column(name = "subqueue", nullable = false) var subQ
         const val TABLE_NAME: String = "multiqueueauthenticationmatrix"
     }
 
+    @get:Generated
+    @set:Generated
     @JsonIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

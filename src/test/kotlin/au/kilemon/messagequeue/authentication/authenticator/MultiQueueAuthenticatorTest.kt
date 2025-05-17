@@ -335,4 +335,23 @@ abstract class MultiQueueAuthenticatorTest
         val emptyIdentifiers = multiQueueAuthenticator.getRestrictedSubQueueIdentifiers()
         Assertions.assertTrue(emptyIdentifiers.isEmpty())
     }
+
+    /**
+     * Ensure [MultiQueueAuthenticator.canAccessSubQueue] returns `false` or throws a [MultiQueueAuthorisationException]
+     * if a reserved sub-queue name is used.
+     */
+    @Test
+    fun testCanAccessSubQueue_UsingReservedSubQueue()
+    {
+        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.RESTRICTED, multiQueueAuthenticator.getRestrictionMode())
+
+        if (multiQueueAuthenticator.getReservedSubQueues().isNotEmpty())
+        {
+            Assertions.assertFalse(multiQueueAuthenticator.canAccessSubQueue(multiQueueAuthenticator.getReservedSubQueues().first(), false))
+            Assertions.assertThrows(MultiQueueAuthorisationException::class.java, {
+                multiQueueAuthenticator.canAccessSubQueue(multiQueueAuthenticator.getReservedSubQueues().first(), true)
+            })
+        }
+    }
 }
