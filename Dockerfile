@@ -19,7 +19,7 @@ COPY settings.gradle.kts .
 # Run gradle build/package/tests
 RUN ["gradle", "build", "-x", "test"]
 
-FROM kilemon/openjdk-alpine:alpine-3.20.0-jdk-17.0.11 AS runner
+FROM amazoncorretto:17-alpine3.21-jdk AS runner
 WORKDIR /messagequeue
 
 # Copy in artifact from above step
