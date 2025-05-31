@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val springVersion = "3.4.2"
@@ -5,7 +6,7 @@ val springDocVersion = "2.6.0" // Version 2.7+ requires spring v3.4+
 val testContainersVersion = "1.20.4"
 
 plugins {
-    id("org.springframework.boot") version "3.3.0" // Upgrading this requires java 21+ which is not supported by Kotlin yet or Gradle (because of Kotlin)
+    id("org.springframework.boot") version "3.3.6" // Upgrading this requires java 21+ which is not supported by Kotlin yet or Gradle (because of Kotlin)
     id("io.spring.dependency-management") version "1.1.7"
     kotlin("jvm") version "2.1.10"
     kotlin("plugin.spring") version "2.1.10"
@@ -14,7 +15,7 @@ plugins {
 
 group = "au.kilemon"
 // Make sure version matches version defined in MessageQueueApplication
-version = "0.4.0"
+version = "0.4.1"
 java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
@@ -94,7 +95,7 @@ tasks.test {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "17"
+    compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
 }
 
 jacoco {
