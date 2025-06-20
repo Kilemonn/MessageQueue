@@ -1,22 +1,22 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val springVersion = "3.4.2"
-val springDocVersion = "2.6.0" // Version 2.7+ requires spring v3.4+
-val testContainersVersion = "1.20.4"
+val springVersion = "3.5.2"
+val springDocVersion = "2.8.9"
+val testContainersVersion = "1.21.2"
 
 plugins {
-    id("org.springframework.boot") version "3.3.6" // Upgrading this requires java 21+ which is not supported by Kotlin yet or Gradle (because of Kotlin)
+    id("org.springframework.boot") version "3.5.3"
     id("io.spring.dependency-management") version "1.1.7"
-    kotlin("jvm") version "2.1.10"
-    kotlin("plugin.spring") version "2.1.10"
+    kotlin("jvm") version "2.1.21"
+    kotlin("plugin.spring") version "2.1.21"
     jacoco
 }
 
 group = "au.kilemon"
 // Make sure version matches version defined in MessageQueueApplication
 version = "0.4.1"
-java.sourceCompatibility = JavaVersion.VERSION_17
+java.sourceCompatibility = JavaVersion.VERSION_21
 
 repositories {
     mavenCentral()
@@ -37,26 +37,26 @@ dependencies {
     // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocVersion}")
 
-    implementation("com.google.code.gson:gson:2.11.0")
+    implementation("com.google.code.gson:gson:2.13.1")
 
-    compileOnly("org.projectlombok:lombok:1.18.32")
+    compileOnly("org.projectlombok:lombok:1.18.38")
 
     // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-reflect
-    runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:2.1.10")
+    runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:2.1.21")
 
     // Database drivers
     // https://mvnrepository.com/artifact/com.mysql/mysql-connector-j
-    implementation("com.mysql:mysql-connector-j:8.4.0")
+    implementation("com.mysql:mysql-connector-j:9.3.0")
     // https://mvnrepository.com/artifact/org.postgresql/postgresql
-    implementation("org.postgresql:postgresql:42.7.3")
+    implementation("org.postgresql:postgresql:42.7.7")
     // https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc
-    implementation("com.microsoft.sqlserver:mssql-jdbc:12.6.3.jre11")
+    implementation("com.microsoft.sqlserver:mssql-jdbc:12.10.0.jre11")
     // https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc
-    implementation("org.xerial:sqlite-jdbc:3.49.1.0")
+    implementation("org.xerial:sqlite-jdbc:3.50.1.0")
 
     // DB Dialects (Needed for SQLLite)
     // https://mvnrepository.com/artifact/org.hibernate.orm/hibernate-community-dialects
-    implementation("org.hibernate.orm:hibernate-community-dialects:6.6.13.Final")
+    implementation("org.hibernate.orm:hibernate-community-dialects:7.0.2.Final")
 
     // No SQL drivers
     // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-data-mongodb
@@ -64,7 +64,7 @@ dependencies {
 
     // JWT token
     // https://mvnrepository.com/artifact/com.auth0/java-jwt
-    implementation("com.auth0:java-jwt:4.4.0")
+    implementation("com.auth0:java-jwt:4.5.0")
 
     /* Test dependencies */
 
@@ -74,8 +74,12 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springVersion}")
     // Required to mock MultiQueue objects since they apparently override a final 'remove(Object)' method.
-    testImplementation("org.mockito:mockito-inline:5.2.0")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.2")
+    // https://mvnrepository.com/artifact/org.mockito/mockito-core
+    testImplementation("org.mockito:mockito-core:5.18.0")
+
+    // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.13.1")
+
     testImplementation("org.testcontainers:testcontainers:${testContainersVersion}")
     testImplementation("org.testcontainers:junit-jupiter:${testContainersVersion}")
     testImplementation(kotlin("test"))
@@ -95,7 +99,7 @@ tasks.test {
 }
 
 tasks.withType<KotlinCompile> {
-    compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
+    compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
 }
 
 jacoco {
