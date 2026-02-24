@@ -1,7 +1,6 @@
 package au.kilemon.messagequeue.authentication.token
 
 import com.auth0.jwt.exceptions.JWTCreationException
-import org.junit.Assert
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith

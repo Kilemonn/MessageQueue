@@ -347,7 +347,7 @@ abstract class MultiQueueTest
             }
             else
             {
-                Assertions.assertTrue(previousIndex!! < pair.second.id!!)
+                Assertions.assertTrue(previousIndex < pair.second.id!!)
             }
         }
     }
@@ -388,7 +388,7 @@ abstract class MultiQueueTest
             }
             else
             {
-                Assertions.assertTrue(previousIndex!! < pair.second.id!!)
+                Assertions.assertTrue(previousIndex < pair.second.id!!)
             }
         }
     }
