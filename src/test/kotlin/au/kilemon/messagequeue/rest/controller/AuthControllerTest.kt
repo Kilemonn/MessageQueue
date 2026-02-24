@@ -20,10 +20,10 @@ import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.MvcResult
@@ -58,11 +58,11 @@ class AuthControllerTest
     }
 
     // Setting as a Spy to override it to replicate different scenarios
-    @SpyBean
+    @MockitoSpyBean
     private lateinit var multiQueueAuthenticator: MultiQueueAuthenticator
 
     // Setting as a Spy to override it to replicate different scenarios
-    @SpyBean
+    @MockitoSpyBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
     @Autowired

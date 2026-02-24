@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.mockito.Mockito
 import org.slf4j.MDC
-import org.springframework.boot.test.mock.mockito.SpyBean
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 
 /**
  * An abstract test class for the [MultiQueueAuthenticator] class.
@@ -20,7 +20,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class MultiQueueAuthenticatorTest
 {
-    @SpyBean
+    @MockitoSpyBean
     protected lateinit var multiQueueAuthenticator: MultiQueueAuthenticator
 
     /**

@@ -26,11 +26,11 @@ import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.MvcResult
@@ -70,10 +70,10 @@ class MessageQueueControllerTest
     @Autowired
     private lateinit var jwtTokenProvider: JwtTokenProvider
 
-    @SpyBean
+    @MockitoSpyBean
     private lateinit var authenticator: MultiQueueAuthenticator
 
-    @SpyBean
+    @MockitoSpyBean
     private lateinit var multiQueue: MultiQueue
 
     private val gson: Gson = Gson()
