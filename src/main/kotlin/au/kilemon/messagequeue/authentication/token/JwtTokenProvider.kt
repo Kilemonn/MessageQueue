@@ -1,5 +1,7 @@
 package au.kilemon.messagequeue.authentication.token
 
+import au.kilemon.messagequeue.authentication.RestrictionMode
+import au.kilemon.messagequeue.authentication.exception.NoKeyProvidedException
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import com.auth0.jwt.JWT
@@ -8,7 +10,9 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.exceptions.JWTCreationException
 import com.auth0.jwt.exceptions.JWTVerificationException
 import com.auth0.jwt.interfaces.DecodedJWT
+import jakarta.annotation.PostConstruct
 import org.slf4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import java.security.SecureRandom
 import java.util.*
@@ -27,26 +31,23 @@ class JwtTokenProvider: HasLogger
 
     override val LOG: Logger = this.initialiseLogger()
 
-    private var jwtVerifier: JWTVerifier? = null
+    @Autowired
+    private lateinit var restrictionMode: RestrictionMode
 
+    private var jwtVerifier: JWTVerifier? = null
     private var algorithm: Algorithm? = null
 
-    @Value("\${${MessageQueueSettings.ACCESS_TOKEN_KEY}:\"\"}")
-    var tokenKey: String = ""
-        private set
+    @Value("\${${MessageQueueSettings.ACCESS_TOKEN_KEY}:}")
+    internal lateinit var tokenKey: String
 
-    /**
-     * Lazily initialise and get the [Algorithm] using [Algorithm.HMAC512] and a random key.
-     *
-     * @return the shared [Algorithm] instance
-     */
-    private fun getAlgorithm(): Algorithm
+    @PostConstruct
+    fun init()
     {
-        if (algorithm == null)
+        if (restrictionMode != RestrictionMode.NONE)
         {
-            algorithm = Algorithm.HMAC512(getOrGenerateKey(tokenKey))
+            algorithm = Algorithm.HMAC512(getKey(tokenKey))
+            jwtVerifier = JWT.require(algorithm).withIssuer(ISSUER).build()
         }
-        return algorithm!!
     }
 
     /**
@@ -55,7 +56,7 @@ class JwtTokenProvider: HasLogger
      * @return If a value is provided via [MessageQueueSettings.ACCESS_TOKEN_KEY] then we will use it if it is
      * not blank. Otherwise, a randomly generated a byte array is returned
      */
-    fun getOrGenerateKey(key: String): ByteArray
+    fun getKey(key: String): ByteArray
     {
         return if (key.isNotBlank())
         {
@@ -64,26 +65,9 @@ class JwtTokenProvider: HasLogger
         }
         else
         {
-            LOG.info("No HMAC512 key provided in property [{}] for token generation and verification key. Generating a new random key.", MessageQueueSettings.ACCESS_TOKEN_KEY)
-            val random = SecureRandom()
-            val bytes = ByteArray(128)
-            random.nextBytes(bytes)
-            bytes
+            LOG.error("No HMAC512 key provided in property [{}] for token generation and verification key. Stopping message queue.", MessageQueueSettings.ACCESS_TOKEN_KEY)
+            throw NoKeyProvidedException(restrictionMode)
         }
-    }
-
-    /**
-     * Lazily initialise and get the [JWTVerifier].
-     *
-     * @return the shared [JWTVerifier] instance
-     */
-    private fun getVerifier(): JWTVerifier
-    {
-        if (jwtVerifier == null)
-        {
-            jwtVerifier = JWT.require(getAlgorithm()).withIssuer(ISSUER).build()
-        }
-        return jwtVerifier!!
     }
 
     /**
@@ -96,7 +80,7 @@ class JwtTokenProvider: HasLogger
     {
         try
         {
-            return Optional.ofNullable(getVerifier().verify(token))
+            return Optional.ofNullable(jwtVerifier?.verify(token))
         }
         catch (ex: JWTVerificationException)
         {
@@ -116,6 +100,13 @@ class JwtTokenProvider: HasLogger
      */
     fun createTokenForSubQueue(subQueue: String, expiryInMinutes: Long? = null): Optional<String>
     {
+        // The caller should return early if we are in none mode [AuthController].
+        if (restrictionMode == RestrictionMode.NONE || algorithm == null)
+        {
+            LOG.error("Unable to generate token for subqueue [{}] because restriction mode is set to [{}]", subQueue, restrictionMode)
+            return Optional.empty()
+        }
+
         try
         {
             val token = createTokenInternal(subQueue, expiryInMinutes)
@@ -148,6 +139,6 @@ class JwtTokenProvider: HasLogger
         {
             builder.withExpiresAt(Date(Date().time + (expiryInMinutes * 60 * 1000)))
         }
-        return builder.sign(getAlgorithm())
+        return builder.sign(algorithm)
     }
 }

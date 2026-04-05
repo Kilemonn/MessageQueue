@@ -38,7 +38,11 @@ import java.util.*
  * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
-@WebMvcTest(controllers = [AuthController::class], properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=IN_MEMORY"])
+@WebMvcTest(controllers = [AuthController::class],
+    properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=IN_MEMORY", "${MessageQueueSettings.RESTRICTION_MODE}=HYBRID",
+        "${MessageQueueSettings.ACCESS_TOKEN_KEY}=1234567890123456"
+    ]
+)
 @Import(*[QueueConfiguration::class, LoggingConfiguration::class])
 class AuthControllerTest
 {
@@ -88,6 +92,7 @@ class AuthControllerTest
     fun testRestrictSubQueue_inNoneMode()
     {
         val subQueue = "testRestrictSubQueue_inNoneMode"
+        Mockito.doReturn(RestrictionMode.NONE).`when`(multiQueueAuthenticator).getRestrictionMode()
         Assertions.assertEquals(RestrictionMode.NONE, multiQueueAuthenticator.getRestrictionMode())
         mockMvc.perform(
             MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/${subQueue}")
@@ -208,7 +213,7 @@ class AuthControllerTest
     fun testRemoveRestrictionFromSubQueue_inNoneMode()
     {
         val subQueue = "testRemoveRestrictionFromSubQueue_inNoneMode"
-
+        Mockito.doReturn(RestrictionMode.NONE).`when`(multiQueueAuthenticator).getRestrictionMode()
         Assertions.assertEquals(RestrictionMode.NONE, multiQueueAuthenticator.getRestrictionMode())
         mockMvc.perform(
             MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${subQueue}")
