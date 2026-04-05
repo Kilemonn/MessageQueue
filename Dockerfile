@@ -19,7 +19,10 @@ COPY settings.gradle.kts .
 # Run gradle build/package/tests
 RUN ["gradle", "build", "-x", "test"]
 
-FROM amazoncorretto:17-alpine3.21-jdk AS runner
+FROM amazoncorretto:17-alpine3.23-jdk AS runner
+
+RUN apk update && apk upgrade --no-cache
+
 WORKDIR /messagequeue
 
 # Copy in artifact from above step

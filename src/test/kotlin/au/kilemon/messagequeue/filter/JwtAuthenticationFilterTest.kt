@@ -7,6 +7,7 @@ import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.queue.MultiQueueTest
 import au.kilemon.messagequeue.rest.controller.MessageQueueController
+import au.kilemon.messagequeue.settings.MessageQueueSettings
 import jakarta.servlet.http.HttpServletRequest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
@@ -16,11 +17,13 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
 import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpMethod
 import org.springframework.test.context.ContextConfiguration
+import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.servlet.HandlerExceptionResolver
 import org.springframework.web.servlet.handler.HandlerExceptionResolverComposite
@@ -31,26 +34,14 @@ import java.util.*
  *
  * @author github.com/Kilemonn
  */
-@ExtendWith(SpringExtension::class)
-@ContextConfiguration(classes = [JwtAuthenticationFilter::class])
-@Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class] )
+@SpringBootTest(classes = [QueueConfiguration::class, LoggingConfiguration::class,
+    MultiQueueTest.MultiQueueTestConfiguration::class, JwtAuthenticationFilter::class])
+@TestPropertySource(properties = [
+    "${MessageQueueSettings.RESTRICTION_MODE}=HYBRID",
+    "${MessageQueueSettings.ACCESS_TOKEN_KEY}=1234567890123456",
+])
 class JwtAuthenticationFilterTest
 {
-    /**
-     * A [TestConfiguration] for the outer class.
-     *
-     * @author github.com/Kilemonn
-     */
-    @TestConfiguration
-    open class TestConfig
-    {
-        @Bean
-        open fun getHandlerExceptionResolver(): HandlerExceptionResolver
-        {
-            return HandlerExceptionResolverComposite()
-        }
-    }
-
     @Autowired
     private lateinit var jwtAuthenticationFilter: JwtAuthenticationFilter
 

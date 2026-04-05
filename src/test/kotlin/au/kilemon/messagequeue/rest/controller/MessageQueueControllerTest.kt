@@ -45,7 +45,11 @@ import java.util.*
  * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
-@WebMvcTest(controllers = [MessageQueueController::class], properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=IN_MEMORY"])
+@WebMvcTest(controllers = [MessageQueueController::class],
+    properties = [
+        "${MessageQueueSettings.STORAGE_MEDIUM}=IN_MEMORY", "${MessageQueueSettings.RESTRICTION_MODE}=HYBRID",
+        "${MessageQueueSettings.ACCESS_TOKEN_KEY}=1234567890123456"
+    ])
 @Import(*[QueueConfiguration::class, LoggingConfiguration::class])
 class MessageQueueControllerTest
 {
@@ -99,7 +103,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetSubQueueInfo()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val subQueue = "testGetSubQueueInfo"
         Assertions.assertEquals(0, multiQueue.getSubQueue(subQueue).size)
@@ -125,7 +129,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetAllSubQueueInfo()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
@@ -155,7 +159,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetEntry()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val message = createQueueMessage(subQueue = "testGetEntry")
 
@@ -185,7 +189,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetEntry_ResponseBody_NotExists()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val uuid = "invalid-not-found-uuid"
         mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid)
@@ -259,7 +263,7 @@ class MessageQueueControllerTest
     @Test
     fun testCreateQueueEntry_withProvidedDefaults()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val message = createQueueMessage(subQueue = "testCreateQueueEntry_withProvidedDefaults", assignedTo = "user-1")
 
@@ -290,7 +294,7 @@ class MessageQueueControllerTest
     @Test
     fun testCreateQueueEntry_withOutDefaults()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val message = createQueueMessage(subQueue = "testCreateQueueEntry_withOutDefaults")
 
@@ -321,7 +325,7 @@ class MessageQueueControllerTest
     @Test
     fun testCreateEntry_Conflict()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val message = createQueueMessage(subQueue = "testCreateEntry_Conflict")
 
@@ -340,7 +344,7 @@ class MessageQueueControllerTest
     @Test
     fun testCreateQueueEntry_withBlankAssignedTo()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val message = createQueueMessage(subQueue = "testCreateQueueEntry_withAssignedButNoAssignedTo")
         message.assignedTo = " "
@@ -400,7 +404,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetKeys()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val entries = initialiseMapWithEntries()
 
@@ -427,7 +431,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetKeys_excludeEmpty()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val entries = initialiseMapWithEntries()
         Assertions.assertTrue(multiQueue.remove(entries.first[0]))
@@ -459,7 +463,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetAll()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val entries = initialiseMapWithEntries()
         val subQueue = entries.first[0].subQueue
@@ -493,7 +497,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetAll_SpecificSubQueue()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val entries = initialiseMapWithEntries()
         val subQueue = entries.first[0].subQueue
@@ -618,7 +622,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetOwned_NoneOwned()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val entries = initialiseMapWithEntries()
         val assignedTo = "my-assigned-to-identifier"
@@ -641,7 +645,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetOwned_SomeOwned()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "my-assigned-to-identifier"
         val subQueue = "testGetOwned_SomeOwned"
@@ -721,7 +725,7 @@ class MessageQueueControllerTest
     @Test
     fun testAssignMessage_doesNotExist()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val uuid = UUID.randomUUID().toString()
         val assignedTo = "assigned"
@@ -738,7 +742,7 @@ class MessageQueueControllerTest
     @Test
     fun testAssignMessage_messageIsAssigned()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assigned"
         val message = createQueueMessage(subQueue = "testAssignMessage_messageIsAssigned")
@@ -810,7 +814,7 @@ class MessageQueueControllerTest
     @Test
     fun testAssignMessage_alreadyAssignedToSameID()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assigned"
         val message = createQueueMessage(subQueue = "testAssignMessage_alreadyAssignedToSameID", assignedTo = assignedTo)
@@ -840,7 +844,7 @@ class MessageQueueControllerTest
     @Test
     fun testAssignMessage_alreadyAssignedToOtherID()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assignee"
         val message = createQueueMessage(subQueue = "testAssignMessage_alreadyAssignedToOtherID", assignedTo = assignedTo)
@@ -872,7 +876,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetNext_noNewMessages()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assignee"
         val subQueue = "testGetNext_noNewMessages"
@@ -892,7 +896,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetNext_noNewUnAssignedMessages()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assignee"
         val subQueue = "testGetNext_noNewUnAssignedMessages"
@@ -918,7 +922,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetNext()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assignee"
         val subQueue = "testGetNext"
@@ -1006,7 +1010,7 @@ class MessageQueueControllerTest
     @Test
     fun testReleaseMessage_doesNotExist()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val uuid = UUID.randomUUID().toString()
         mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid + MessageQueueController.ENDPOINT_RELEASE)
@@ -1021,7 +1025,7 @@ class MessageQueueControllerTest
     @Test
     fun testReleaseMessage_messageIsReleased()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assignee"
         val message = createQueueMessage(subQueue = "testReleaseMessage_messageIsReleased", assignedTo = assignedTo)
@@ -1095,7 +1099,7 @@ class MessageQueueControllerTest
     @Test
     fun testReleaseMessage_messageIsReleased_withoutAssignedToInQuery()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assigned"
         val message = createQueueMessage(subQueue = "testReleaseMessage_messageIsReleased_withoutAssignedToInQuery", assignedTo = assignedTo)
@@ -1124,7 +1128,7 @@ class MessageQueueControllerTest
     @Test
     fun testReleaseMessage_alreadyReleased()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val message = createQueueMessage(subQueue = "testReleaseMessage_alreadyReleased")
         Assertions.assertNull(message.assignedTo)
@@ -1153,7 +1157,7 @@ class MessageQueueControllerTest
     @Test
     fun testReleaseMessage_cannotBeReleasedWithMisMatchingID()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assigned"
         val message = createQueueMessage(subQueue = "testReleaseMessage_cannotBeReleasedWithMisMatchingID", assignedTo = assignedTo)
@@ -1178,7 +1182,7 @@ class MessageQueueControllerTest
     @Test
     fun testRemoveMessage_notFound()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val uuid = UUID.randomUUID().toString()
 
@@ -1194,7 +1198,7 @@ class MessageQueueControllerTest
     @Test
     fun testRemoveMessage_removeExistingEntry()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val message = createQueueMessage(subQueue = "testRemoveMessage_removed")
         Assertions.assertTrue(multiQueue.add(message))
@@ -1248,7 +1252,7 @@ class MessageQueueControllerTest
     @Test
     fun testRemoveMessage_doesNotExist()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val uuid = UUID.randomUUID().toString()
         Assertions.assertFalse(multiQueue.containsUUID(uuid).isPresent)
@@ -1267,7 +1271,7 @@ class MessageQueueControllerTest
     @Test
     fun testRemoveMessage_assignedToAnotherID()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assignee"
         val message = createQueueMessage(subQueue = "testRemoveMessage_assignedToAnotherID", assignedTo = assignedTo)
@@ -1290,7 +1294,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetOwners_inSubQueue()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assignedTo"
         val assignedTo2 = "assignedTo2"
@@ -1333,7 +1337,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetOwners_notInSubQueue()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assignedTo"
         val assignedTo2 = "assignedTo2"
@@ -1377,7 +1381,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetPerformHealthCheck()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_HEALTH_CHECK)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
@@ -1392,7 +1396,7 @@ class MessageQueueControllerTest
     @Test
     fun testCorrelationId_randomIdOnSuccess()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val message = createQueueMessage(subQueue = "testCorrelationId_providedId")
 
@@ -1413,7 +1417,7 @@ class MessageQueueControllerTest
     @Test
     fun testCorrelationId_providedId()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val message = createQueueMessage(subQueue = "testCorrelationId_providedId")
         val correlationId = "my-correlation-id-123456"
@@ -1437,7 +1441,7 @@ class MessageQueueControllerTest
     @Test
     fun testCorrelationId_randomIdOnError()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assignee"
         val message = createQueueMessage(subQueue = "testCorrelationId_randomIdOnError", assignedTo = assignedTo)
@@ -1469,7 +1473,7 @@ class MessageQueueControllerTest
     @Test
     fun testDeleteKeys_singleKey()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val subQueue1 = "testDeleteKeys_singleKey1"
         var messages = listOf(createQueueMessage(subQueue1), createQueueMessage(subQueue1), createQueueMessage(subQueue1))
@@ -1559,7 +1563,7 @@ class MessageQueueControllerTest
     @Test
     fun testDeleteKeys_allKeys()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val (messages, subQueues) = initialiseMapWithEntries()
         Assertions.assertEquals(messages.size, multiQueue.size)
@@ -1619,7 +1623,7 @@ class MessageQueueControllerTest
     @Test
     fun testGetPerformHealthCheck_failureResponse()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         Mockito.doThrow(RuntimeException("Failed to perform health check.")).`when`(multiQueue).performHealthCheckInternal()
 
@@ -1637,7 +1641,7 @@ class MessageQueueControllerTest
     @Test
     fun testCreateMessage_addFails()
     {
-        Assertions.assertEquals(RestrictionMode.NONE, authenticator.getRestrictionMode())
+        Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val message = QueueMessage("payload", "testCreateMessage_addFails")
 
