@@ -7,7 +7,8 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.test.context.TestPropertySource
-import java.util.*
+import java.util.Date
+
 
 /**
  * A test class for [JwtTokenProvider] and different token issuing and verification scenarios. Specifically the

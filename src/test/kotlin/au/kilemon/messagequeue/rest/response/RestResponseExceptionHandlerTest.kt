@@ -14,7 +14,8 @@ import org.junit.jupiter.api.Test
 import org.slf4j.MDC
 import org.springframework.http.HttpStatus
 import org.springframework.web.server.ResponseStatusException
-import java.util.*
+import java.util.UUID
+
 
 /**
  * Test [RestResponseExceptionHandler] to make sure the [ResponseStatusException] is correctly transformed to [ErrorResponse].

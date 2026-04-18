@@ -25,7 +25,8 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
 import org.springframework.context.support.ReloadableResourceBundleMessageSource
 import org.springframework.data.redis.core.RedisTemplate
-import java.util.*
+import java.util.Locale
+
 
 /**
  * A [Configuration] class holding all required [Bean]s for the [MessageQueueApplication] to run.

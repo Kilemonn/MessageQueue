@@ -3,7 +3,8 @@ package au.kilemon.messagequeue.message
 import com.fasterxml.jackson.annotation.JsonIgnore
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
-import java.util.*
+import java.util.UUID
+
 
 /**
  * This is used for `No-SQL` queues.

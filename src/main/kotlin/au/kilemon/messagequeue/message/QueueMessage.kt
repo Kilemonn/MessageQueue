@@ -12,7 +12,8 @@ import jakarta.persistence.Table
 import jakarta.persistence.Transient
 import org.springframework.util.SerializationUtils
 import java.io.Serializable
-import java.util.*
+import java.util.UUID
+
 
 /**
  * A base [QueueMessage] object which will wrap any object that is placed into the `MultiQueue`.

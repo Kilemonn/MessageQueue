@@ -5,7 +5,8 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.mongodb.repository.Aggregation
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.transaction.annotation.Transactional
-import java.util.*
+import java.util.Optional
+
 
 /**
  * A [MongoRepository] specific for [QueueMessageDocument] and queries made against them.

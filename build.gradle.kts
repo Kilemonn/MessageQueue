@@ -1,12 +1,12 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val springVersion = "3.5.11"
-val springDocVersion = "2.8.15"
+val springVersion = "4.0.5"
+val springDocVersion = "3.0.3"
 val testContainersVersion = "2.0.3"
 
 plugins {
-    id("org.springframework.boot") version "3.5.11"
+    id("org.springframework.boot") version "4.0.5"
     id("io.spring.dependency-management") version "1.1.7"
     kotlin("jvm") version "2.3.10"
     kotlin("plugin.spring") version "2.3.10"
@@ -73,6 +73,10 @@ dependencies {
     testImplementation("com.github.Kilemonn:mock-all:0.1.5")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springVersion}")
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test:${springVersion}")
+    testImplementation("org.springframework.boot:spring-boot-test-autoconfigure:${springVersion}")
+    testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test:${springVersion}")
+    testImplementation("org.springframework.boot:spring-boot-starter-data-mongodb-test:${springVersion}")
     // Required to mock MultiQueue objects since they apparently override a final 'remove(Object)' method.
     // https://mvnrepository.com/artifact/org.mockito/mockito-core
     testImplementation("org.mockito:mockito-core:5.18.0")

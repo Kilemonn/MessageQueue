@@ -8,7 +8,8 @@ import org.slf4j.MDC
 import org.springframework.mock.web.MockFilterChain
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
-import java.util.*
+import java.util.UUID
+
 
 /**
  * Test [CorrelationIdFilter] to make sure the [CorrelationIdFilter.CORRELATION_ID] is set correctly.

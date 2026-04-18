@@ -27,7 +27,8 @@ import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.servlet.HandlerExceptionResolver
 import org.springframework.web.servlet.handler.HandlerExceptionResolverComposite
-import java.util.*
+import java.util.Optional
+
 
 /**
  * A test class for the [JwtAuthenticationFilter].

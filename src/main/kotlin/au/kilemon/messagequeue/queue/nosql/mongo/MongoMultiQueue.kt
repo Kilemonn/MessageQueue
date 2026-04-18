@@ -9,7 +9,9 @@ import au.kilemon.messagequeue.queue.nosql.mongo.repository.MongoQueueMessageRep
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
-import java.util.*
+import java.util.Optional
+import java.util.Queue
+
 import java.util.concurrent.ConcurrentLinkedQueue
 
 /**

@@ -3,7 +3,8 @@ package au.kilemon.messagequeue.message
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.springframework.util.SerializationUtils
-import java.util.*
+import java.util.UUID
+
 
 /**
  * A test class for the [QueueMessage].
