@@ -81,9 +81,6 @@ dependencies {
     // https://mvnrepository.com/artifact/org.mockito/mockito-core
     testImplementation("org.mockito:mockito-core:5.18.0")
 
-    // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.13.1")
-
     testImplementation("org.testcontainers:testcontainers:${testContainersVersion}")
     // Update and align version with ${testContainersVersion}
     testImplementation("org.testcontainers:junit-jupiter:1.21.4")

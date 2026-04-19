@@ -1,20 +1,22 @@
 package au.kilemon.messagequeue.authentication.authenticator.nosql.mongo
 
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticatorTest
-import au.kilemon.messagequeue.authentication.authenticator.nosql.mongo.MongoMultiAuthenticatorTest.Companion.MONGO_CONTAINER
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.queue.MultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
+import com.mongodb.client.MongoClient
+import com.mongodb.client.MongoClients
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.boot.data.mongodb.test.autoconfigure.DataMongoTest
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
+import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.test.util.TestPropertyValues
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.junit.jupiter.SpringExtension
@@ -32,14 +34,12 @@ import org.testcontainers.utility.DockerImageName
 @Testcontainers
 @DataMongoTest(properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=MONGO"])
 @ContextConfiguration(initializers = [MongoMultiAuthenticatorTest.Initializer::class])
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class] )
+@Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class, MongoMultiAuthenticatorTest.MongoTestConfig::class] )
 class MongoMultiAuthenticatorTest: MultiQueueAuthenticatorTest()
 {
     companion object
     {
         lateinit var mongoDb: GenericContainer<*>
-
         private const val MONGO_CONTAINER = "mongo:7.0.0"
         private const val MONGO_PORT = 27017
 
@@ -50,7 +50,23 @@ class MongoMultiAuthenticatorTest: MultiQueueAuthenticatorTest()
         @JvmStatic
         fun afterClass()
         {
-            mongoDb.stop()
+            if (::mongoDb.isInitialized)
+            {
+                mongoDb.stop()
+            }
+        }
+    }
+
+    @TestConfiguration
+    open class MongoTestConfig
+    {
+        @Bean
+        open fun mongoClient(): MongoClient
+        {
+            val host = mongoDb.host
+            val port = mongoDb.getMappedPort(MONGO_PORT)
+            val endpoint = "mongodb://root:password@$host:$port/MultiQueue?authSource=admin"
+            return MongoClients.create(endpoint)
         }
     }
 
@@ -61,18 +77,6 @@ class MongoMultiAuthenticatorTest: MultiQueueAuthenticatorTest()
      */
     internal class Initializer : ApplicationContextInitializer<ConfigurableApplicationContext>
     {
-        /**
-         * Force start the container, so we can place its host and dynamic ports into the system properties.
-         *
-         * Set the environment variables before any of the beans are initialised.
-         *
-         * The following properties can also be used:
-         * - "spring.data.mongodb.host=${mongoDb.host}"
-         * - "spring.data.mongodb.database=$databaseName"
-         * - "spring.data.mongodb.username=$username"
-         * - "spring.data.mongodb.password=$password"
-         * - "spring.data.mongodb.port=${mongoDb.getMappedPort(MONGO_PORT)}"
-         */
         override fun initialize(configurableApplicationContext: ConfigurableApplicationContext)
         {
             val password = "password"
@@ -85,9 +89,11 @@ class MongoMultiAuthenticatorTest: MultiQueueAuthenticatorTest()
                 .withExposedPorts(MONGO_PORT).withReuse(false).withEnv(envMap)
             mongoDb.start()
 
+            val host = mongoDb.host
+            val port = mongoDb.getMappedPort(MONGO_PORT)
             val databaseName = "MultiQueue"
             // mongodb://<username>:<password>@<host>:<port>/<database>
-            val endpoint = "mongodb://$username:$password@${mongoDb.host}:${mongoDb.getMappedPort(MONGO_PORT)}/$databaseName?authSource=admin"
+            val endpoint = "mongodb://$username:$password@$host:$port/$databaseName?authSource=admin"
 
             TestPropertyValues.of(
                 "spring.data.mongodb.uri=$endpoint"
