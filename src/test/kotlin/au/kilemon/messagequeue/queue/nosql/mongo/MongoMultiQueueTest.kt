@@ -1,22 +1,19 @@
 package au.kilemon.messagequeue.queue.nosql.mongo
 
 import au.kilemon.messagequeue.configuration.QueueConfiguration
+import au.kilemon.messagequeue.configuration.nosql.mongo.MongoConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.queue.MultiQueueTest
 import au.kilemon.messagequeue.queue.nosql.mongo.MongoMultiQueueTest.Companion.MONGO_CONTAINER
 import au.kilemon.messagequeue.settings.MessageQueueSettings
-import com.mongodb.client.MongoClient
-import com.mongodb.client.MongoClients
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.boot.data.mongodb.test.autoconfigure.DataMongoTest
-import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.test.util.TestPropertyValues
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.junit.jupiter.SpringExtension
@@ -33,7 +30,7 @@ import org.testcontainers.utility.DockerImageName
 @Testcontainers
 @DataMongoTest(properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=MONGO"])
 @ContextConfiguration(initializers = [MongoMultiQueueTest.Initializer::class])
-@Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class, MongoMultiQueueTest.MongoTestConfig::class] )
+@Import( *[QueueConfiguration::class, LoggingConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class, MongoConfiguration::class])
 class MongoMultiQueueTest: MultiQueueTest()
 {
     companion object
@@ -54,19 +51,6 @@ class MongoMultiQueueTest: MultiQueueTest()
             {
                 mongoDb.stop()
             }
-        }
-    }
-
-    @TestConfiguration
-    open class MongoTestConfig
-    {
-        @Bean
-        open fun mongoClient(): MongoClient
-        {
-            val host = mongoDb.host
-            val port = mongoDb.getMappedPort(MONGO_PORT)
-            val endpoint = "mongodb://root:password@$host:$port/MultiQueue?authSource=admin"
-            return MongoClients.create(endpoint)
         }
     }
 
