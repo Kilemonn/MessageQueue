@@ -21,7 +21,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
-import java.util.*
+
 
 /**
  * A test class for the [RedisMultiQueue] `Component` class running in the Sentinel mode.

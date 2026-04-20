@@ -20,7 +20,8 @@ import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import org.springframework.web.servlet.HandlerExceptionResolver
-import java.util.*
+import java.util.Optional
+
 
 /**
  * A filter responsible for verifying provided Jwt tokens when sub-queues are being accessed.

@@ -24,8 +24,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
@@ -34,9 +34,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.MvcResult
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
-import java.util.*
+import java.util.UUID
 
 /**
  * A test class for the [MessageQueueController].
@@ -107,7 +107,7 @@ class MessageQueueControllerTest
 
         val subQueue = "testGetSubQueueInfo"
         Assertions.assertEquals(0, multiQueue.getSubQueue(subQueue).size)
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE + "/" + subQueue)
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE + "/" + subQueue)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.content().json("0"))
@@ -116,7 +116,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertEquals(1, multiQueue.getSubQueue(subQueue).size)
 
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE + "/" + subQueue)
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE + "/" + subQueue)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.content().json("1"))
@@ -131,7 +131,7 @@ class MessageQueueControllerTest
     {
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE)
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.content().json("0"))
@@ -146,7 +146,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(1, multiQueue.getSubQueue(message2.subQueue).size)
         Assertions.assertEquals(2, multiQueue.size)
 
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE)
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.content().json("2"))
@@ -165,7 +165,7 @@ class MessageQueueControllerTest
 
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
@@ -192,7 +192,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val uuid = "invalid-not-found-uuid"
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid)
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
     }
@@ -217,12 +217,12 @@ class MessageQueueControllerTest
         Assertions.assertTrue(authenticator.isRestricted(subQueue1))
 
         // Make sure we cannot access without a token
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message1.uuid)
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message1.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isForbidden)
 
         // Checking entry is retrieve with provided token
-        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message1.uuid)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message1.uuid)
             .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER,  "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${subQueue1Token.get()}")
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -241,7 +241,7 @@ class MessageQueueControllerTest
         Assertions.assertFalse(authenticator.isRestricted(subQueue2))
 
         // Check un-restricted entry is still accessible without a token
-        val mvcResult2: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message2.uuid)
+        val mvcResult2: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message2.uuid)
             .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER,  "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${subQueue1Token.get()}")
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -267,7 +267,7 @@ class MessageQueueControllerTest
 
         val message = createQueueMessage(subQueue = "testCreateQueueEntry_withProvidedDefaults", assignedTo = "user-1")
 
-        val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .content(gson.toJson(message)))
             .andExpect(MockMvcResultMatchers.status().isCreated)
@@ -298,7 +298,7 @@ class MessageQueueControllerTest
 
         val message = createQueueMessage(subQueue = "testCreateQueueEntry_withOutDefaults")
 
-        val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .content(gson.toJson(message)))
             .andExpect(MockMvcResultMatchers.status().isCreated)
@@ -331,7 +331,7 @@ class MessageQueueControllerTest
 
         Assertions.assertTrue(multiQueue.add(message))
 
-        mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+        mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .content(gson.toJson(message)))
             .andExpect(MockMvcResultMatchers.status().isConflict)
@@ -349,7 +349,7 @@ class MessageQueueControllerTest
         val message = createQueueMessage(subQueue = "testCreateQueueEntry_withAssignedButNoAssignedTo")
         message.assignedTo = " "
 
-        val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .content(gson.toJson(message)))
             .andExpect(MockMvcResultMatchers.status().isCreated)
@@ -377,12 +377,12 @@ class MessageQueueControllerTest
         val token = jwtTokenProvider.createTokenForSubQueue(message.subQueue)
         Assertions.assertTrue(token.isPresent)
 
-        mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+        mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .content(gson.toJson(message)))
             .andExpect(MockMvcResultMatchers.status().isForbidden)
 
-        mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+        mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .content(gson.toJson(message)))
@@ -391,7 +391,7 @@ class MessageQueueControllerTest
         val message2 = createQueueMessage(subQueue = "testCreateEntry_inHybridMode2")
         Assertions.assertFalse(authenticator.isRestricted(message2.subQueue))
 
-        mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+        mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .content(gson.toJson(message2)))
             .andExpect(MockMvcResultMatchers.status().isCreated)
@@ -408,7 +408,7 @@ class MessageQueueControllerTest
 
         val entries = initialiseMapWithEntries()
 
-        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
@@ -437,7 +437,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.remove(entries.first[0]))
         Assertions.assertTrue(multiQueue.remove(entries.first[1]))
 
-        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.INCLUDE_EMPTY, "false"))
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -469,7 +469,7 @@ class MessageQueueControllerTest
         val subQueue = entries.first[0].subQueue
         val detailed = true
 
-        val mvcResult: MvcResult = mockMvc.perform(get("${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}/${MessageQueueController.ENDPOINT_ALL}?${RestParameters.DETAILED}=$detailed")
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get("${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}/${MessageQueueController.ENDPOINT_ALL}?${RestParameters.DETAILED}=$detailed")
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
@@ -501,7 +501,7 @@ class MessageQueueControllerTest
 
         val entries = initialiseMapWithEntries()
         val subQueue = entries.first[0].subQueue
-        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.SUB_QUEUE, subQueue))
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -545,7 +545,7 @@ class MessageQueueControllerTest
         val detailed = true
 
         // Ensure the message in the restricted sub-queue are not returned
-        var mvcResult: MvcResult = mockMvc.perform(get("${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}/${MessageQueueController.ENDPOINT_ALL}?${RestParameters.DETAILED}=$detailed")
+        var mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get("${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}/${MessageQueueController.ENDPOINT_ALL}?${RestParameters.DETAILED}=$detailed")
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
@@ -559,7 +559,7 @@ class MessageQueueControllerTest
         Assertions.assertNull(keys[subQueue])
 
         // After providing the token we should see the messages for the restricted queue
-        mvcResult = mockMvc.perform(get("${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}/${MessageQueueController.ENDPOINT_ALL}?${RestParameters.DETAILED}=$detailed")
+        mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("${MessageQueueController.MESSAGE_QUEUE_BASE_PATH}/${MessageQueueController.ENDPOINT_ALL}?${RestParameters.DETAILED}=$detailed")
             .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -590,7 +590,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(authenticator.addRestrictedEntry(subQueue))
         Assertions.assertTrue(authenticator.isRestricted(subQueue))
 
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL)
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.SUB_QUEUE, subQueue))
             .andExpect(MockMvcResultMatchers.status().isForbidden)
@@ -598,7 +598,7 @@ class MessageQueueControllerTest
         val token = jwtTokenProvider.createTokenForSubQueue(subQueue)
         Assertions.assertTrue(token.isPresent)
 
-        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL)
             .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.SUB_QUEUE, subQueue))
@@ -627,7 +627,7 @@ class MessageQueueControllerTest
         val entries = initialiseMapWithEntries()
         val assignedTo = "my-assigned-to-identifier"
 
-        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, assignedTo)
             .param(RestParameters.SUB_QUEUE, entries.first[0].subQueue))
@@ -655,7 +655,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.add(message1))
         Assertions.assertTrue(multiQueue.add(message2))
 
-        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, assignedTo)
             .param(RestParameters.SUB_QUEUE, subQueue))
@@ -692,7 +692,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(authenticator.addRestrictedEntry(subQueue))
         Assertions.assertTrue(authenticator.isRestricted(subQueue))
 
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, assignedTo)
             .param(RestParameters.SUB_QUEUE, subQueue))
@@ -701,7 +701,7 @@ class MessageQueueControllerTest
         val token = jwtTokenProvider.createTokenForSubQueue(subQueue)
         Assertions.assertTrue(token.isPresent)
 
-        val mvcResult: MvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED)
             .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, assignedTo)
@@ -729,7 +729,7 @@ class MessageQueueControllerTest
 
         val uuid = UUID.randomUUID().toString()
         val assignedTo = "assigned"
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid + MessageQueueController.ENDPOINT_ASSIGN)
+        mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid + MessageQueueController.ENDPOINT_ASSIGN)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, assignedTo))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
@@ -749,7 +749,7 @@ class MessageQueueControllerTest
         Assertions.assertNull(message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_ASSIGN)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_ASSIGN)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, assignedTo))
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -782,7 +782,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(authenticator.addRestrictedEntry(message.subQueue))
         Assertions.assertTrue(authenticator.isRestricted(message.subQueue))
 
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_ASSIGN)
+        mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_ASSIGN)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, assignedTo))
             .andExpect(MockMvcResultMatchers.status().isForbidden)
@@ -790,7 +790,7 @@ class MessageQueueControllerTest
         val token = jwtTokenProvider.createTokenForSubQueue(message.subQueue)
         Assertions.assertTrue(token.isPresent)
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_ASSIGN)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_ASSIGN)
             .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, assignedTo))
@@ -822,7 +822,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_ASSIGN)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_ASSIGN)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, assignedTo))
             .andExpect(MockMvcResultMatchers.status().isAccepted)
@@ -858,7 +858,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(message.uuid, assignedMessage.uuid)
 
         val wrongAssignee = "wrong-assignee"
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_ASSIGN)
+        mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_ASSIGN)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, wrongAssignee))
             .andExpect(MockMvcResultMatchers.status().isConflict)
@@ -880,7 +880,7 @@ class MessageQueueControllerTest
 
         val assignedTo = "assignee"
         val subQueue = "testGetNext_noNewMessages"
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
+        mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.SUB_QUEUE, subQueue)
             .param(RestParameters.ASSIGNED_TO, assignedTo))
@@ -908,7 +908,7 @@ class MessageQueueControllerTest
 
         Assertions.assertFalse(multiQueue.getSubQueue(subQueue).isEmpty())
 
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
+        mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.SUB_QUEUE, subQueue)
             .param(RestParameters.ASSIGNED_TO, assignedTo))
@@ -936,7 +936,7 @@ class MessageQueueControllerTest
         Assertions.assertNull(storedMessage2.assignedTo)
         Assertions.assertEquals(message2.uuid, storedMessage2.uuid)
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.SUB_QUEUE, subQueue)
             .param(RestParameters.ASSIGNED_TO, assignedTo))
@@ -977,7 +977,7 @@ class MessageQueueControllerTest
         Assertions.assertNull(storedMessage2.assignedTo)
         Assertions.assertEquals(message2.uuid, storedMessage2.uuid)
 
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
+        mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.SUB_QUEUE, subQueue)
             .param(RestParameters.ASSIGNED_TO, assignedTo))
@@ -986,7 +986,7 @@ class MessageQueueControllerTest
         val token = jwtTokenProvider.createTokenForSubQueue(subQueue)
         Assertions.assertTrue(token.isPresent)
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT)
             .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.SUB_QUEUE, subQueue)
@@ -1013,7 +1013,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val uuid = UUID.randomUUID().toString()
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid + MessageQueueController.ENDPOINT_RELEASE)
+        mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid + MessageQueueController.ENDPOINT_RELEASE)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
     }
@@ -1033,7 +1033,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_RELEASE)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_RELEASE)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, assignedTo))
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -1067,7 +1067,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(authenticator.addRestrictedEntry(message.subQueue))
         Assertions.assertTrue(authenticator.isRestricted(message.subQueue))
 
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_RELEASE)
+        mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_RELEASE)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, assignedTo))
             .andExpect(MockMvcResultMatchers.status().isForbidden)
@@ -1076,7 +1076,7 @@ class MessageQueueControllerTest
         val token = jwtTokenProvider.createTokenForSubQueue(message.subQueue)
         Assertions.assertTrue(token.isPresent)
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_RELEASE)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_RELEASE)
             .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, assignedTo))
@@ -1107,7 +1107,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_RELEASE)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_RELEASE)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
@@ -1134,7 +1134,7 @@ class MessageQueueControllerTest
         Assertions.assertNull(message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
-        val mvcResult: MvcResult = mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_RELEASE)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_RELEASE)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isAccepted)
             .andReturn()
@@ -1166,7 +1166,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.add(message))
 
         val wrongAssignedTo = "wrong-assigned"
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_RELEASE)
+        mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid + MessageQueueController.ENDPOINT_RELEASE)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, wrongAssignedTo))
             .andExpect(MockMvcResultMatchers.status().isConflict)
@@ -1186,7 +1186,7 @@ class MessageQueueControllerTest
 
         val uuid = UUID.randomUUID().toString()
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid)
+        mockMvc.perform(MockMvcRequestBuilders.delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
     }
@@ -1204,7 +1204,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.containsUUID(message.uuid).isPresent)
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+        mockMvc.perform(MockMvcRequestBuilders.delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
 
@@ -1229,14 +1229,14 @@ class MessageQueueControllerTest
         Assertions.assertTrue(authenticator.addRestrictedEntry(message.subQueue))
         Assertions.assertTrue(authenticator.isRestricted(message.subQueue))
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+        mockMvc.perform(MockMvcRequestBuilders.delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isForbidden)
 
         val token = jwtTokenProvider.createTokenForSubQueue(message.subQueue)
         Assertions.assertTrue(token.isPresent)
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+        mockMvc.perform(MockMvcRequestBuilders.delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
             .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -1257,7 +1257,7 @@ class MessageQueueControllerTest
         val uuid = UUID.randomUUID().toString()
         Assertions.assertFalse(multiQueue.containsUUID(uuid).isPresent)
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid)
+        mockMvc.perform(MockMvcRequestBuilders.delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
 
@@ -1278,7 +1278,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.add(message))
 
         val wrongAssignedTo = "wrong-assignee"
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+        mockMvc.perform(MockMvcRequestBuilders.delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, wrongAssignedTo))
             .andExpect(MockMvcResultMatchers.status().isForbidden)
@@ -1309,7 +1309,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.add(message2))
         Assertions.assertTrue(multiQueue.add(message3))
 
-        val mvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNERS)
+        val mvcResult = mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNERS)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.SUB_QUEUE, subQueue))
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -1353,7 +1353,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.add(message2))
         Assertions.assertTrue(multiQueue.add(message3))
 
-        val mvcResult = mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNERS)
+        val mvcResult = mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNERS)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
@@ -1383,7 +1383,7 @@ class MessageQueueControllerTest
     {
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_HEALTH_CHECK)
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_HEALTH_CHECK)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andReturn()
@@ -1400,7 +1400,7 @@ class MessageQueueControllerTest
 
         val message = createQueueMessage(subQueue = "testCorrelationId_providedId")
 
-        val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .content(gson.toJson(message)))
             .andExpect(MockMvcResultMatchers.status().isCreated)
@@ -1422,7 +1422,7 @@ class MessageQueueControllerTest
         val message = createQueueMessage(subQueue = "testCorrelationId_providedId")
         val correlationId = "my-correlation-id-123456"
 
-        val mvcResult: MvcResult = mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .header(CorrelationIdFilter.CORRELATION_ID_HEADER, correlationId)
             .content(gson.toJson(message)))
@@ -1448,7 +1448,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.add(message))
 
         val wrongAssignedTo = "wrong-assignee"
-        val mvcResult: MvcResult = mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+        val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.ASSIGNED_TO, wrongAssignedTo))
             .andExpect(MockMvcResultMatchers.status().isForbidden)
@@ -1490,7 +1490,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(multiQueue.keys().contains(subQueue1))
         Assertions.assertTrue(multiQueue.keys().contains(subQueue2))
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+        mockMvc.perform(MockMvcRequestBuilders.delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.SUB_QUEUE, subQueue1))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
@@ -1528,7 +1528,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(authenticator.addRestrictedEntry(subQueue2))
         Assertions.assertTrue(authenticator.isRestricted(subQueue2))
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+        mockMvc.perform(MockMvcRequestBuilders.delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.SUB_QUEUE, subQueue1))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
@@ -1537,7 +1537,7 @@ class MessageQueueControllerTest
         Assertions.assertFalse(multiQueue.keys().contains(subQueue1))
         Assertions.assertTrue(multiQueue.keys().contains(subQueue2))
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+        mockMvc.perform(MockMvcRequestBuilders.delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.SUB_QUEUE, subQueue2))
             .andExpect(MockMvcResultMatchers.status().isForbidden)
@@ -1545,7 +1545,7 @@ class MessageQueueControllerTest
         val token = jwtTokenProvider.createTokenForSubQueue(subQueue2)
         Assertions.assertTrue(token.isPresent)
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+        mockMvc.perform(MockMvcRequestBuilders.delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
             .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .param(RestParameters.SUB_QUEUE, subQueue2))
@@ -1569,7 +1569,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(messages.size, multiQueue.size)
         subQueues.forEach { subQueue -> Assertions.assertTrue(multiQueue.keys().contains(subQueue)) }
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+        mockMvc.perform(MockMvcRequestBuilders.delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
 
@@ -1594,7 +1594,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(authenticator.addRestrictedEntry(subQueues[0]))
         Assertions.assertTrue(authenticator.isRestricted(subQueues[0]))
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+        mockMvc.perform(MockMvcRequestBuilders.delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isPartialContent)
 
@@ -1605,7 +1605,7 @@ class MessageQueueControllerTest
         val token = jwtTokenProvider.createTokenForSubQueue(subQueues[0])
         Assertions.assertTrue(token.isPresent)
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
+        mockMvc.perform(MockMvcRequestBuilders.delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_KEYS)
             .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isNoContent)
@@ -1627,7 +1627,7 @@ class MessageQueueControllerTest
 
         Mockito.doThrow(RuntimeException("Failed to perform health check.")).`when`(multiQueue).performHealthCheckInternal()
 
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_HEALTH_CHECK)
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_HEALTH_CHECK)
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isInternalServerError)
             .andReturn()
@@ -1647,7 +1647,7 @@ class MessageQueueControllerTest
 
         Mockito.doReturn(false).`when`(multiQueue).add(message)
 
-        mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+        mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
                 .contentType(MediaType.APPLICATION_JSON_VALUE)
                 .content(gson.toJson(message)))
             .andExpect(MockMvcResultMatchers.status().isInternalServerError)
@@ -1663,37 +1663,37 @@ class MessageQueueControllerTest
         Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(authenticator).getRestrictionMode()
         Assertions.assertEquals(RestrictionMode.RESTRICTED, authenticator.getRestrictionMode())
 
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + UUID.randomUUID().toString())
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + UUID.randomUUID().toString())
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isUnauthorized)
 
-        mockMvc.perform(delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + UUID.randomUUID().toString())
+        mockMvc.perform(MockMvcRequestBuilders.delete(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + UUID.randomUUID().toString())
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isUnauthorized)
 
         val message = QueueMessage("", "testRestrictedModeMakesAllEndpointsInaccessible")
-        mockMvc.perform(post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
+        mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .content(gson.toJson(message))
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isUnauthorized)
 
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + UUID.randomUUID().toString() + MessageQueueController.ENDPOINT_RELEASE)
+        mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + MessageQueueController.ENDPOINT_ENTRY + "/" + UUID.randomUUID().toString() + MessageQueueController.ENDPOINT_RELEASE)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isUnauthorized)
 
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + UUID.randomUUID().toString() + MessageQueueController.ENDPOINT_ASSIGN)
+        mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + UUID.randomUUID().toString() + MessageQueueController.ENDPOINT_ASSIGN)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isUnauthorized)
 
-        mockMvc.perform(put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT + "?" + RestParameters.SUB_QUEUE +"=someType&" + RestParameters.ASSIGNED_TO + "=me")
+        mockMvc.perform(MockMvcRequestBuilders.put(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_NEXT + "?" + RestParameters.SUB_QUEUE +"=someType&" + RestParameters.ASSIGNED_TO + "=me")
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isUnauthorized)
 
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL)
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ALL)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isUnauthorized)
 
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED + "?" + RestParameters.SUB_QUEUE +"=someType&" + RestParameters.ASSIGNED_TO + "=me")
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_OWNED + "?" + RestParameters.SUB_QUEUE +"=someType&" + RestParameters.ASSIGNED_TO + "=me")
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isUnauthorized)
     }
@@ -1713,14 +1713,14 @@ class MessageQueueControllerTest
 
         Assertions.assertTrue(multiQueue.add(message))
 
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isUnauthorized)
 
         val token = jwtTokenProvider.createTokenForSubQueue(subQueue)
         Assertions.assertTrue(token.isPresent)
 
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
             .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isUnauthorized)
@@ -1728,7 +1728,7 @@ class MessageQueueControllerTest
         Assertions.assertTrue(authenticator.addRestrictedEntry(subQueue))
         Assertions.assertTrue(authenticator.isRestricted(subQueue))
 
-        mockMvc.perform(get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
+        mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
             .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
             .contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(MockMvcResultMatchers.status().isOk)

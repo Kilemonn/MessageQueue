@@ -15,7 +15,9 @@ import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import java.security.SecureRandom
-import java.util.*
+import java.util.Date
+import java.util.Optional
+
 
 /**
  * A class to handle Jwt token creation and verification.

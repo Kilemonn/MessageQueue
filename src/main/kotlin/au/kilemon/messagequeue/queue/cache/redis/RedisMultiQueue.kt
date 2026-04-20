@@ -8,7 +8,9 @@ import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.slf4j.Logger
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ScanOptions
-import java.util.*
+import java.util.Optional
+import java.util.Queue
+
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.stream.Collectors
 import kotlin.collections.HashSet

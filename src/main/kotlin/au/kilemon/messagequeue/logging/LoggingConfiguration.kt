@@ -4,7 +4,8 @@ import org.slf4j.Logger
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.support.ReloadableResourceBundleMessageSource
-import java.util.*
+import java.util.Locale
+
 
 /**
  * A [Configuration] class to logging specific [Bean] initialisation such as for the [ReloadableResourceBundleMessageSource].

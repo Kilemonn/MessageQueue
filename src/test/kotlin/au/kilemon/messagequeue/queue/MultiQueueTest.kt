@@ -20,12 +20,13 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Lazy
 import java.io.Serializable
-import java.util.*
+import java.util.Optional
+import java.util.UUID
+
 import java.util.function.Supplier
 import java.util.stream.Stream
 
@@ -49,7 +50,7 @@ abstract class MultiQueueTest
     {
         /**
          * The bean initialise here will have all its properties overridden by environment variables.
-         * Don't set them here, set them in the [WebMvcTest.properties].
+         * Don't set them here, set them in the [org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest.properties].
          */
         @Bean
         @Lazy

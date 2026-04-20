@@ -2,7 +2,8 @@ package au.kilemon.messagequeue.authentication.authenticator.nosql.mongo
 
 import au.kilemon.messagequeue.authentication.AuthenticationMatrixDocument
 import org.springframework.data.mongodb.repository.MongoRepository
-import java.util.*
+import java.util.Optional
+
 
 /**
  * A [MongoRepository] for [AuthenticationMatrixDocument] which stores which sub-queues are under restricted access.

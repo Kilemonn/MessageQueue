@@ -1,12 +1,12 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val springVersion = "3.5.11"
-val springDocVersion = "2.8.15"
+val springVersion = "4.0.5"
+val springDocVersion = "3.0.3"
 val testContainersVersion = "2.0.3"
 
 plugins {
-    id("org.springframework.boot") version "3.5.11"
+    id("org.springframework.boot") version "4.0.5"
     id("io.spring.dependency-management") version "1.1.7"
     kotlin("jvm") version "2.3.10"
     kotlin("plugin.spring") version "2.3.10"
@@ -15,7 +15,7 @@ plugins {
 
 group = "au.kilemon"
 // Make sure version matches version defined in MessageQueueApplication
-version = "0.4.2"
+version = "0.4.3"
 java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
@@ -50,7 +50,7 @@ dependencies {
     // https://mvnrepository.com/artifact/org.postgresql/postgresql
     implementation("org.postgresql:postgresql:42.7.8")
     // https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc
-    implementation("com.microsoft.sqlserver:mssql-jdbc:12.10.2.jre11")
+    implementation("com.microsoft.sqlserver:mssql-jdbc:13.2.1.jre11")
     // https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc
     implementation("org.xerial:sqlite-jdbc:3.50.1.0")
 
@@ -73,12 +73,13 @@ dependencies {
     testImplementation("com.github.Kilemonn:mock-all:0.1.5")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test:${springVersion}")
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test:${springVersion}")
+    testImplementation("org.springframework.boot:spring-boot-test-autoconfigure:${springVersion}")
+    testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test:${springVersion}")
+    testImplementation("org.springframework.boot:spring-boot-starter-data-mongodb-test:${springVersion}")
     // Required to mock MultiQueue objects since they apparently override a final 'remove(Object)' method.
     // https://mvnrepository.com/artifact/org.mockito/mockito-core
     testImplementation("org.mockito:mockito-core:5.18.0")
-
-    // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.13.1")
 
     testImplementation("org.testcontainers:testcontainers:${testContainersVersion}")
     // Update and align version with ${testContainersVersion}

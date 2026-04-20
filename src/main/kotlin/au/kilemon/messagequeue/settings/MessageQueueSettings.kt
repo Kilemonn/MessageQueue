@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.settings
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
 import io.swagger.v3.oas.annotations.media.Schema
@@ -272,12 +273,11 @@ class MessageQueueSettings
      * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
      * It specifies the password for the user that you wish to connect with.
      */
-    // TODO: Commenting out since it is unused and returned in the settings endpoint without masking
-    // @JsonIgnore
-    // @SerializedName(MONGO_PASSWORD)
-    // @JsonProperty(MONGO_PASSWORD)
-    // @Value("\${MONGO_PASSWORD:}")
-    // lateinit var mongoPassword: String
+     @JsonIgnore
+//     @SerializedName(MONGO_PASSWORD)
+//     @JsonProperty(MONGO_PASSWORD)
+     @Value("\${$MONGO_PASSWORD:}")
+     lateinit var mongoPassword: String
 
     /**
      * Required when [StorageMedium.MONGO] is used and the above mongo properties are empty.
