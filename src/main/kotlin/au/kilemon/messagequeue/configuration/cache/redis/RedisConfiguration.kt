@@ -4,12 +4,16 @@ import au.kilemon.messagequeue.authentication.AuthenticationMatrix
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.settings.MessageQueueSettings
+import au.kilemon.messagequeue.settings.MessageQueueSettings.Companion.REDIS_USERNAME
+import io.lettuce.core.RedisURI
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.data.redis.connection.RedisClusterConfiguration
 import org.springframework.data.redis.connection.RedisConnectionFactory
+import org.springframework.data.redis.connection.RedisNode
 import org.springframework.data.redis.connection.RedisSentinelConfiguration
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
@@ -134,7 +138,7 @@ class RedisConfiguration: HasLogger
      */
     fun getStandAloneConfiguration(): RedisStandaloneConfiguration
     {
-        LOG.info("Initialising redis configuration with the following configuration: Endpoint [{}], prefix [{}].",
+        LOG.info("Initialising redis standalone configuration with the following configuration: Endpoint [{}], prefix [{}].",
             messageQueueSettings.redisEndpoint, messageQueueSettings.redisPrefix)
         val redisConfiguration = RedisStandaloneConfiguration()
         val redisEndpoints = stringToInetSocketAddresses(messageQueueSettings.redisEndpoint, REDIS_DEFAULT_PORT)
@@ -151,6 +155,44 @@ class RedisConfiguration: HasLogger
         redisConfiguration.hostName = redisEndpoints[0].hostName
         redisConfiguration.port = redisEndpoints[0].port
         return redisConfiguration
+    }
+
+    fun getClusterConfiguration(): RedisClusterConfiguration
+    {
+        LOG.info("Initialising redis cluster configuration with the following configuration: Endpoint [{}], prefix [{}].",
+            messageQueueSettings.redisEndpoint, messageQueueSettings.redisPrefix)
+
+        val configuration = RedisClusterConfiguration()
+        val nodes = endpointToNodes(messageQueueSettings.redisEndpoint)
+        configuration.setClusterNodes(nodes)
+
+        return configuration
+    }
+
+    fun endpointToNodes(endpoints: String): List<RedisNode>
+    {
+        val nodes = ArrayList<RedisNode>()
+        var endpointString = endpoints
+
+        if (endpointString.startsWith(RedisURI.URI_SCHEME_REDIS + "s://"))
+        {
+            endpointString = endpointString.removePrefix(RedisURI.URI_SCHEME_REDIS + "s://")
+        }
+        else if (endpointString.startsWith(RedisURI.URI_SCHEME_REDIS + "://"))
+        {
+            endpointString = endpointString.removePrefix(RedisURI.URI_SCHEME_REDIS + "://")
+        }
+
+        val split = endpointString.split(",")
+        for (endpoint in split)
+        {
+            if (endpoint.isNotBlank())
+            {
+                nodes.add(RedisNode.fromString(endpoint, RedisNode.DEFAULT_PORT))
+            }
+        }
+
+        return nodes
     }
 
     /**

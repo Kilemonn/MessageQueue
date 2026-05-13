@@ -39,6 +39,8 @@ class MessageQueueSettings
         const val REDIS_PREFIX: String = "$MESSAGE_QUEUE.$REDIS.prefix"
         const val REDIS_ENDPOINT: String = "$MESSAGE_QUEUE.$REDIS.endpoint"
         const val REDIS_ENDPOINT_DEFAULT: String = "127.0.0.1"
+        const val REDIS_USERNAME: String = "$MESSAGE_QUEUE.$REDIS.username"
+        const val REDIS_PASSWORD: String = "$MESSAGE_QUEUE.$REDIS.password"
 
         // Redis sentinel related properties
         const val REDIS_USE_SENTINELS: String = "$MESSAGE_QUEUE.$REDIS.sentinel"
