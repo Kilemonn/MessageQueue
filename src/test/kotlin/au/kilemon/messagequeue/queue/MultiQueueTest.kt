@@ -7,8 +7,6 @@ import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.exception.IllegalSubQueueIdentifierException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
-import au.kilemon.messagequeue.queue.nosql.mongo.MongoMultiQueue
-import au.kilemon.messagequeue.queue.sql.SqlMultiQueue
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
 import au.kilemon.messagequeue.settings.MessageQueueSettings
@@ -26,7 +24,6 @@ import org.springframework.context.annotation.Lazy
 import java.io.Serializable
 import java.util.Optional
 import java.util.UUID
-
 import java.util.function.Supplier
 import java.util.stream.Stream
 
@@ -243,87 +240,6 @@ abstract class MultiQueueTest
     }
 
     /**
-     * Ensuring that only the [InMemoryMultiQueue] will auto increment the index as its retrieved but others will not
-     * and [SqlMultiQueue] will always return [Optional.empty].
-     */
-    @Test
-    fun testGetNextQueueIndex_doesNotIncrement()
-    {
-        val subQueue = "testGetNextQueueIndex_doesNotIncrement"
-        if (multiQueue is SqlMultiQueue)
-        {
-            Assertions.assertTrue(multiQueue.getNextSubQueueIndex(subQueue).isEmpty)
-        }
-        else if (multiQueue is InMemoryMultiQueue)
-        {
-            Assertions.assertEquals(1, multiQueue.getNextSubQueueIndex(subQueue).get())
-            Assertions.assertEquals(2, multiQueue.getNextSubQueueIndex(subQueue).get())
-            Assertions.assertEquals(3, multiQueue.getNextSubQueueIndex(subQueue).get())
-            Assertions.assertEquals(4, multiQueue.getNextSubQueueIndex(subQueue).get())
-            Assertions.assertEquals(5, multiQueue.getNextSubQueueIndex(subQueue).get())
-
-            multiQueue.clearSubQueue(subQueue)
-            Assertions.assertEquals(1, multiQueue.getNextSubQueueIndex(subQueue).get())
-            Assertions.assertEquals(2, multiQueue.getNextSubQueueIndex(subQueue).get())
-            Assertions.assertEquals(3, multiQueue.getNextSubQueueIndex(subQueue).get())
-            Assertions.assertEquals(4, multiQueue.getNextSubQueueIndex(subQueue).get())
-            Assertions.assertEquals(5, multiQueue.getNextSubQueueIndex(subQueue).get())
-
-            multiQueue.clear()
-            Assertions.assertEquals(1, multiQueue.getNextSubQueueIndex(subQueue).get())
-            Assertions.assertEquals(2, multiQueue.getNextSubQueueIndex(subQueue).get())
-            Assertions.assertEquals(3, multiQueue.getNextSubQueueIndex(subQueue).get())
-            Assertions.assertEquals(4, multiQueue.getNextSubQueueIndex(subQueue).get())
-            Assertions.assertEquals(5, multiQueue.getNextSubQueueIndex(subQueue).get())
-        }
-        else
-        {
-            Assertions.assertTrue(multiQueue.getNextSubQueueIndex(subQueue).isPresent)
-            Assertions.assertEquals(1, multiQueue.getNextSubQueueIndex(subQueue).get())
-            Assertions.assertEquals(1, multiQueue.getNextSubQueueIndex(subQueue).get())
-            Assertions.assertEquals(1, multiQueue.getNextSubQueueIndex(subQueue).get())
-        }
-    }
-
-    /**
-     * Ensure that [MultiQueue.getNextSubQueueIndex] starts at `1` and increments properly as called once entries are added.
-     */
-    @Test
-    fun testGetNextQueueIndex_withMessages()
-    {
-        Assertions.assertTrue(multiQueue.isEmpty())
-
-        val subQueue1 = "testGetNextQueueIndex_reInitialise1"
-        val subQueue2 = "testGetNextQueueIndex_reInitialise2"
-
-        val list1 = listOf(QueueMessage(81273648, subQueue1), QueueMessage("test test test", subQueue1), QueueMessage(false, subQueue1))
-        val list2 = listOf(QueueMessage("test", subQueue2), QueueMessage(123, subQueue2))
-        Assertions.assertTrue(multiQueue.addAll(list1))
-        Assertions.assertTrue(multiQueue.addAll(list2))
-
-        if (multiQueue is SqlMultiQueue)
-        {
-            Assertions.assertTrue(multiQueue.getNextSubQueueIndex(subQueue1).isEmpty)
-            Assertions.assertTrue(multiQueue.getNextSubQueueIndex(subQueue2).isEmpty)
-        }
-        else if (multiQueue is InMemoryMultiQueue)
-        {
-            Assertions.assertEquals((list1.size + 1).toLong(), multiQueue.getNextSubQueueIndex(subQueue1).get())
-            Assertions.assertEquals((list2.size + 1).toLong(), multiQueue.getNextSubQueueIndex(subQueue2).get())
-        }
-        else if (multiQueue is MongoMultiQueue)
-        {
-            Assertions.assertEquals((list1.size + list2.size + 1).toLong(), multiQueue.getNextSubQueueIndex(subQueue1).get())
-            Assertions.assertEquals((list1.size + list2.size + 1).toLong(), multiQueue.getNextSubQueueIndex(subQueue2).get())
-        }
-        else
-        {
-            Assertions.assertEquals((list1.size + 1).toLong(), multiQueue.getNextSubQueueIndex(subQueue1).get())
-            Assertions.assertEquals((list2.size + 1).toLong(), multiQueue.getNextSubQueueIndex(subQueue2).get())
-        }
-    }
-
-    /**
      * Ensure [MultiQueue.getSubQueue] returns the list of [QueueMessage]s always ordered by their [QueueMessage.id].
      *
      * This also ensures they are assigned the `id` in the order they are enqueued.
@@ -338,18 +254,14 @@ abstract class MultiQueueTest
         Assertions.assertTrue(multiQueue.addAll(list))
         val queue = multiQueue.getSubQueue(subQueue)
         Assertions.assertEquals(list.size, queue.size)
-        var previousIndex: Long? = null
-        list.zip(queue).forEach { pair ->
-            Assertions.assertEquals(pair.first.uuid, pair.second.uuid)
-            Assertions.assertNotNull(pair.second.id)
-            if (previousIndex == null)
+        var previousUuid: String? = null
+        queue.forEach { message ->
+            if (previousUuid != null)
             {
-                previousIndex = pair.second.id
+                Assertions.assertTrue(previousUuid.compareTo(message.uuid) < 0)
             }
-            else
-            {
-                Assertions.assertTrue(previousIndex < pair.second.id!!)
-            }
+
+            previousUuid = message.uuid
         }
     }
 
@@ -378,19 +290,14 @@ abstract class MultiQueueTest
         multiQueue.persistMessage(firstMessage)
 
         queue = multiQueue.getSubQueue(subQueue)
-        var previousIndex: Long? = null
-        list.zip(queue).forEach { pair ->
-            Assertions.assertEquals(pair.first.uuid, pair.second.uuid)
-            Assertions.assertNotNull(pair.second.id)
-            if (previousIndex == null)
+        var previousUuid: String? = null
+        queue.forEach { message ->
+            if (previousUuid != null)
             {
-                Assertions.assertEquals(newData, pair.second.payload)
-                previousIndex = pair.second.id
+                Assertions.assertTrue(previousUuid.compareTo(message.uuid) < 0)
             }
-            else
-            {
-                Assertions.assertTrue(previousIndex < pair.second.id!!)
-            }
+
+            previousUuid = message.uuid
         }
     }
 
@@ -612,10 +519,10 @@ abstract class MultiQueueTest
      * A [MessageUpdateException] will be thrown for all [MultiQueue] except the [InMemoryMultiQueue].
      */
     @Test
-    fun testPersistMessage_messageHasNullID()
+    fun testPersistMessage_messageDoesNotExistToUpdate()
     {
         val message = QueueMessage("payload", "testPersistMessage_messageHasNullID")
-        Assertions.assertNull(message.id)
+        Assertions.assertTrue(multiQueue.getMessageByUUID(message.uuid).isEmpty)
 
         if (multiQueue !is InMemoryMultiQueue)
         {

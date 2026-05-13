@@ -9,6 +9,8 @@ import au.kilemon.messagequeue.filter.JwtAuthenticationFilter
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
+import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
+import au.kilemon.messagequeue.rest.controller.model.CreateMessage
 import au.kilemon.messagequeue.rest.model.Payload
 import au.kilemon.messagequeue.rest.model.PayloadEnum
 import au.kilemon.messagequeue.rest.response.KeysResponse
@@ -16,6 +18,7 @@ import au.kilemon.messagequeue.rest.response.MessageListResponse
 import au.kilemon.messagequeue.rest.response.MessageResponse
 import au.kilemon.messagequeue.rest.response.OwnersMapResponse
 import au.kilemon.messagequeue.settings.MessageQueueSettings
+import au.kilemon.messagequeue.util.MockUtil
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import org.junit.jupiter.api.Assertions
@@ -30,12 +33,14 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
+import java.util.Optional
 import java.util.UUID
 
 /**
@@ -51,6 +56,7 @@ import java.util.UUID
         "${MessageQueueSettings.ACCESS_TOKEN_KEY}=1234567890123456"
     ])
 @Import(*[QueueConfiguration::class, LoggingConfiguration::class])
+@DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
 class MessageQueueControllerTest
 {
     /**
@@ -112,8 +118,8 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.content().json("0"))
 
-        val message = createQueueMessage(subQueue = subQueue)
-        Assertions.assertTrue(multiQueue.add(message))
+        val message = createCreateMessage(subQueue = subQueue)
+        Assertions.assertTrue(multiQueue.add(QueueMessage(message)))
         Assertions.assertEquals(1, multiQueue.getSubQueue(subQueue).size)
 
         mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_TYPE + "/" + subQueue)
@@ -136,11 +142,11 @@ class MessageQueueControllerTest
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.content().json("0"))
 
-        val message = createQueueMessage(subQueue = "testGetAllSubQueueInfo1")
-        val message2 = createQueueMessage(subQueue = "testGetAllSubQueueInfo2")
+        val message = createCreateMessage(subQueue = "testGetAllSubQueueInfo1")
+        val message2 = createCreateMessage(subQueue = "testGetAllSubQueueInfo2")
 
-        Assertions.assertTrue(multiQueue.add(message))
-        Assertions.assertTrue(multiQueue.add(message2))
+        Assertions.assertTrue(multiQueue.add(QueueMessage(message)))
+        Assertions.assertTrue(multiQueue.add(QueueMessage(message2)))
 
         Assertions.assertEquals(1, multiQueue.getSubQueue(message.subQueue).size)
         Assertions.assertEquals(1, multiQueue.getSubQueue(message2.subQueue).size)
@@ -161,8 +167,9 @@ class MessageQueueControllerTest
     {
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
-        val message = createQueueMessage(subQueue = "testGetEntry")
+        val createMessage = createCreateMessage(subQueue = "testGetEntry")
 
+        val message = QueueMessage(createMessage)
         Assertions.assertTrue(multiQueue.add(message))
 
         val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.get(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY + "/" + message.uuid)
@@ -179,7 +186,6 @@ class MessageQueueControllerTest
         Assertions.assertNotNull(messageResponse.message.uuid)
 
         Assertions.assertNull(messageResponse.message.payloadBytes)
-        Assertions.assertNull(messageResponse.message.id)
     }
 
     /**
@@ -265,7 +271,7 @@ class MessageQueueControllerTest
     {
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
-        val message = createQueueMessage(subQueue = "testCreateQueueEntry_withProvidedDefaults", assignedTo = "user-1")
+        val message = createCreateMessage(subQueue = "testCreateQueueEntry_withProvidedDefaults", assignedTo = "user-1")
 
         val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -279,12 +285,12 @@ class MessageQueueControllerTest
         Assertions.assertEquals(message.payload, deserialisedPayload)
         Assertions.assertEquals(message.assignedTo, messageResponse.message.assignedTo)
         Assertions.assertEquals(message.subQueue, messageResponse.message.subQueue)
-        Assertions.assertEquals(message.uuid, messageResponse.message.uuid)
+        Assertions.assertNotNull(messageResponse.message.uuid)
 
         val createdMessage = multiQueue.peekSubQueue(message.subQueue).get()
         Assertions.assertEquals(message.assignedTo, createdMessage.assignedTo)
         Assertions.assertEquals(message.subQueue, createdMessage.subQueue)
-        Assertions.assertEquals(message.uuid, createdMessage.uuid)
+        Assertions.assertNotNull(createdMessage.uuid)
     }
 
     /**
@@ -296,7 +302,7 @@ class MessageQueueControllerTest
     {
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
-        val message = createQueueMessage(subQueue = "testCreateQueueEntry_withOutDefaults")
+        val message = createCreateMessage(subQueue = "testCreateQueueEntry_withOutDefaults")
 
         val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -315,7 +321,7 @@ class MessageQueueControllerTest
         val createdMessage = multiQueue.peekSubQueue(message.subQueue).get()
         Assertions.assertNull(createdMessage.assignedTo)
         Assertions.assertEquals(message.subQueue, createdMessage.subQueue)
-        Assertions.assertEquals(message.uuid, createdMessage.uuid)
+        Assertions.assertNotNull(createdMessage.uuid)
     }
 
     /**
@@ -327,9 +333,10 @@ class MessageQueueControllerTest
     {
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
-        val message = createQueueMessage(subQueue = "testCreateEntry_Conflict")
+        val message = createCreateMessage(subQueue = "testCreateEntry_Conflict")
 
-        Assertions.assertTrue(multiQueue.add(message))
+        Mockito.doThrow(DuplicateMessageException("", "")).`when`(multiQueue).add(MockUtil.any())
+        Mockito.doReturn(Optional.of(message.subQueue)).`when`(multiQueue).containsUUID(Mockito.anyString())
 
         mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -346,7 +353,7 @@ class MessageQueueControllerTest
     {
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
-        val message = createQueueMessage(subQueue = "testCreateQueueEntry_withAssignedButNoAssignedTo")
+        val message = createCreateMessage(subQueue = "testCreateQueueEntry_withAssignedButNoAssignedTo")
         message.assignedTo = " "
 
         val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
@@ -369,7 +376,7 @@ class MessageQueueControllerTest
         Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getRestrictionMode()
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
-        val message = createQueueMessage(subQueue = "testCreateEntry_inHybridMode")
+        val message = createCreateMessage(subQueue = "testCreateEntry_inHybridMode")
 
         Assertions.assertTrue(authenticator.addRestrictedEntry(message.subQueue))
         Assertions.assertTrue(authenticator.isRestricted(message.subQueue))
@@ -388,7 +395,7 @@ class MessageQueueControllerTest
             .content(gson.toJson(message)))
             .andExpect(MockMvcResultMatchers.status().isCreated)
 
-        val message2 = createQueueMessage(subQueue = "testCreateEntry_inHybridMode2")
+        val message2 = createCreateMessage(subQueue = "testCreateEntry_inHybridMode2")
         Assertions.assertFalse(authenticator.isRestricted(message2.subQueue))
 
         mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
@@ -531,8 +538,8 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val subQueue = "testGetAll_inHybridMode"
-        val messages = listOf(createQueueMessage(subQueue), createQueueMessage(subQueue))
-        messages.forEach { message -> Assertions.assertTrue(multiQueue.add(message)) }
+        val messages = listOf(createCreateMessage(subQueue), createCreateMessage(subQueue))
+        messages.forEach { message -> Assertions.assertTrue(multiQueue.add(QueueMessage(message))) }
 
         Assertions.assertTrue(authenticator.addRestrictedEntry(subQueue))
         Assertions.assertTrue(authenticator.isRestricted(subQueue))
@@ -584,8 +591,8 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val subQueue = "testGetAll_SpecificSubQueue_inHybridMode"
-        val messages = listOf(createQueueMessage(subQueue), createQueueMessage(subQueue))
-        messages.forEach { message -> Assertions.assertTrue(multiQueue.add(message)) }
+        val messages = listOf(createCreateMessage(subQueue), createCreateMessage(subQueue))
+        messages.forEach { message -> Assertions.assertTrue(multiQueue.add(QueueMessage(message))) }
 
         Assertions.assertTrue(authenticator.addRestrictedEntry(subQueue))
         Assertions.assertTrue(authenticator.isRestricted(subQueue))
@@ -649,8 +656,8 @@ class MessageQueueControllerTest
 
         val assignedTo = "my-assigned-to-identifier"
         val subQueue = "testGetOwned_SomeOwned"
-        val message1 = createQueueMessage(assignedTo = assignedTo, subQueue = subQueue)
-        val message2 = createQueueMessage(assignedTo = assignedTo, subQueue = subQueue)
+        val message1 = QueueMessage(createCreateMessage(assignedTo = assignedTo, subQueue = subQueue))
+        val message2 = QueueMessage(createCreateMessage(assignedTo = assignedTo, subQueue = subQueue))
 
         Assertions.assertTrue(multiQueue.add(message1))
         Assertions.assertTrue(multiQueue.add(message2))
@@ -683,8 +690,8 @@ class MessageQueueControllerTest
 
         val assignedTo = "my-assigned-to-identifier"
         val subQueue = "testGetOwned_SomeOwned_inHybridMode"
-        val message1 = createQueueMessage(assignedTo = assignedTo, subQueue = subQueue)
-        val message2 = createQueueMessage(assignedTo = assignedTo, subQueue = subQueue)
+        val message1 = QueueMessage(createCreateMessage(assignedTo = assignedTo, subQueue = subQueue))
+        val message2 = QueueMessage(createCreateMessage(assignedTo = assignedTo, subQueue = subQueue))
 
         Assertions.assertTrue(multiQueue.add(message1))
         Assertions.assertTrue(multiQueue.add(message2))
@@ -745,7 +752,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assigned"
-        val message = createQueueMessage(subQueue = "testAssignMessage_messageIsAssigned")
+        val message = QueueMessage(createCreateMessage(subQueue = "testAssignMessage_messageIsAssigned"))
         Assertions.assertNull(message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
@@ -775,7 +782,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assigned"
-        val message = createQueueMessage(subQueue = "testAssignMessage_messageIsAssigned_inHybridMode")
+        val message = QueueMessage(createCreateMessage(subQueue = "testAssignMessage_messageIsAssigned_inHybridMode"))
         Assertions.assertNull(message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
@@ -817,7 +824,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assigned"
-        val message = createQueueMessage(subQueue = "testAssignMessage_alreadyAssignedToSameID", assignedTo = assignedTo)
+        val message = QueueMessage(createCreateMessage(subQueue = "testAssignMessage_alreadyAssignedToSameID", assignedTo = assignedTo))
 
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
@@ -847,7 +854,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assignee"
-        val message = createQueueMessage(subQueue = "testAssignMessage_alreadyAssignedToOtherID", assignedTo = assignedTo)
+        val message = QueueMessage(createCreateMessage(subQueue = "testAssignMessage_alreadyAssignedToOtherID", assignedTo = assignedTo))
 
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
@@ -900,8 +907,8 @@ class MessageQueueControllerTest
 
         val assignedTo = "assignee"
         val subQueue = "testGetNext_noNewUnAssignedMessages"
-        val message = createQueueMessage(subQueue = subQueue, assignedTo = assignedTo)
-        val message2 = createQueueMessage(subQueue = subQueue, assignedTo = assignedTo)
+        val message = QueueMessage(createCreateMessage(subQueue = subQueue, assignedTo = assignedTo))
+        val message2 = QueueMessage(createCreateMessage(subQueue = subQueue, assignedTo = assignedTo))
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.add(message2))
@@ -926,8 +933,8 @@ class MessageQueueControllerTest
 
         val assignedTo = "assignee"
         val subQueue = "testGetNext"
-        val message = createQueueMessage(subQueue = subQueue, assignedTo = assignedTo)
-        val message2 = createQueueMessage(subQueue = subQueue)
+        val message = QueueMessage(createCreateMessage(subQueue = subQueue, assignedTo = assignedTo))
+        val message2 = QueueMessage(createCreateMessage(subQueue = subQueue))
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.add(message2))
@@ -964,8 +971,8 @@ class MessageQueueControllerTest
 
         val assignedTo = "assignee"
         val subQueue = "testGetNext_inHybridMode"
-        val message = createQueueMessage(subQueue = subQueue, assignedTo = assignedTo)
-        val message2 = createQueueMessage(subQueue = subQueue)
+        val message = QueueMessage(createCreateMessage(subQueue = subQueue, assignedTo = assignedTo))
+        val message2 = QueueMessage(createCreateMessage(subQueue = subQueue))
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.add(message2))
@@ -1028,7 +1035,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assignee"
-        val message = createQueueMessage(subQueue = "testReleaseMessage_messageIsReleased", assignedTo = assignedTo)
+        val message = QueueMessage(createCreateMessage(subQueue = "testReleaseMessage_messageIsReleased", assignedTo = assignedTo))
 
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
@@ -1059,7 +1066,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assignee"
-        val message = createQueueMessage(subQueue = "testReleaseMessage_messageIsReleased_inHybridMode", assignedTo = assignedTo)
+        val message = QueueMessage(createCreateMessage(subQueue = "testReleaseMessage_messageIsReleased_inHybridMode", assignedTo = assignedTo))
 
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
@@ -1102,7 +1109,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assigned"
-        val message = createQueueMessage(subQueue = "testReleaseMessage_messageIsReleased_withoutAssignedToInQuery", assignedTo = assignedTo)
+        val message = QueueMessage(createCreateMessage(subQueue = "testReleaseMessage_messageIsReleased_withoutAssignedToInQuery", assignedTo = assignedTo))
 
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
@@ -1130,7 +1137,7 @@ class MessageQueueControllerTest
     {
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
-        val message = createQueueMessage(subQueue = "testReleaseMessage_alreadyReleased")
+        val message = QueueMessage(createCreateMessage(subQueue = "testReleaseMessage_alreadyReleased"))
         Assertions.assertNull(message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
 
@@ -1160,7 +1167,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assigned"
-        val message = createQueueMessage(subQueue = "testReleaseMessage_cannotBeReleasedWithMisMatchingID", assignedTo = assignedTo)
+        val message = QueueMessage(createCreateMessage(subQueue = "testReleaseMessage_cannotBeReleasedWithMisMatchingID", assignedTo = assignedTo))
 
         Assertions.assertEquals(assignedTo, message.assignedTo)
         Assertions.assertTrue(multiQueue.add(message))
@@ -1200,7 +1207,7 @@ class MessageQueueControllerTest
     {
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
-        val message = createQueueMessage(subQueue = "testRemoveMessage_removed")
+        val message = QueueMessage(createCreateMessage(subQueue = "testRemoveMessage_removed"))
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.containsUUID(message.uuid).isPresent)
 
@@ -1222,7 +1229,7 @@ class MessageQueueControllerTest
         Mockito.doReturn(RestrictionMode.HYBRID).`when`(authenticator).getRestrictionMode()
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
-        val message = createQueueMessage(subQueue = "testRemoveMessage_removeExistingEntry_inHybridMode")
+        val message = QueueMessage(createCreateMessage(subQueue = "testRemoveMessage_removeExistingEntry_inHybridMode"))
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.containsUUID(message.uuid).isPresent)
 
@@ -1274,7 +1281,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assignee"
-        val message = createQueueMessage(subQueue = "testRemoveMessage_assignedToAnotherID", assignedTo = assignedTo)
+        val message = QueueMessage(createCreateMessage(subQueue = "testRemoveMessage_assignedToAnotherID", assignedTo = assignedTo))
         Assertions.assertTrue(multiQueue.add(message))
 
         val wrongAssignedTo = "wrong-assignee"
@@ -1301,9 +1308,9 @@ class MessageQueueControllerTest
 
         val subQueue = "testGetOwners"
 
-        val message = createQueueMessage(subQueue = subQueue, assignedTo = assignedTo)
-        val message2 = createQueueMessage(subQueue = subQueue, assignedTo = assignedTo2)
-        val message3 = createQueueMessage(subQueue = subQueue, assignedTo = assignedTo2)
+        val message = QueueMessage(createCreateMessage(subQueue = subQueue, assignedTo = assignedTo))
+        val message2 = QueueMessage(createCreateMessage(subQueue = subQueue, assignedTo = assignedTo2))
+        val message3 = QueueMessage(createCreateMessage(subQueue = subQueue, assignedTo = assignedTo2))
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.add(message2))
@@ -1345,9 +1352,9 @@ class MessageQueueControllerTest
         val subQueue = "testGetOwners"
         val subQueue2 = "testGetOwners2"
 
-        val message = createQueueMessage(subQueue = subQueue, assignedTo = assignedTo)
-        val message2 = createQueueMessage(subQueue = subQueue2, assignedTo = assignedTo)
-        val message3 = createQueueMessage(subQueue = subQueue2, assignedTo = assignedTo2)
+        val message = QueueMessage(createCreateMessage(subQueue = subQueue, assignedTo = assignedTo))
+        val message2 = QueueMessage(createCreateMessage(subQueue = subQueue2, assignedTo = assignedTo))
+        val message3 = QueueMessage(createCreateMessage(subQueue = subQueue2, assignedTo = assignedTo2))
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.add(message2))
@@ -1398,7 +1405,7 @@ class MessageQueueControllerTest
     {
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
-        val message = createQueueMessage(subQueue = "testCorrelationId_providedId")
+        val message = createCreateMessage(subQueue = "testCorrelationId_providedId")
 
         val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
             .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -1419,7 +1426,7 @@ class MessageQueueControllerTest
     {
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
-        val message = createQueueMessage(subQueue = "testCorrelationId_providedId")
+        val message = createCreateMessage(subQueue = "testCorrelationId_providedId")
         val correlationId = "my-correlation-id-123456"
 
         val mvcResult: MvcResult = mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
@@ -1444,7 +1451,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val assignedTo = "assignee"
-        val message = createQueueMessage(subQueue = "testCorrelationId_randomIdOnError", assignedTo = assignedTo)
+        val message = QueueMessage(createCreateMessage(subQueue = "testCorrelationId_randomIdOnError", assignedTo = assignedTo))
         Assertions.assertTrue(multiQueue.add(message))
 
         val wrongAssignedTo = "wrong-assignee"
@@ -1476,13 +1483,16 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val subQueue1 = "testDeleteKeys_singleKey1"
-        var messages = listOf(createQueueMessage(subQueue1), createQueueMessage(subQueue1), createQueueMessage(subQueue1))
+        var messages = listOf(QueueMessage(createCreateMessage(subQueue1)),
+            QueueMessage(createCreateMessage(subQueue1)),
+            QueueMessage(createCreateMessage(subQueue1)))
         messages.forEach { message -> Assertions.assertTrue(multiQueue.add(message)) }
 
         Assertions.assertEquals(3, multiQueue.size)
 
         val subQueue2 = "testDeleteKeys_singleKey2"
-        messages = listOf(createQueueMessage(subQueue2), createQueueMessage(subQueue2))
+        messages = listOf(QueueMessage(createCreateMessage(subQueue2)),
+            QueueMessage(createCreateMessage(subQueue2)))
         messages.forEach { message -> Assertions.assertTrue(multiQueue.add(message)) }
 
         Assertions.assertEquals(5, multiQueue.size)
@@ -1511,13 +1521,16 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
         val subQueue1 = "testDeleteKeys_singleKey_inHybridMode1"
-        var messages = listOf(createQueueMessage(subQueue1), createQueueMessage(subQueue1), createQueueMessage(subQueue1))
+        var messages = listOf(QueueMessage(createCreateMessage(subQueue1)),
+            QueueMessage(createCreateMessage(subQueue1)),
+            QueueMessage(createCreateMessage(subQueue1)))
         messages.forEach { message -> Assertions.assertTrue(multiQueue.add(message)) }
 
         Assertions.assertEquals(3, multiQueue.size)
 
         val subQueue2 = "testDeleteKeys_singleKey_inHybridMode2"
-        messages = listOf(createQueueMessage(subQueue2), createQueueMessage(subQueue2))
+        messages = listOf(QueueMessage(createCreateMessage(subQueue2)),
+            QueueMessage(createCreateMessage(subQueue2)))
         messages.forEach { message -> Assertions.assertTrue(multiQueue.add(message)) }
 
         Assertions.assertEquals(5, multiQueue.size)
@@ -1643,9 +1656,9 @@ class MessageQueueControllerTest
     {
         Assertions.assertEquals(RestrictionMode.HYBRID, authenticator.getRestrictionMode())
 
-        val message = QueueMessage("payload", "testCreateMessage_addFails")
+        val message = createCreateMessage("testCreateMessage_addFails")
 
-        Mockito.doReturn(false).`when`(multiQueue).add(message)
+        Mockito.doReturn(false).`when`(multiQueue).add(MockUtil.any())
 
         mockMvc.perform(MockMvcRequestBuilders.post(MessageQueueController.MESSAGE_QUEUE_BASE_PATH + "/" + MessageQueueController.ENDPOINT_ENTRY)
                 .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -1709,7 +1722,7 @@ class MessageQueueControllerTest
         Assertions.assertEquals(RestrictionMode.RESTRICTED, authenticator.getRestrictionMode())
 
         val subQueue = "testGetEntry_inRestrictedMode"
-        val message = createQueueMessage(subQueue)
+        val message = QueueMessage(createCreateMessage(subQueue))
 
         Assertions.assertTrue(multiQueue.add(message))
 
@@ -1735,17 +1748,17 @@ class MessageQueueControllerTest
     }
 
     /**
-     * A helper method which creates `4` [QueueMessage] objects and inserts them into the [MultiQueue].
+     * A helper method which creates `4` [CreateMessage] objects and inserts them into the [MultiQueue].
      *
      * @return a [Pair] containing the [List] of [QueueMessage] and their related matching [List] of [String] `sub-queue` IDs in order.
      */
     private fun initialiseMapWithEntries(): Pair<List<QueueMessage>, List<String>>
     {
         val subQueues = listOf("type1", "type2", "type3", "type4")
-        val message = createQueueMessage(subQueue = subQueues[0])
-        val message2 = createQueueMessage(subQueue = subQueues[1])
-        val message3 = createQueueMessage(subQueue = subQueues[2], assignedTo = "assignee")
-        val message4 = createQueueMessage(subQueue = subQueues[3])
+        val message = QueueMessage(createCreateMessage(subQueue = subQueues[0]))
+        val message2 = QueueMessage(createCreateMessage(subQueue = subQueues[1]))
+        val message3 = QueueMessage(createCreateMessage(subQueue = subQueues[2], assignedTo = "assignee"))
+        val message4 = QueueMessage(createCreateMessage(subQueue = subQueues[3]))
 
         Assertions.assertTrue(multiQueue.add(message))
         Assertions.assertTrue(multiQueue.add(message2))
@@ -1756,18 +1769,18 @@ class MessageQueueControllerTest
     }
 
     /**
-     * A helper method to create a [QueueMessage] that can be easily re-used between each test.
+     * A helper method to create a [CreateMessage] that can be easily re-used between each test.
      *
-     * @param subQueue the `subQueue` to set in to the created [QueueMessage]
+     * @param subQueue the `subQueue` to set in to the created [CreateMessage]
      * @param assignedTo the [QueueMessage.assignedTo] value to set
-     * @return a [QueueMessage] initialised with multiple parameters
+     * @return a [CreateMessage] initialised with multiple parameters
      */
-    private fun createQueueMessage(subQueue: String, assignedTo: String? = null): QueueMessage
+    private fun createCreateMessage(subQueue: String, assignedTo: String? = null): CreateMessage
     {
-        val uuid = UUID.randomUUID().toString()
         val payload = Payload("test", 12, true, PayloadEnum.C)
-        val message = QueueMessage(payload = payload, subQueue = subQueue)
-        message.uuid = UUID.fromString(uuid).toString()
+        val message = CreateMessage()
+        message.subQueue = subQueue
+        message.payload = payload
 
         message.assignedTo = assignedTo
         return message

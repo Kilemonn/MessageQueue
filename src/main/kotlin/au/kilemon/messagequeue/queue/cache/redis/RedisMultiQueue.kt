@@ -84,7 +84,7 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
         val set = redisTemplate.opsForSet().members(appendPrefix(subQueue))
         if (!set.isNullOrEmpty())
         {
-            queue.addAll(set.toSortedSet { message1, message2 -> (message1.id ?: 0).minus(message2.id ?: 0).toInt() })
+            queue.addAll(set.sortedBy { it.uuid })
         }
         return queue
     }
@@ -129,34 +129,6 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
     {
         val result = redisTemplate.opsForSet().add(appendPrefix(element.subQueue), element)
         return result != null && result > 0
-    }
-
-    /**
-     * Overriding to pass in the [subQueue] into [appendPrefix].
-     */
-    override fun getNextSubQueueIndex(subQueue: String): Optional<Long>
-    {
-        val queue = getSubQueue(appendPrefix(subQueue))
-        return if (queue.isNotEmpty())
-        {
-            var lastIndex = queue.last().id
-            if (lastIndex == null)
-            {
-                LOG.warn("subQueue [{}] is not empty but last index is null. Returning index with value [{}].", subQueue, 1)
-                return Optional.of(1)
-            }
-            else
-            {
-                lastIndex++
-                LOG.trace("Incrementing and returning index for subQueue [{}]. Returning index with value [{}].", subQueue, lastIndex)
-                return Optional.of(lastIndex)
-            }
-        }
-        else
-        {
-            LOG.trace("subQueue [{}] is empty, returning index with value [{}].", subQueue, 1)
-            Optional.of(1)
-        }
     }
 
     override fun removeInternal(element: QueueMessage): Boolean
@@ -247,11 +219,9 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
      */
     override fun persistMessageInternal(message: QueueMessage)
     {
-        val queue = getSubQueue(message.subQueue)
-        val matchingMessage = queue.stream().filter{ element -> element.uuid == message.uuid }.findFirst()
+        val matchingMessage = getMessageByUUID(message.uuid)
         if (matchingMessage.isPresent)
         {
-            message.id = matchingMessage.get().id
             val wasRemoved = removeInternal(matchingMessage.get())
             val wasReAdded = addInternal(message)
             if (wasRemoved && wasReAdded)
