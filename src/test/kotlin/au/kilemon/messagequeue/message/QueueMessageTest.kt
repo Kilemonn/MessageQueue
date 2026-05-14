@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.message
 
+import au.kilemon.messagequeue.rest.controller.model.CreateMessage
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.springframework.util.SerializationUtils
@@ -224,5 +225,54 @@ class QueueMessageTest
         message.resolvePayloadObject()
         Assertions.assertArrayEquals(SerializationUtils.serialize(payload), message.payloadBytes)
         Assertions.assertEquals(payload, message.payload)
+    }
+
+    /**
+     * Ensure the conversion from a [QueueMessageDocument] object sets the correct properties.
+     */
+    @Test
+    fun testFromQueueMessageDocument()
+    {
+        val subQueue = "testFromCreateMessage"
+        val payload = "data"
+        val assignedTo = "assignedTo"
+
+        val queueMessageDocument = QueueMessageDocument()
+        queueMessageDocument.subQueue = subQueue
+        queueMessageDocument.assignedTo = assignedTo
+        queueMessageDocument.payload = payload
+
+        val queueMessage = QueueMessage(queueMessageDocument)
+        Assertions.assertEquals(queueMessageDocument.payload, queueMessage.payload)
+        Assertions.assertEquals(queueMessageDocument.subQueue, queueMessage.subQueue)
+        Assertions.assertEquals(queueMessageDocument.assignedTo, queueMessage.assignedTo)
+        Assertions.assertEquals(queueMessageDocument.uuid, queueMessage.uuid)
+
+        Assertions.assertNotNull(queueMessage.payloadBytes)
+    }
+
+    /**
+     * Ensure the conversion from a [CreateMessage] object sets the correct properties.
+     */
+    @Test
+    fun testFromCreateMessage()
+    {
+        val subQueue = "testFromCreateMessage"
+        val payload = "data"
+        val assignedTo = "assignedTo"
+
+        val createMessage = CreateMessage()
+        createMessage.subQueue = subQueue
+        createMessage.payload = payload
+        createMessage.assignedTo = assignedTo
+
+        val queueMessage = QueueMessage(createMessage)
+
+        Assertions.assertEquals(createMessage.subQueue, queueMessage.subQueue)
+        Assertions.assertEquals(createMessage.payload, queueMessage.payload)
+        Assertions.assertEquals(createMessage.assignedTo, queueMessage.assignedTo)
+
+        Assertions.assertNotNull(queueMessage.payloadBytes)
+        Assertions.assertNotNull(queueMessage.uuid)
     }
 }

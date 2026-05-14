@@ -41,41 +41,41 @@ interface SqlQueueMessageRepository: JpaRepository<QueueMessage, Long>
     fun findDistinctSubQueue(): List<String>
 
     /**
-     * Get a list of [QueueMessage] which have [QueueMessage.subQueue] matching the provided [subQueue].
+     * Get a list of [QueueMessage] which have [QueueMessage.subQueue] matching the provided [subQueue]. Sorted by UUID ascending.
      *
      * @param subQueue to match [QueueMessage.subQueue] with
      * @return a [List] of [QueueMessage] who have a matching [QueueMessage.subQueue] with the provided [subQueue]
      */
     @Transactional
-    fun findBySubQueueOrderByIdAsc(subQueue: String): List<QueueMessage>
+    fun findBySubQueueOrderByUuidAsc(subQueue: String): List<QueueMessage>
 
     /**
-     * Find the entity with the matching [QueueMessage.subQueue] and that has a non-null [QueueMessage.assignedTo]. Sorted by ID ascending.
+     * Find the entity with the matching [QueueMessage.subQueue] and that has a non-null [QueueMessage.assignedTo]. Sorted by UUID ascending.
      *
      * @param subQueue to match [QueueMessage.subQueue] with
      * @return a [List] of [QueueMessage] who have a matching [QueueMessage.subQueue] with the provided [subQueue] and non-null [QueueMessage.assignedTo]
      */
     @Transactional
-    fun findBySubQueueAndAssignedToIsNotNullOrderByIdAsc(subQueue: String): List<QueueMessage>
+    fun findBySubQueueAndAssignedToIsNotNullOrderByUuidAsc(subQueue: String): List<QueueMessage>
 
     /**
-     * Find the entity with the matching [QueueMessage.subQueue] and that has [QueueMessage.assignedTo] set to `null`. Sorted by ID ascending.
+     * Find the entity with the matching [QueueMessage.subQueue] and that has [QueueMessage.assignedTo] set to `null`. Sorted by UUID ascending.
      *
      * @param subQueue the type to match [QueueMessage.subQueue] with
      * @return a [List] of [QueueMessage] who have a matching [QueueMessage.subQueue] with the provided [subQueue] and `null` [QueueMessage.assignedTo]
      */
     @Transactional
-    fun findBySubQueueAndAssignedToIsNullOrderByIdAsc(subQueue: String): List<QueueMessage>
+    fun findBySubQueueAndAssignedToIsNullOrderByUuidAsc(subQueue: String): List<QueueMessage>
 
     /**
-     * Find the entity with the matching [QueueMessage.subQueue] and [QueueMessage.assignedTo]. Sorted by ID ascending.
+     * Find the entity with the matching [QueueMessage.subQueue] and [QueueMessage.assignedTo]. Sorted by UUID ascending.
      *
      * @param subQueue the type to match [QueueMessage.subQueue] with
      * @param assignedTo the identifier to match [QueueMessage.assignedTo] with
      * @return a [List] of [QueueMessage] who have a matching [QueueMessage.subQueue] and [QueueMessage.assignedTo]
      */
     @Transactional
-    fun findBySubQueueAndAssignedToOrderByIdAsc(subQueue: String, assignedTo: String): List<QueueMessage>
+    fun findBySubQueueAndAssignedToOrderByUuidAsc(subQueue: String, assignedTo: String): List<QueueMessage>
 
     /**
      * Find the entity which has a [QueueMessage.uuid] matching the provided [uuid].

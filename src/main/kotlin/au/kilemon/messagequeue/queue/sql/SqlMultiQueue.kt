@@ -29,7 +29,7 @@ class SqlMultiQueue : MultiQueue(), HasLogger
 
     override fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
     {
-        val entries = queueMessageRepository.findBySubQueueOrderByIdAsc(subQueue)
+        val entries = queueMessageRepository.findBySubQueueOrderByUuidAsc(subQueue)
         return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
     }
 
@@ -40,11 +40,11 @@ class SqlMultiQueue : MultiQueue(), HasLogger
     {
         val entries = if (assignedTo == null)
         {
-            queueMessageRepository.findBySubQueueAndAssignedToIsNotNullOrderByIdAsc(subQueue)
+            queueMessageRepository.findBySubQueueAndAssignedToIsNotNullOrderByUuidAsc(subQueue)
         }
         else
         {
-            queueMessageRepository.findBySubQueueAndAssignedToOrderByIdAsc(subQueue, assignedTo)
+            queueMessageRepository.findBySubQueueAndAssignedToOrderByUuidAsc(subQueue, assignedTo)
         }
 
         return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
@@ -55,7 +55,7 @@ class SqlMultiQueue : MultiQueue(), HasLogger
      */
     override fun getUnassignedMessagesInSubQueue(subQueue: String): Queue<QueueMessage>
     {
-        val entries = queueMessageRepository.findBySubQueueAndAssignedToIsNullOrderByIdAsc(subQueue)
+        val entries = queueMessageRepository.findBySubQueueAndAssignedToIsNullOrderByUuidAsc(subQueue)
         return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
     }
 
@@ -88,12 +88,12 @@ class SqlMultiQueue : MultiQueue(), HasLogger
 
     override fun isEmptySubQueue(subQueue: String): Boolean
     {
-        return queueMessageRepository.findBySubQueueOrderByIdAsc(subQueue).isEmpty()
+        return queueMessageRepository.findBySubQueueOrderByUuidAsc(subQueue).isEmpty()
     }
 
     override fun pollInternal(subQueue: String): Optional<QueueMessage>
     {
-        val messages = queueMessageRepository.findBySubQueueOrderByIdAsc(subQueue)
+        val messages = queueMessageRepository.findBySubQueueOrderByUuidAsc(subQueue)
         return if (messages.isNotEmpty())
         {
             return Optional.of(messages[0].resolvePayloadObject())
@@ -134,8 +134,16 @@ class SqlMultiQueue : MultiQueue(), HasLogger
     {
         // UUID Unique constraint ensures we don't save duplicate entries
         // Not need to set [QueueMessage.id] since it's managed by the DB
-        val saved = queueMessageRepository.save(element)
-        return saved.id != null
+        try
+        {
+            queueMessageRepository.save(element)
+            return true
+        }
+        catch (ex: Exception)
+        {
+            LOG.error("Failed to add entry to subqueue [{}]", element.subQueue, ex)
+            return false
+        }
     }
 
     override fun removeInternal(element: QueueMessage): Boolean
@@ -146,25 +154,12 @@ class SqlMultiQueue : MultiQueue(), HasLogger
 
     override fun persistMessageInternal(message: QueueMessage)
     {
-        // We are working with an object from JPA if there is an existing ID
-        // If there is no id in the provided message then we will check that the message with the same UUID does exist
-        if (message.id != null || queueMessageRepository.findByUuid(message.uuid).isPresent)
+        // If there is no existing message we are not persisting or updating in place and need to throw
+        if (queueMessageRepository.findByUuid(message.uuid).isPresent)
         {
-            val saved = queueMessageRepository.save(message)
-            if (saved == message)
-            {
-                return
-            }
+            queueMessageRepository.save(message)
+            return
         }
         throw MessageUpdateException(message.uuid)
-    }
-
-    /**
-     * Overriding to return [Optional.EMPTY] so that the [MultiQueue.add] does set an `id` into the [QueueMessage]
-     * even if the id is `null`.
-     */
-    override fun getNextSubQueueIndex(subQueue: String): Optional<Long>
-    {
-        return Optional.empty()
     }
 }

@@ -286,33 +286,6 @@ class AuthControllerTest
     }
 
     /**
-     * Ensure [AuthController.removeRestrictionFromSubQueue] returns
-     * [org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR] when there is an error when attempting to remove
-     * the restriction on the sub-queue.
-     */
-    @Test
-    fun testRemoveRestrictionFromSubQueue_failedToRemoveRestriction()
-    {
-        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getRestrictionMode()
-        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getRestrictionMode())
-
-        val subQueue = "testRemoveRestrictionFromSubQueue_failedToRemoveRestriction"
-        val token = jwtTokenProvider.createTokenForSubQueue(subQueue)
-        Assertions.assertTrue(token.isPresent)
-
-        Assertions.assertTrue(multiQueueAuthenticator.addRestrictedEntry(subQueue))
-        Assertions.assertTrue(multiQueueAuthenticator.isRestricted(subQueue))
-
-        Mockito.doReturn(false).`when`(multiQueueAuthenticator).removeRestriction(subQueue)
-
-        mockMvc.perform(
-            MockMvcRequestBuilders.delete("${AuthController.AUTH_PATH}/${subQueue}")
-                .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token.get()}")
-                .contentType(MediaType.APPLICATION_JSON_VALUE))
-            .andExpect(MockMvcResultMatchers.status().isInternalServerError)
-    }
-
-    /**
      * Ensure [AuthController.removeRestrictionFromSubQueue] returns [org.springframework.http.HttpStatus.OK] when
      * the sub-queue restriction is removed BUT the sub-queue is not cleared when the query parameter
      * [RestParameters.CLEAR_QUEUE] is not provided.

@@ -7,6 +7,7 @@ import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.cache.redis.RedisMultiQueue
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
+import au.kilemon.messagequeue.rest.controller.model.CreateMessage
 import au.kilemon.messagequeue.rest.response.KeysResponse
 import au.kilemon.messagequeue.rest.response.MessageListResponse
 import au.kilemon.messagequeue.rest.response.MessageResponse
@@ -216,17 +217,19 @@ open class MessageQueueController : HasLogger
         ApiResponse(responseCode = "409", description = "A queue message already exists with the same UUID.", content = [Content()]), // Add empty Content() to remove duplicate responses in swagger docs
         ApiResponse(responseCode = "500", description = "An internal system error occurred when adding the new queue message.", content = [Content()])
     )
-    fun createMessage(@io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, description = "The new queue message to create in the multi queue.") @Valid @RequestBody queueMessage: QueueMessage): ResponseEntity<MessageResponse>
+    fun createMessage(@io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, description = "The new queue message to create in the multi queue.") @Valid @RequestBody createMessage: CreateMessage): ResponseEntity<MessageResponse>
     {
+
+        authenticator.canAccessSubQueue(createMessage.subQueue)
+
+        if (createMessage.assignedTo != null && createMessage.assignedTo!!.isBlank())
+        {
+            createMessage.assignedTo = null
+        }
+
+        val queueMessage = QueueMessage(createMessage)
         try
         {
-            authenticator.canAccessSubQueue(queueMessage.subQueue)
-
-            if (queueMessage.assignedTo != null && queueMessage.assignedTo!!.isBlank())
-            {
-                queueMessage.assignedTo = null
-            }
-
             val wasAdded = messageQueue.add(queueMessage)
             if (wasAdded)
             {

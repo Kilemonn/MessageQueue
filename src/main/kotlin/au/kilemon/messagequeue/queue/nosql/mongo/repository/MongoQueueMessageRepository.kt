@@ -25,12 +25,12 @@ interface MongoQueueMessageRepository: MongoRepository<QueueMessageDocument, Lon
     fun getDistinctSubQueues(): List<String>
 
     /**
-     * Get a list of [QueueMessageDocument] which have [QueueMessageDocument.subQueue] matching the provided [subQueue].
+     * Get a list of [QueueMessageDocument] which have [QueueMessageDocument.subQueue] matching the provided [subQueue]. Sorted by UUID ascending.
      *
      * @param subQueue the type to match [QueueMessageDocument.subQueue] with
      * @return a [List] of [QueueMessageDocument] who have a matching [QueueMessageDocument.subQueue] with the provided [subQueue]
      */
-    fun findBySubQueueOrderByIdAsc(subQueue: String): List<QueueMessageDocument>
+    fun findBySubQueueOrderByUuidAsc(subQueue: String): List<QueueMessageDocument>
 
     /**
      * Find and return a [QueueMessageDocument] that matches the provided [uuid].
@@ -59,37 +59,30 @@ interface MongoQueueMessageRepository: MongoRepository<QueueMessageDocument, Lon
     fun deleteByUuid(uuid: String): Int
 
     /**
-     * Get the entry with the largest ID.
-     *
-     * @return the [QueueMessageDocument] with the largest ID, otherwise [Optional.empty]
-     */
-    fun findTopByOrderByIdDesc(): Optional<QueueMessageDocument>
-
-    /**
-     * Find the entity with the matching [QueueMessageDocument.subQueue] and that has a non-null [QueueMessageDocument.assignedTo]. Sorted by ID ascending.
+     * Find the entity with the matching [QueueMessageDocument.subQueue] and that has a non-null [QueueMessageDocument.assignedTo]. Sorted by UUID ascending.
      *
      * @param subQueue the type to match [QueueMessageDocument.subQueue] with
      * @return a [List] of [QueueMessageDocument] who have a matching [QueueMessageDocument.subQueue] with the provided [subQueue] and non-null [QueueMessageDocument.assignedTo]
      */
     @Transactional
-    fun findBySubQueueAndAssignedToIsNotNullOrderByIdAsc(subQueue: String): List<QueueMessageDocument>
+    fun findBySubQueueAndAssignedToIsNotNullOrderByUuidAsc(subQueue: String): List<QueueMessageDocument>
 
     /**
-     * Find the entity with the matching [QueueMessageDocument.subQueue] and [QueueMessageDocument.assignedTo]. Sorted by ID ascending.
+     * Find the entity with the matching [QueueMessageDocument.subQueue] and [QueueMessageDocument.assignedTo]. Sorted by UUID ascending.
      *
      * @param subQueue the type to match [QueueMessageDocument.subQueue] with
      * @param assignedTo the identifier to match [QueueMessageDocument.assignedTo] with
      * @return a [List] of [QueueMessageDocument] who have a matching [QueueMessageDocument.subQueue] and [QueueMessageDocument.assignedTo]
      */
     @Transactional
-    fun findBySubQueueAndAssignedToOrderByIdAsc(subQueue: String, assignedTo: String): List<QueueMessageDocument>
+    fun findBySubQueueAndAssignedToOrderByUuidAsc(subQueue: String, assignedTo: String): List<QueueMessageDocument>
 
     /**
-     * Find the entity with the matching [QueueMessageDocument.subQueue] and that has [QueueMessageDocument.assignedTo] set to `null`. Sorted by ID ascending.
+     * Find the entity with the matching [QueueMessageDocument.subQueue] and that has [QueueMessageDocument.assignedTo] set to `null`. Sorted by UUID ascending.
      *
      * @param subQueue the type to match [QueueMessageDocument.subQueue] with
      * @return a [List] of [QueueMessageDocument] who have a matching [QueueMessageDocument.subQueue] with the provided [subQueue] and `null` [QueueMessageDocument.assignedTo]
      */
     @Transactional
-    fun findBySubQueueAndAssignedToIsNullOrderByIdAsc(subQueue: String): List<QueueMessageDocument>
+    fun findBySubQueueAndAssignedToIsNullOrderByUuidAsc(subQueue: String): List<QueueMessageDocument>
 }
