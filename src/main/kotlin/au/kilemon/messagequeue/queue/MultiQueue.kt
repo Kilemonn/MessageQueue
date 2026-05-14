@@ -51,18 +51,6 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
         }
 
     /**
-     * Get the next queue index.
-     * If it does not exist yet, a default value of 1 will be set and returned.
-     *
-     * This can be overridden to return [Optional.EMPTY] to not override the ID of the
-     * incoming messages even if it is empty as it is maintained by the underlying mechanism
-     * (in most cases a database).
-     *
-     * @return the current value of the index before it was incremented
-     */
-    abstract fun getNextSubQueueIndex(subQueue: String): Optional<Long>
-
-    /**
      * A wrapper for the [MultiQueue.persistMessageInternal] so this method can be synchronised.
      *
      * Synchronising so that multiple messages are not updated out of order.
@@ -407,14 +395,6 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
         val subQueueMessageAlreadyExistsIn = containsUUID(element.uuid)
         if ( !subQueueMessageAlreadyExistsIn.isPresent)
         {
-            if (element.id == null)
-            {
-                val index = getNextSubQueueIndex(element.subQueue)
-                if (index.isPresent)
-                {
-                    element.id = index.get()
-                }
-            }
             val wasAdded = addInternal(element)
             return if (wasAdded)
             {

@@ -22,11 +22,6 @@ import java.util.concurrent.ConcurrentLinkedQueue
  */
 class MongoMultiQueue : MultiQueue(), HasLogger
 {
-    companion object
-    {
-        const val INDEX_ID = "index_id"
-    }
-
     override val LOG: Logger = this.initialiseLogger()
 
     @Lazy
@@ -35,15 +30,13 @@ class MongoMultiQueue : MultiQueue(), HasLogger
 
     override fun persistMessageInternal(message: QueueMessage)
     {
-        val queueMessageDocument = QueueMessageDocument(message)
-        try
+        if (queueMessageRepository.findByUuid(message.uuid).isPresent)
         {
+            val queueMessageDocument = QueueMessageDocument(message)
             queueMessageRepository.save(queueMessageDocument)
+            return
         }
-        catch (ex: Exception)
-        {
-            throw MessageUpdateException(message.uuid, ex)
-        }
+        throw MessageUpdateException(message.uuid)
     }
 
     /**
@@ -53,11 +46,11 @@ class MongoMultiQueue : MultiQueue(), HasLogger
     {
         val entries = if (assignedTo == null)
         {
-            queueMessageRepository.findBySubQueueAndAssignedToIsNotNullOrderByIdAsc(subQueue)
+            queueMessageRepository.findBySubQueueAndAssignedToIsNotNullOrderByUuidAsc(subQueue)
         }
         else
         {
-            queueMessageRepository.findBySubQueueAndAssignedToOrderByIdAsc(subQueue, assignedTo)
+            queueMessageRepository.findBySubQueueAndAssignedToOrderByUuidAsc(subQueue, assignedTo)
         }
 
         return ConcurrentLinkedQueue(entries.map { entry -> QueueMessage(entry) })
@@ -68,13 +61,13 @@ class MongoMultiQueue : MultiQueue(), HasLogger
      */
     override fun getUnassignedMessagesInSubQueue(subQueue: String): Queue<QueueMessage>
     {
-        val entries = queueMessageRepository.findBySubQueueAndAssignedToIsNullOrderByIdAsc(subQueue)
+        val entries = queueMessageRepository.findBySubQueueAndAssignedToIsNullOrderByUuidAsc(subQueue)
         return ConcurrentLinkedQueue(entries.map { entry -> QueueMessage(entry) })
     }
 
     override fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
     {
-        val entries = queueMessageRepository.findBySubQueueOrderByIdAsc(subQueue)
+        val entries = queueMessageRepository.findBySubQueueOrderByUuidAsc(subQueue)
         return ConcurrentLinkedQueue(entries.map { entry -> QueueMessage(entry) })
     }
 
@@ -107,12 +100,12 @@ class MongoMultiQueue : MultiQueue(), HasLogger
 
     override fun isEmptySubQueue(subQueue: String): Boolean
     {
-        return queueMessageRepository.findBySubQueueOrderByIdAsc(subQueue).isEmpty()
+        return queueMessageRepository.findBySubQueueOrderByUuidAsc(subQueue).isEmpty()
     }
 
     override fun pollInternal(subQueue: String): Optional<QueueMessage>
     {
-        val messages = queueMessageRepository.findBySubQueueOrderByIdAsc(subQueue)
+        val messages = queueMessageRepository.findBySubQueueOrderByUuidAsc(subQueue)
         return if (messages.isNotEmpty())
         {
             return Optional.of(QueueMessage(messages[0]))
@@ -152,41 +145,21 @@ class MongoMultiQueue : MultiQueue(), HasLogger
     override fun addInternal(element: QueueMessage): Boolean
     {
         val queueMessageDocument = QueueMessageDocument(element)
-        val saved = queueMessageRepository.save(queueMessageDocument)
-        return saved.id != null
+        try
+        {
+            queueMessageRepository.save(queueMessageDocument)
+            return true
+        }
+        catch (ex: Exception)
+        {
+            LOG.error("Failed to add message to sub queue [{}]", element.subQueue, ex)
+            return false
+        }
     }
 
     override fun removeInternal(element: QueueMessage): Boolean
     {
         val removedCount = queueMessageRepository.deleteByUuid(element.uuid)
         return removedCount > 0
-    }
-
-    /**
-     * Overriding to use the constant [INDEX_ID] for all look-ups since the ID is shared and needs to be assigned to
-     * the [QueueMessageDocument] before it is created.
-     */
-    override fun getNextSubQueueIndex(subQueue: String): Optional<Long>
-    {
-        val largestIdMessage = queueMessageRepository.findTopByOrderByIdDesc()
-        return if (largestIdMessage.isPresent)
-        {
-            var lastIndex = largestIdMessage.get().id
-            if (lastIndex == null)
-            {
-                LOG.warn("subQueue [{}] is not empty but last index is null. Returning index with value [{}].", subQueue, 1)
-                return Optional.of(1)
-            }
-            else
-            {
-                lastIndex++
-                LOG.trace("Incrementing and returning index for subQueue [{}]. Returning index with value [{}].", subQueue, lastIndex)
-                return Optional.of(lastIndex)
-            }
-        }
-        else
-        {
-            Optional.of(1)
-        }
     }
 }

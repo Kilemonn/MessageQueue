@@ -1,18 +1,17 @@
 package au.kilemon.messagequeue.message
 
+import au.kilemon.messagequeue.rest.controller.model.CreateMessage
 import com.fasterxml.jackson.annotation.JsonIgnore
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
-import jakarta.persistence.Lob
 import jakarta.persistence.Table
 import jakarta.persistence.Transient
 import org.springframework.util.SerializationUtils
 import java.io.Serializable
-import java.util.UUID
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 
 /**
@@ -52,15 +51,12 @@ class QueueMessage: Serializable
             payloadBytes = SerializationUtils.serialize(payload)
         }
 
-    @Schema(title = "Message unique identifier", example = "7a3c1326-f038-4c17-9b6b-a9ada353f79c",
+    @Id
+    @OptIn(ExperimentalUuidApi::class)
+    @Schema(title = "Message unique identifier", example = "019e2102-e818-7312-a5d7-8cf1d66e0420",
         description = "A unique identifier for this message, usually in the form of a UUID, unless created otherwise. This can be used to directly retireve or manipulate the message.")
     @Column(nullable = false, unique = true)
-    var uuid: String = UUID.randomUUID().toString()
-
-    @JsonIgnore
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long? = null
+    var uuid: String = Uuid.generateV7().toString()
 
     @JsonIgnore
     // @Lob - Needed to remove to support SQLLite, seems like it was not required
@@ -83,9 +79,15 @@ class QueueMessage: Serializable
     {
         this.subQueue = queueMessageDocument.subQueue
         this.uuid = queueMessageDocument.uuid
-        this.id = queueMessageDocument.id
         this.payload = queueMessageDocument.payload
         this.assignedTo = queueMessageDocument.assignedTo
+    }
+
+    constructor(createMessage: CreateMessage) : this()
+    {
+        this.subQueue = createMessage.subQueue
+        this.payload = createMessage.payload
+        this.assignedTo = createMessage.assignedTo
     }
 
     /**
@@ -158,7 +160,7 @@ class QueueMessage: Serializable
      */
     override fun hashCode(): Int {
         var result = payload?.hashCode() ?: 0
-        result = 31 * result + (payloadBytes?.hashCode() ?: 0)
+        result = 31 * result + (payloadBytes?.contentHashCode() ?: 0)
         result = 31 * result + subQueue.hashCode()
         result = 31 * result + uuid.hashCode()
         return result
