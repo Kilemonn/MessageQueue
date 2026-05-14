@@ -2,6 +2,7 @@ package au.kilemon.messagequeue.queue.cache.redis
 
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
+import au.kilemon.messagequeue.configuration.cache.redis.RedisMode
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueueTest
@@ -87,7 +88,7 @@ class RedisSentinelMultiQueueTest: MultiQueueTest()
 
             TestPropertyValues.of(
                 "${MessageQueueSettings.REDIS_ENDPOINT}=${sentinel.host}:${sentinel.getMappedPort(RedisConfiguration.REDIS_SENTINEL_DEFAULT_PORT.toInt())}",
-                "${MessageQueueSettings.REDIS_USE_SENTINELS}=true"
+                "${MessageQueueSettings.REDIS_MODE}=${RedisMode.SENTINEL.name}"
             ).applyTo(configurableApplicationContext.environment)
         }
     }

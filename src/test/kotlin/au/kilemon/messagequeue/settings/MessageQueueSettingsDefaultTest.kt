@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.settings
 
+import au.kilemon.messagequeue.configuration.cache.redis.RedisMode
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -48,7 +49,7 @@ class MessageQueueSettingsDefaultTest
         Assertions.assertEquals(MessageQueueSettings.REDIS_ENDPOINT_DEFAULT, messageQueueSettings.redisEndpoint)
         Assertions.assertEquals("", messageQueueSettings.redisPrefix)
         Assertions.assertEquals(MessageQueueSettings.REDIS_MASTER_NAME_DEFAULT, messageQueueSettings.redisMasterName)
-        Assertions.assertEquals(false.toString(), messageQueueSettings.redisUseSentinels)
+        Assertions.assertEquals(RedisMode.STANDALONE.name, messageQueueSettings.redisMode)
 
         Assertions.assertEquals("", messageQueueSettings.sqlEndpoint)
         Assertions.assertEquals("", messageQueueSettings.sqlUsername)

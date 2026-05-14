@@ -43,7 +43,8 @@ class MessageQueueSettings
         const val REDIS_PASSWORD: String = "$MESSAGE_QUEUE.$REDIS.password"
 
         // Redis sentinel related properties
-        const val REDIS_USE_SENTINELS: String = "$MESSAGE_QUEUE.$REDIS.sentinel"
+        const val REDIS_MODE: String = "$MESSAGE_QUEUE.$REDIS.mode"
+        const val REDIS_MODE_DEFAULT: String = "STANDALONE"
 
         const val REDIS_MASTER_NAME: String = "$MESSAGE_QUEUE.$REDIS.master-name"
         const val REDIS_MASTER_NAME_DEFAULT: String = "mymaster"
@@ -154,22 +155,22 @@ class MessageQueueSettings
 
     /**
      * `Optional` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
-     * Indicates whether the `MultiQueue` should connect directly to the redis instance or connect via one or more sentinel instances.
-     * If set to `true` the `MultiQueue` will create a sentinel pool connection instead of a direct connection which is what would occur if this is left as `false`.
-     * By default, this is `false`.
+     * Indicates the configuration of the redis environment that this being connected to.
+     * By default, this is [au.kilemon.messagequeue.configuration.cache.redis.RedisMode.STANDALONE].
      */
-    @Schema(title = "Redis Sentinel Mode Enabled", example = "true",
-        description = "Indicates whether the `MultiQueue` should connect directly to the redis instance or connect via one or more sentinel instances.")
-    @SerializedName(REDIS_USE_SENTINELS)
-    @JsonProperty(REDIS_USE_SENTINELS)
-    @Value("\${$REDIS_USE_SENTINELS:false}")
+    @Schema(title = "Redis Mode", example = "cluster",
+        description = "Indicates the configuration of the redis environment that this being connected to.")
+    @SerializedName(REDIS_MODE)
+    @JsonProperty(REDIS_MODE)
+    @Value("\${$REDIS_MODE:$REDIS_MODE_DEFAULT}")
     @get:Generated
     @set:Generated
-    lateinit var redisUseSentinels: String
+    lateinit var redisMode: String
 
     /**
      * `Optional` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
-     * `Required` when [redisUseSentinels] is set to `true`. Is used to indicate the name of the redis master instance.
+     * `Required` when [redisMode] is set to [au.kilemon.messagequeue.configuration.cache.redis.RedisMode.SENTINEL].
+     * Is used to indicate the name of the redis master instance.
      * By default, this is [REDIS_MASTER_NAME_DEFAULT].
      */
     @Schema(title = "Redis Master Name", example = "not-my-master",

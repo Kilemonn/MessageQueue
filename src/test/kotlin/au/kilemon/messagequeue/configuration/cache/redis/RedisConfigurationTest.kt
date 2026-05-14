@@ -133,9 +133,8 @@ class RedisConfigurationTest
     @Test
     fun testGetConnectionFactory_sentinelWithNoEndpoints()
     {
-        messageQueueSettings.redisUseSentinels = "true"
+        messageQueueSettings.redisMode = RedisMode.SENTINEL.name
         messageQueueSettings.redisEndpoint = ""
-        Assertions.assertTrue(messageQueueSettings.redisUseSentinels.toBoolean())
         Assertions.assertEquals("", messageQueueSettings.redisEndpoint)
         Assertions.assertThrows(RedisInitialisationException::class.java) {
             redisConfiguration.getSentinelConfiguration()
@@ -148,9 +147,8 @@ class RedisConfigurationTest
     @Test
     fun testGetConnectionFactory_standAloneWithNoEndpoints()
     {
-        messageQueueSettings.redisUseSentinels = "false"
+        messageQueueSettings.redisMode = RedisMode.STANDALONE.name
         messageQueueSettings.redisEndpoint = ""
-        Assertions.assertFalse(messageQueueSettings.redisUseSentinels.toBoolean())
         Assertions.assertEquals("", messageQueueSettings.redisEndpoint)
         Assertions.assertThrows(RedisInitialisationException::class.java) {
             redisConfiguration.getStandAloneConfiguration()
@@ -163,14 +161,13 @@ class RedisConfigurationTest
     @Test
     fun testGetConnectionFactory_standAloneWithMultipleEndpoints()
     {
-        messageQueueSettings.redisUseSentinels = "false"
+        messageQueueSettings.redisMode = RedisMode.STANDALONE.name
         val endpoint1Host = "localhost"
         val endpoint1Port = "1234"
         val endpoint1 = "$endpoint1Host:$endpoint1Port"
         val endpoint2 = "redis:6789"
         val endpoints = "$endpoint1,$endpoint2"
         messageQueueSettings.redisEndpoint = endpoints
-        Assertions.assertFalse(messageQueueSettings.redisUseSentinels.toBoolean())
         Assertions.assertEquals(endpoints, messageQueueSettings.redisEndpoint)
         val standAloneConfiguration = redisConfiguration.getStandAloneConfiguration()
         Assertions.assertEquals(endpoint1Host, standAloneConfiguration.hostName)

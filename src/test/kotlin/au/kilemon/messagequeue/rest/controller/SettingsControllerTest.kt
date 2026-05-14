@@ -3,6 +3,7 @@ package au.kilemon.messagequeue.rest.controller
 import au.kilemon.messagequeue.authentication.RestrictionMode
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import au.kilemon.messagequeue.configuration.QueueConfiguration
+import au.kilemon.messagequeue.configuration.cache.redis.RedisMode
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import au.kilemon.messagequeue.settings.StorageMedium
@@ -79,7 +80,7 @@ class SettingsControllerTest
 
         Assertions.assertTrue(settings.redisPrefix.isEmpty())
         Assertions.assertEquals(MessageQueueSettings.REDIS_ENDPOINT_DEFAULT, settings.redisEndpoint)
-        Assertions.assertEquals("false", settings.redisUseSentinels)
+        Assertions.assertEquals(RedisMode.STANDALONE.name, settings.redisMode)
         Assertions.assertEquals(MessageQueueSettings.REDIS_MASTER_NAME_DEFAULT, settings.redisMasterName)
 
         Assertions.assertTrue(settings.sqlEndpoint.isEmpty())

@@ -1,10 +1,10 @@
 package au.kilemon.messagequeue.configuration.cache.redis
 
 import au.kilemon.messagequeue.authentication.AuthenticationMatrix
+import au.kilemon.messagequeue.authentication.RestrictionMode
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.settings.MessageQueueSettings
-import au.kilemon.messagequeue.settings.MessageQueueSettings.Companion.REDIS_USERNAME
 import io.lettuce.core.RedisURI
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -86,8 +86,31 @@ class RedisConfiguration: HasLogger
     private lateinit var messageQueueSettings: MessageQueueSettings
 
     /**
+     * Parse the provided [MessageQueueSettings.redisMode] to a [RedisMode], defaulting to [RedisMode.STANDALONE] if it cannot be determined.
+     */
+    private fun getRedisMode(): RedisMode
+    {
+        val defaultMode = RedisMode.STANDALONE
+        val redisMode = messageQueueSettings.redisMode
+        try
+        {
+
+            if (redisMode.isNotBlank())
+            {
+                return RedisMode.valueOf(redisMode.uppercase())
+            }
+        }
+        catch (ex: Exception)
+        {
+            LOG.warn("No redis mode configured [{}], falling back to default [{}].", redisMode, defaultMode, ex)
+        }
+
+        return defaultMode
+    }
+
+    /**
      * Create the [RedisConnectionFactory] based on the loaded configuration.
-     * If [MessageQueueSettings.redisUseSentinels] is `true` then multiple endpoints are expected in [MessageQueueSettings.redisEndpoint] and will attempt to be parsed out
+     * If [MessageQueueSettings.redisMode] is `true` then multiple endpoints are expected in [MessageQueueSettings.redisEndpoint] and will attempt to be parsed out
      * and set into the [RedisSentinelConfiguration].
      *
      * Otherwise, the first endpoint and port provided will be used to create a [RedisStandaloneConfiguration].
@@ -98,9 +121,14 @@ class RedisConfiguration: HasLogger
     @ConditionalOnProperty(name=[MessageQueueSettings.STORAGE_MEDIUM], havingValue="REDIS")
     fun getConnectionFactory(): RedisConnectionFactory
     {
-        return if (messageQueueSettings.redisUseSentinels.toBoolean())
+        val redisMode = getRedisMode()
+        return if (redisMode == RedisMode.SENTINEL)
         {
             LettuceConnectionFactory(getSentinelConfiguration())
+        }
+        else if (redisMode == RedisMode.CLUSTER)
+        {
+            LettuceConnectionFactory(getClusterConfiguration())
         }
         else
         {
