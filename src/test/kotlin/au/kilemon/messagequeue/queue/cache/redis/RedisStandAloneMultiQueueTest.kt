@@ -50,7 +50,7 @@ class RedisStandAloneMultiQueueTest: MultiQueueTest()
     companion object
     {
         private const val REDIS_PORT: Int = 6379
-        private const val REDIS_CONTAINER: String = "redis:7.2.3-alpine"
+        private const val REDIS_CONTAINER: String = "redis:7.2.14-alpine"
 
         lateinit var redis: GenericContainer<*>
 
