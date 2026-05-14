@@ -10,8 +10,6 @@ name: Build, test and update coverage badge
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 permissions:
   contents: write
