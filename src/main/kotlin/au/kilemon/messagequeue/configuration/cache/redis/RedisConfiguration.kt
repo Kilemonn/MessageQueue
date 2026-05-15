@@ -41,9 +41,14 @@ class RedisConfiguration: HasLogger
         const val REDIS_SENTINEL_DEFAULT_PORT: String = "26379"
 
         /**
-         * The default Redis port for standalone connections.
+         * The default Redis port.
          */
         const val REDIS_DEFAULT_PORT: String = "6379"
+
+        /**
+         * The default Redis gossip port when it is cluster mode.
+         */
+        const val REDIS_DEFAULT_GOSSIP_PORT: String = "16379"
 
         /**
          * A helper method which takes a comma separated list of endpoints and optionally ports in the format: `<endpoint>:<port>,<endpoint2>`.

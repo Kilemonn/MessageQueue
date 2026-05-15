@@ -1,6 +1,5 @@
-package au.kilemon.messagequeue.authentication.authenticator.cache.redis
+package au.kilemon.messagequeue.queue.cache.redis
 
-import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticatorTest
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
 import au.kilemon.messagequeue.configuration.cache.redis.RedisMode
@@ -24,18 +23,20 @@ import org.testcontainers.utility.DockerImageName
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.util.stream.IntStream
+import kotlin.collections.forEach
 
 /**
- * A test class for [RedisAuthenticator] running in a cluster configuration.
+ * A test class for the [RedisMultiQueue] `Component` class running in the
+ * [au.kilemon.messagequeue.configuration.cache.redis.RedisMode.CLUSTER] mode.
  *
  * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
 @TestPropertySource(properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=REDIS"])
 @Testcontainers
-@ContextConfiguration(initializers = [RedisClusterAuthenticatorTest.Initializer::class])
+@ContextConfiguration(initializers = [RedisClusterMultiQueueTest.Initializer::class])
 @Import(*[LoggingConfiguration::class, RedisConfiguration::class, QueueConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class])
-class RedisClusterAuthenticatorTest: MultiQueueAuthenticatorTest()
+class RedisClusterMultiQueueTest: MultiQueueTest()
 {
     companion object
     {
@@ -71,7 +72,7 @@ class RedisClusterAuthenticatorTest: MultiQueueAuthenticatorTest()
     }
 
     /**
-     * The test initialiser for [RedisClusterAuthenticatorTest] to initialise the container and test properties.
+     * The test initialiser for [RedisClusterMultiQueueTest] to initialise the container and test properties.
      *
      * @author github.com/Kilemonn
      */
@@ -87,7 +88,7 @@ class RedisClusterAuthenticatorTest: MultiQueueAuthenticatorTest()
             val hostIp = getHostIp()
             val startCommand = "redis-server --cluster-enabled yes"
             IntStream.range(0, AMOUNT_OF_INSTANCES).forEach {
-                val instance = GenericContainer(DockerImageName.parse(REDIS_CONTAINER))
+                val instance = GenericContainer(DockerImageName.parse(RedisClusterMultiQueueTest.REDIS_CONTAINER))
                     .withExposedPorts(RedisConfiguration.REDIS_DEFAULT_PORT.toInt(), RedisConfiguration.REDIS_DEFAULT_GOSSIP_PORT.toInt())
                     .withReuse(false)
                     .withCommand(startCommand)
@@ -142,6 +143,6 @@ class RedisClusterAuthenticatorTest: MultiQueueAuthenticatorTest()
     fun beforeEach()
     {
         redisInstances.forEach { Assertions.assertTrue(it.isRunning) }
-        multiQueueAuthenticator.clearRestrictedSubQueues()
+        multiQueue.clear()
     }
 }
