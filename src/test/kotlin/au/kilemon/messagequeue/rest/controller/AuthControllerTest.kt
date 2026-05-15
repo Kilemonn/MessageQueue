@@ -10,6 +10,7 @@ import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.rest.response.AuthResponse
 import au.kilemon.messagequeue.settings.MessageQueueSettings
+import com.auth0.jwt.interfaces.DecodedJWT
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import org.junit.jupiter.api.Assertions
@@ -405,5 +406,38 @@ class AuthControllerTest
 
         Assertions.assertEquals(restrictedIdentifiers.size, identifiers.size)
         identifiers.forEach { identifier -> Assertions.assertTrue(restrictedIdentifiers.contains(identifier)) }
+    }
+
+    /**
+     * Ensure that calls to the remove restriction endpoint with an invalid token fail with an unauthorised error code
+     * even when the queue is in any restriction mode.
+     */
+    @Test
+    fun testRemoveRestrictionFromSubQueue_withInvalidToken_inNoneMode()
+    {
+        Mockito.doReturn(RestrictionMode.NONE).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.NONE, multiQueueAuthenticator.getRestrictionMode())
+
+        val token = "invalid-token"
+        Assertions.assertEquals(Optional.empty<DecodedJWT>(),jwtTokenProvider.verifyTokenForSubQueue(token))
+
+        val request = MockMvcRequestBuilders.post("${AuthController.AUTH_PATH}/some-sub-queue")
+            .header(JwtAuthenticationFilter.AUTHORIZATION_HEADER, "${JwtAuthenticationFilter.BEARER_HEADER_VALUE}${token}")
+            .contentType(MediaType.APPLICATION_JSON_VALUE)
+
+        mockMvc.perform(request)
+            .andExpect(MockMvcResultMatchers.status().isUnauthorized)
+
+        Mockito.doReturn(RestrictionMode.HYBRID).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.HYBRID, multiQueueAuthenticator.getRestrictionMode())
+
+        mockMvc.perform(request)
+            .andExpect(MockMvcResultMatchers.status().isUnauthorized)
+
+        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.RESTRICTED, multiQueueAuthenticator.getRestrictionMode())
+
+        mockMvc.perform(request)
+            .andExpect(MockMvcResultMatchers.status().isUnauthorized)
     }
 }
