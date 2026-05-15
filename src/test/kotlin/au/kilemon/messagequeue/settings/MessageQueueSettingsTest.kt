@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.settings
 
+import au.kilemon.messagequeue.configuration.cache.redis.RedisMode
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -19,7 +20,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
     "${MessageQueueSettings.STORAGE_MEDIUM}=REDIS",
     "${MessageQueueSettings.REDIS_ENDPOINT}=123.123.123.123",
     "${MessageQueueSettings.REDIS_PREFIX}=redis",
-    "${MessageQueueSettings.REDIS_USE_SENTINELS}=true",
+    "${MessageQueueSettings.REDIS_MODE}=SENTINEL",
     "${MessageQueueSettings.REDIS_MASTER_NAME}=master"
 ])
 class MessageQueueSettingsTest
@@ -54,6 +55,6 @@ class MessageQueueSettingsTest
         Assertions.assertEquals("123.123.123.123", messageQueueSettings.redisEndpoint)
         Assertions.assertEquals("redis", messageQueueSettings.redisPrefix)
         Assertions.assertEquals("master", messageQueueSettings.redisMasterName)
-        Assertions.assertEquals(true.toString(), messageQueueSettings.redisUseSentinels)
+        Assertions.assertEquals("SENTINEL", messageQueueSettings.redisMode)
     }
 }
