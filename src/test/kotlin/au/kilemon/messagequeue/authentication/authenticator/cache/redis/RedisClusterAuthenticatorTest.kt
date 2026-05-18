@@ -132,7 +132,7 @@ class RedisClusterAuthenticatorTest: MultiQueueAuthenticatorTest()
             val endpoints = StringBuilder()
             redisInstances.forEach { endpoints.append("$hostIp:${it.getMappedPort(RedisConfiguration.REDIS_DEFAULT_PORT.toInt())},") }
             TestPropertyValues.of(
-                "${MessageQueueSettings.REDIS_ENDPOINT}=${endpoints}",
+                "${MessageQueueSettings.CACHE_PREFIX}=${endpoints}",
                 "${MessageQueueSettings.REDIS_MODE}=${RedisMode.CLUSTER.name}"
             ).applyTo(configurableApplicationContext.environment)
         }

@@ -99,8 +99,8 @@ class RedisMultiQueue(private val prefix: String) : MultiQueue(), HasLogger, Cac
             throw IllegalSubQueueIdentifierException(element.subQueue)
         }
 
-        cacheKeyManager.add(appendPrefix(element.subQueue))
         val result = redisTemplate.opsForSet().add(appendPrefix(element.subQueue), element)
+        cacheKeyManager.add(appendPrefix(element.subQueue))
         return result != null && result > 0
     }
 

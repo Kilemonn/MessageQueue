@@ -83,13 +83,8 @@ class RedisSentinelAuthenticatorTest: MultiQueueAuthenticatorTest()
             sentinel.start()
 
             TestPropertyValues.of(
-<<<<<<< HEAD
-                "${MessageQueueSettings.REDIS_ENDPOINT}=${sentinel.host}:${sentinel.getMappedPort(RedisConfiguration.REDIS_SENTINEL_DEFAULT_PORT.toInt())}",
-                "${MessageQueueSettings.REDIS_MODE}=${RedisMode.SENTINEL.name}"
-=======
                 "${MessageQueueSettings.CACHE_ENDPOINT}=${sentinel.host}:${sentinel.getMappedPort(RedisConfiguration.REDIS_SENTINEL_DEFAULT_PORT.toInt())}",
-                "${MessageQueueSettings.REDIS_USE_SENTINELS}=true"
->>>>>>> 36e6084 (Work through adding memcached support. Implementing most methods the same way redis is implemented for now.)
+                "${MessageQueueSettings.REDIS_MODE}=${RedisMode.SENTINEL.name}"
             ).applyTo(configurableApplicationContext.environment)
         }
     }

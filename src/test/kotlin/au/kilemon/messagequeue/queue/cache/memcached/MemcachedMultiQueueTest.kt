@@ -5,6 +5,7 @@ import au.kilemon.messagequeue.configuration.cache.memcached.MemcachedConfigurat
 import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.queue.MultiQueueTest
+import au.kilemon.messagequeue.queue.cache.CacheMultiQueueTest
 import au.kilemon.messagequeue.queue.cache.redis.RedisStandAloneMultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
@@ -28,11 +29,12 @@ import org.testcontainers.utility.DockerImageName
  * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
-@TestPropertySource(properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=MEMCACHED", "${MessageQueueSettings.CACHE_PREFIX}=test"])
+@TestPropertySource(properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=MEMCACHED",
+    "${MessageQueueSettings.CACHE_PREFIX}=test"])
 @Testcontainers
 @ContextConfiguration(initializers = [MemcachedMultiQueueTest.Initializer::class])
 @Import(*[QueueConfiguration::class, LoggingConfiguration::class, MemcachedConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class])
-class MemcachedMultiQueueTest: MultiQueueTest()
+class MemcachedMultiQueueTest: CacheMultiQueueTest()
 {
     companion object
     {
@@ -80,8 +82,9 @@ class MemcachedMultiQueueTest: MultiQueueTest()
      * Check the container is running before each test.
      */
     @BeforeEach
-    fun beforeEach()
+    override fun beforeEach()
     {
+        super.beforeEach()
         Assertions.assertTrue(memcache.isRunning)
     }
 }

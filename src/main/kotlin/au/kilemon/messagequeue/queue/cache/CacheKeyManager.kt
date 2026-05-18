@@ -13,9 +13,14 @@ abstract class CacheKeyManager(protected val prefix: String = "")
         const val CACHE_KEYS_KEY: String = "messagequeue-cache-keys"
     }
 
+    protected fun getReservedKey(): String
+    {
+        return "$prefix$CACHE_KEYS_KEY"
+    }
+
     fun getReservedKeys(): Set<String>
     {
-        return setOf("$prefix$CACHE_KEYS_KEY")
+        return setOf(getReservedKey())
     }
 
     abstract fun add(key: String)
