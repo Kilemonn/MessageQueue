@@ -5,6 +5,7 @@ import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
 import au.kilemon.messagequeue.configuration.cache.redis.RedisMode
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.queue.MultiQueueTest
+import au.kilemon.messagequeue.queue.cache.CacheMultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
@@ -36,7 +37,7 @@ import kotlin.collections.forEach
 @Testcontainers
 @ContextConfiguration(initializers = [RedisClusterMultiQueueTest.Initializer::class])
 @Import(*[LoggingConfiguration::class, RedisConfiguration::class, QueueConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class])
-class RedisClusterMultiQueueTest: MultiQueueTest()
+class RedisClusterMultiQueueTest: CacheMultiQueueTest()
 {
     companion object
     {
@@ -140,8 +141,9 @@ class RedisClusterMultiQueueTest: MultiQueueTest()
     }
 
     @BeforeEach
-    fun beforeEach()
+    override fun beforeEach()
     {
+        super.beforeEach()
         redisInstances.forEach { Assertions.assertTrue(it.isRunning) }
         multiQueue.clear()
     }
