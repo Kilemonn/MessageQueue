@@ -13,7 +13,7 @@ import java.util.stream.Collectors
  *
  * @author github.com/Kilemonn
  */
-class RedisAuthenticator: MultiQueueAuthenticator()
+class RedisAuthenticator(private val prefix: String): MultiQueueAuthenticator()
 {
     companion object
     {
@@ -33,7 +33,7 @@ class RedisAuthenticator: MultiQueueAuthenticator()
     {
         if (!isInNoneMode())
         {
-            return setOf(RESTRICTED_KEY)
+            return setOf("$prefix$RESTRICTED_KEY")
         }
         return setOf()
     }

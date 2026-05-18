@@ -4,6 +4,7 @@ import au.kilemon.messagequeue.authentication.AuthenticationMatrix
 import au.kilemon.messagequeue.authentication.RestrictionMode
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
+import au.kilemon.messagequeue.queue.cache.redis.RedisCacheKeyManager
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import io.lettuce.core.RedisURI
 import org.slf4j.Logger
@@ -256,5 +257,22 @@ class RedisConfiguration: HasLogger
         template.connectionFactory = getConnectionFactory()
         template.keySerializer = StringRedisSerializer()
         return template
+    }
+
+    @Bean
+    @ConditionalOnProperty(name=[MessageQueueSettings.STORAGE_MEDIUM], havingValue="REDIS")
+    fun getRedisCacheKeyManagerRedisTemplate(): RedisTemplate<String, String>
+    {
+        val template = RedisTemplate<String, String>()
+        template.connectionFactory = getConnectionFactory()
+        template.keySerializer = StringRedisSerializer()
+        return template
+    }
+
+    @Bean
+    @ConditionalOnProperty(name=[MessageQueueSettings.STORAGE_MEDIUM], havingValue="REDIS")
+    fun getRedisCacheKeyManager(): RedisCacheKeyManager
+    {
+        return RedisCacheKeyManager()
     }
 }

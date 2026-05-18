@@ -5,6 +5,7 @@ import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueueTest
+import au.kilemon.messagequeue.queue.cache.CacheMultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
@@ -45,7 +46,7 @@ import org.testcontainers.utility.DockerImageName
 @Testcontainers
 @ContextConfiguration(initializers = [RedisStandAloneMultiQueueTest.Initializer::class])
 @Import(*[QueueConfiguration::class, LoggingConfiguration::class, RedisConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class])
-class RedisStandAloneMultiQueueTest: MultiQueueTest()
+class RedisStandAloneMultiQueueTest: CacheMultiQueueTest()
 {
     companion object
     {
@@ -93,8 +94,9 @@ class RedisStandAloneMultiQueueTest: MultiQueueTest()
      * Check the container is running before each test as it's required for the methods to access the [RedisMultiQueue].
      */
     @BeforeEach
-    fun beforeEach()
+    override fun beforeEach()
     {
+        super.beforeEach()
         Assertions.assertTrue(redis.isRunning)
         multiQueue.clear()
     }

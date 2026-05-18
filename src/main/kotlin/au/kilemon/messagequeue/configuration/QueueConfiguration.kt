@@ -12,6 +12,7 @@ import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.logging.Messages
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
+import au.kilemon.messagequeue.queue.cache.CacheKeyManager
 import au.kilemon.messagequeue.queue.cache.redis.RedisMultiQueue
 import au.kilemon.messagequeue.queue.inmemory.InMemoryMultiQueue
 import au.kilemon.messagequeue.queue.nosql.mongo.MongoMultiQueue
@@ -45,10 +46,6 @@ class QueueConfiguration : HasLogger
     @Autowired
     private lateinit var messageSource: ReloadableResourceBundleMessageSource
 
-    @Autowired
-    @Lazy
-    private lateinit var redisTemplate: RedisTemplate<String, QueueMessage>
-
     /**
      * Initialise the [MultiQueue] [Bean] based on the [MessageQueueSettings.storageMedium].
      */
@@ -61,7 +58,7 @@ class QueueConfiguration : HasLogger
         var queue: MultiQueue = InMemoryMultiQueue()
         when (messageQueueSettings.storageMedium.uppercase()) {
             StorageMedium.REDIS.toString() -> {
-                queue = RedisMultiQueue(messageQueueSettings.redisPrefix, redisTemplate)
+                queue = RedisMultiQueue(messageQueueSettings.redisPrefix)
             }
             StorageMedium.SQL.toString() -> {
                 queue = SqlMultiQueue()
@@ -118,7 +115,7 @@ class QueueConfiguration : HasLogger
         var authenticator: MultiQueueAuthenticator = InMemoryAuthenticator()
         when (messageQueueSettings.storageMedium.uppercase()) {
             StorageMedium.REDIS.toString() -> {
-                authenticator = RedisAuthenticator()
+                authenticator = RedisAuthenticator(messageQueueSettings.redisPrefix)
             }
             StorageMedium.SQL.toString() -> {
                 authenticator = SqlAuthenticator()
