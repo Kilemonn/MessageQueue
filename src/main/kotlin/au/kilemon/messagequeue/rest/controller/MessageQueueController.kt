@@ -4,6 +4,7 @@ import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthentica
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
+import au.kilemon.messagequeue.queue.cache.CacheMultiQueue
 import au.kilemon.messagequeue.queue.cache.redis.RedisMultiQueue
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
@@ -264,9 +265,9 @@ open class MessageQueueController : HasLogger
                 @RequestParam(required = false, name = RestParameters.INCLUDE_EMPTY) includeEmpty: Boolean?): ResponseEntity<KeysResponse>
     {
         val keys = messageQueue.keys(includeEmpty != false)
-        if (messageQueue is RedisMultiQueue)
+        if (messageQueue is CacheMultiQueue)
         {
-            return ResponseEntity.ok(KeysResponse((messageQueue as RedisMultiQueue).removePrefix(keys)))
+            return ResponseEntity.ok(KeysResponse((messageQueue as CacheMultiQueue).removePrefix(keys)))
         }
         return ResponseEntity.ok(KeysResponse(keys))
     }

@@ -39,7 +39,7 @@ class MemcachedMultiQueueTest: CacheMultiQueueTest()
     companion object
     {
         private const val MEMCACHED_PORT: Int = 11211
-        private const val MEMCACHED_CONTAINER: String = "memcached:1.6.34-alpine3.21"
+        private const val MEMCACHED_CONTAINER: String = "memcached:1.6.41-alpine3.23"
 
         lateinit var memcache: GenericContainer<*>
 
