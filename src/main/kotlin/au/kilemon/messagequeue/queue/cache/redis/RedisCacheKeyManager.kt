@@ -2,6 +2,7 @@ package au.kilemon.messagequeue.queue.cache.redis
 
 import au.kilemon.messagequeue.queue.cache.CacheKeyManager
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.redis.core.RedisTemplate
 
 /**
@@ -12,6 +13,7 @@ import org.springframework.data.redis.core.RedisTemplate
  */
 class RedisCacheKeyManager: CacheKeyManager()
 {
+    @Qualifier("RedisCacheKeyManagerTemplate")
     @Autowired
     private lateinit var redisTemplate: RedisTemplate<String, String>
 

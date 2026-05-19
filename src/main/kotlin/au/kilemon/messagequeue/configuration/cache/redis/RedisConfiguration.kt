@@ -265,7 +265,7 @@ class RedisConfiguration: HasLogger
         return template
     }
 
-    @Bean
+    @Bean(name=["RedisCacheKeyManagerTemplate"])
     @ConditionalOnProperty(name=[MessageQueueSettings.STORAGE_MEDIUM], havingValue="REDIS")
     fun getRedisCacheKeyManagerRedisTemplate(): RedisTemplate<String, String>
     {
