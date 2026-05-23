@@ -42,7 +42,7 @@ import org.testcontainers.utility.DockerImageName
  * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
-@TestPropertySource(properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=REDIS", "${MessageQueueSettings.REDIS_PREFIX}=test"])
+@TestPropertySource(properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=REDIS", "${MessageQueueSettings.CACHE_PREFIX}=test"])
 @Testcontainers
 @ContextConfiguration(initializers = [RedisStandAloneMultiQueueTest.Initializer::class])
 @Import(*[QueueConfiguration::class, LoggingConfiguration::class, RedisConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class])
@@ -85,7 +85,7 @@ class RedisStandAloneMultiQueueTest: CacheMultiQueueTest()
             redis.start()
 
             TestPropertyValues.of(
-                "${MessageQueueSettings.REDIS_ENDPOINT}=${redis.host}:${redis.getMappedPort(REDIS_PORT)}"
+                "${MessageQueueSettings.CACHE_ENDPOINT}=${redis.host}:${redis.getMappedPort(REDIS_PORT)}"
             ).applyTo(configurableApplicationContext.environment)
         }
     }

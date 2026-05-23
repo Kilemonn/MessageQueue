@@ -80,6 +80,13 @@ abstract class CacheMultiQueueTest: MultiQueueTest()
 
         val keys = keyManager.getKeys()
         Assertions.assertEquals(keysSize, keys.size)
+
+        val multiQueueKeys = multiQueue.keys()
+        IntStream.range(0, keysSize).forEach { i ->
+            val key = "$allSubQueuePrefix$keyPrefix$i"
+            Assertions.assertTrue(keys.contains(key))
+            Assertions.assertTrue(multiQueueKeys.contains(key))
+        }
     }
 
     /**

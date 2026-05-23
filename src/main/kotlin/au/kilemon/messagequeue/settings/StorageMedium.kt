@@ -26,5 +26,10 @@ enum class StorageMedium
     /**
      * Initialise and connect to the defined `mongo` store.
      */
-    MONGO;
+    MONGO,
+
+    /**
+     * Will connect to the defined memcache instance to store queue messages.
+     */
+    MEMCACHED;
 }

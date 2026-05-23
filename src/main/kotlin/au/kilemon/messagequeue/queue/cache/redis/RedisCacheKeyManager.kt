@@ -2,6 +2,7 @@ package au.kilemon.messagequeue.queue.cache.redis
 
 import au.kilemon.messagequeue.queue.cache.CacheKeyManager
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.redis.core.RedisTemplate
 
 /**
@@ -12,31 +13,32 @@ import org.springframework.data.redis.core.RedisTemplate
  */
 class RedisCacheKeyManager: CacheKeyManager()
 {
+    @Qualifier("RedisCacheKeyManagerTemplate")
     @Autowired
     private lateinit var redisTemplate: RedisTemplate<String, String>
 
     override fun add(key: String)
     {
-        redisTemplate.opsForSet().add(CACHE_KEYS_KEY, key)
+        redisTemplate.opsForSet().add(getReservedKey(), key)
     }
 
     override fun remove(key: String)
     {
-        redisTemplate.opsForSet().remove(CACHE_KEYS_KEY, key)
+        redisTemplate.opsForSet().remove(getReservedKey(), key)
     }
 
     override fun contains(key: String): Boolean
     {
-        return redisTemplate.opsForSet().isMember(CACHE_KEYS_KEY, key)
+        return redisTemplate.opsForSet().isMember(getReservedKey(), key)
     }
 
     override fun getKeys(): HashSet<String>
     {
-        return HashSet(redisTemplate.opsForSet().members(CACHE_KEYS_KEY))
+        return HashSet(redisTemplate.opsForSet().members(getReservedKey()))
     }
 
     override fun clear()
     {
-        redisTemplate.delete(CACHE_KEYS_KEY)
+        redisTemplate.delete(getReservedKey())
     }
 }

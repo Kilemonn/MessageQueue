@@ -1,4 +1,4 @@
-package au.kilemon.messagequeue.queue.cache.redis
+package au.kilemon.messagequeue.queue.cache.memcached
 
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
@@ -6,34 +6,30 @@ import au.kilemon.messagequeue.queue.MultiQueue
 import au.kilemon.messagequeue.queue.cache.CacheMultiQueue
 import au.kilemon.messagequeue.queue.exception.IllegalSubQueueIdentifierException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
-import au.kilemon.messagequeue.settings.MessageQueueSettings
+import net.rubyeye.xmemcached.MemcachedClient
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.redis.core.RedisTemplate
 import java.util.Optional
 import java.util.Queue
-
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.stream.Collectors
 import kotlin.collections.HashSet
-import kotlin.jvm.Throws
 
 /**
- * A `Redis` specific implementation of the [MultiQueue].
- * All messages stored and accessed directly from the `Redis` cache.
- * This increasing overhead when checking UUID, but it is required incase the cache is edited manually, or by another message managing instance.
+ * A `Memcached` specific implementation of the [MultiQueue].
+ * All messages stored and accessed directly from the `Memcached` instance.
+ * This increases overhead when checking UUID, but it is required incase the cache is edited manually, or by another message managing instance.
  *
  * @author github.com/Kilemonn
  */
-class RedisMultiQueue(private val prefix: String) : MultiQueue(), HasLogger, CacheMultiQueue
+class MemcachedMultiQueue(private val prefix: String): MultiQueue(), HasLogger, CacheMultiQueue
 {
     override val LOG: Logger = this.initialiseLogger()
 
     @Autowired
-    private lateinit var redisTemplate: RedisTemplate<String, QueueMessage>
+    private lateinit var client: MemcachedClient
 
     @Autowired
-    private lateinit var cacheKeyManager: RedisCacheKeyManager
+    private lateinit var cacheKeyManager: MemcachedCacheKeyManager
 
     /**
      * @return [prefix]
@@ -43,38 +39,38 @@ class RedisMultiQueue(private val prefix: String) : MultiQueue(), HasLogger, Cac
         return prefix
     }
 
-    override fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
+    override fun persistMessageInternal(message: QueueMessage)
     {
-        val queue = ConcurrentLinkedQueue<QueueMessage>()
-        val set = redisTemplate.opsForSet().members(appendPrefix(subQueue))
-        if (!set.isNullOrEmpty())
+        val queue = getSubQueue(message.subQueue)
+        val matchingMessage = queue.stream().filter{ element -> element.uuid == message.uuid }.findFirst()
+        if (matchingMessage.isPresent)
         {
-            queue.addAll(set.sortedBy { it.uuid })
+            val wasRemoved = removeInternal(matchingMessage.get())
+            val wasReAdded = addInternal(message)
+            if (wasRemoved && wasReAdded)
+            {
+                return
+            }
         }
-        return queue
+        throw MessageUpdateException(message.uuid)
     }
 
-    override fun getAssignedMessagesInSubQueue(subQueue: String, assignedTo: String?): Queue<QueueMessage>
+    override fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
     {
-        val queue = ConcurrentLinkedQueue<QueueMessage>()
-        val existingQueue = getSubQueue(subQueue)
-        if (existingQueue.isNotEmpty())
+        var queue: Queue<QueueMessage>? = client.get<Queue<QueueMessage>?>(appendPrefix(subQueue))
+        if (queue == null)
         {
-            if (assignedTo == null)
-            {
-                queue.addAll(existingQueue.stream().filter { message -> message.assignedTo != null }.collect(Collectors.toList()))
-            }
-            else
-            {
-                queue.addAll(existingQueue.stream().filter { message -> message.assignedTo == assignedTo }.collect(Collectors.toList()))
-            }
+            queue = ConcurrentLinkedQueue<QueueMessage>()
+            client.set(appendPrefix(subQueue), 0, queue)
         }
-        return queue
+
+        // Memcached does not guarantee the order, so we need to order it ourselves
+        return ConcurrentLinkedQueue(queue.sortedBy { it.uuid })
     }
 
     override fun performHealthCheckInternal()
     {
-        redisTemplate.opsForSet().members("")
+        client.get<Any?>("health-check-key")
     }
 
     override fun getMessageByUUID(uuid: String): Optional<QueueMessage>
@@ -90,26 +86,6 @@ class RedisMultiQueue(private val prefix: String) : MultiQueue(), HasLogger, Cac
         return Optional.empty()
     }
 
-    @Throws(IllegalSubQueueIdentifierException::class)
-    override fun addInternal(element: QueueMessage): Boolean
-    {
-        if (cacheKeyManager.getReservedKeys().contains(element.subQueue)
-            || cacheKeyManager.getReservedKeys().contains(appendPrefix(element.subQueue)))
-        {
-            throw IllegalSubQueueIdentifierException(element.subQueue)
-        }
-
-        val result = redisTemplate.opsForSet().add(appendPrefix(element.subQueue), element)
-        cacheKeyManager.add(appendPrefix(element.subQueue))
-        return result != null && result > 0
-    }
-
-    override fun removeInternal(element: QueueMessage): Boolean
-    {
-        val result = redisTemplate.opsForSet().remove(appendPrefix(element.subQueue), element)
-        return result != null && result > 0
-    }
-
     override fun clearSubQueueInternal(subQueue: String): Int
     {
         var amountRemoved = 0
@@ -117,7 +93,7 @@ class RedisMultiQueue(private val prefix: String) : MultiQueue(), HasLogger, Cac
         if (queue.isNotEmpty())
         {
             amountRemoved = queue.size
-            redisTemplate.delete(appendPrefix(subQueue))
+            client.delete(appendPrefix(subQueue))
             LOG.debug("Cleared existing sub-queue [{}]. Removed [{}] message entries.", subQueue, amountRemoved)
         }
         else
@@ -156,8 +132,8 @@ class RedisMultiQueue(private val prefix: String) : MultiQueue(), HasLogger, Cac
             val retainedKeys = HashSet<String>()
             for (key: String in keys)
             {
-                val sizeOfQueue = redisTemplate.opsForSet().size(key)
-                if (sizeOfQueue != null && sizeOfQueue > 0)
+                val sizeOfQueue = getSubQueue(key).size
+                if (sizeOfQueue > 0)
                 {
                     LOG.trace("Sub-queue [{}] is not empty and will be returned in keys() call.", key)
                     retainedKeys.add(key)
@@ -184,22 +160,24 @@ class RedisMultiQueue(private val prefix: String) : MultiQueue(), HasLogger, Cac
         return Optional.empty()
     }
 
-    /**
-     * [RedisTemplate] does not allow for inplace object updates, so we will need to remove the [message] then re-add the [message] to perform the update.
-     * Since we cannot "remove" the message directly, we need to find the matching message via UUID.
-     */
-    override fun persistMessageInternal(message: QueueMessage)
+    override fun addInternal(element: QueueMessage): Boolean
     {
-        val matchingMessage = getMessageByUUID(message.uuid)
-        if (matchingMessage.isPresent)
+        if (cacheKeyManager.getReservedKeys().contains(element.subQueue)
+            || cacheKeyManager.getReservedKeys().contains(appendPrefix(element.subQueue)))
         {
-            val wasRemoved = removeInternal(matchingMessage.get())
-            val wasReAdded = addInternal(message)
-            if (wasRemoved && wasReAdded)
-            {
-                return
-            }
+            throw IllegalSubQueueIdentifierException(element.subQueue)
         }
-        throw MessageUpdateException(message.uuid)
+
+        val queue: Queue<QueueMessage> = getSubQueue(element.subQueue)
+        val wasAdded = queue.add(element)
+        cacheKeyManager.add(appendPrefix(element.subQueue))
+        return wasAdded && client.set(appendPrefix(element.subQueue), 0, queue)
+    }
+
+    override fun removeInternal(element: QueueMessage): Boolean
+    {
+        val queue: Queue<QueueMessage> = getSubQueue(element.subQueue)
+        val wasRemoved = queue.remove(element)
+        return wasRemoved && client.set(appendPrefix(element.subQueue), 0, queue)
     }
 }

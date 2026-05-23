@@ -294,7 +294,7 @@ abstract class MultiQueueTest
         queue.forEach { message ->
             if (previousUuid != null)
             {
-                Assertions.assertTrue(previousUuid.compareTo(message.uuid) < 0)
+                Assertions.assertTrue(previousUuid < message.uuid)
             }
 
             previousUuid = message.uuid

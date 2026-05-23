@@ -88,7 +88,7 @@ class RedisSentinelMultiQueueTest: CacheMultiQueueTest()
             sentinel.start()
 
             TestPropertyValues.of(
-                "${MessageQueueSettings.REDIS_ENDPOINT}=${sentinel.host}:${sentinel.getMappedPort(RedisConfiguration.REDIS_SENTINEL_DEFAULT_PORT.toInt())}",
+                "${MessageQueueSettings.CACHE_ENDPOINT}=${sentinel.host}:${sentinel.getMappedPort(RedisConfiguration.REDIS_SENTINEL_DEFAULT_PORT.toInt())}",
                 "${MessageQueueSettings.REDIS_MODE}=${RedisMode.SENTINEL.name}"
             ).applyTo(configurableApplicationContext.environment)
         }
