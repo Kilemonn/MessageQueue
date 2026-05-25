@@ -5,6 +5,7 @@ import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueueTest
+import au.kilemon.messagequeue.queue.cache.CacheMultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
@@ -41,16 +42,16 @@ import org.testcontainers.utility.DockerImageName
  * @author github.com/Kilemonn
  */
 @ExtendWith(SpringExtension::class)
-@TestPropertySource(properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=REDIS", "${MessageQueueSettings.REDIS_PREFIX}=test"])
+@TestPropertySource(properties = ["${MessageQueueSettings.STORAGE_MEDIUM}=REDIS", "${MessageQueueSettings.CACHE_PREFIX}=test"])
 @Testcontainers
 @ContextConfiguration(initializers = [RedisStandAloneMultiQueueTest.Initializer::class])
 @Import(*[QueueConfiguration::class, LoggingConfiguration::class, RedisConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class])
-class RedisStandAloneMultiQueueTest: MultiQueueTest()
+class RedisStandAloneMultiQueueTest: CacheMultiQueueTest()
 {
     companion object
     {
         private const val REDIS_PORT: Int = 6379
-        private const val REDIS_CONTAINER: String = "redis:7.2.3-alpine"
+        private const val REDIS_CONTAINER: String = "redis:7.2.14-alpine"
 
         lateinit var redis: GenericContainer<*>
 
@@ -84,7 +85,7 @@ class RedisStandAloneMultiQueueTest: MultiQueueTest()
             redis.start()
 
             TestPropertyValues.of(
-                "${MessageQueueSettings.REDIS_ENDPOINT}=${redis.host}:${redis.getMappedPort(REDIS_PORT)}"
+                "${MessageQueueSettings.CACHE_ENDPOINT}=${redis.host}:${redis.getMappedPort(REDIS_PORT)}"
             ).applyTo(configurableApplicationContext.environment)
         }
     }
@@ -93,8 +94,9 @@ class RedisStandAloneMultiQueueTest: MultiQueueTest()
      * Check the container is running before each test as it's required for the methods to access the [RedisMultiQueue].
      */
     @BeforeEach
-    fun beforeEach()
+    override fun beforeEach()
     {
+        super.beforeEach()
         Assertions.assertTrue(redis.isRunning)
         multiQueue.clear()
     }

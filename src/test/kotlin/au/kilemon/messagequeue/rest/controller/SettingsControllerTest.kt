@@ -3,6 +3,7 @@ package au.kilemon.messagequeue.rest.controller
 import au.kilemon.messagequeue.authentication.RestrictionMode
 import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthenticator
 import au.kilemon.messagequeue.configuration.QueueConfiguration
+import au.kilemon.messagequeue.configuration.cache.redis.RedisMode
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import au.kilemon.messagequeue.settings.StorageMedium
@@ -12,12 +13,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.MvcResult
@@ -56,7 +57,7 @@ class SettingsControllerTest
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @SpyBean
+    @MockitoSpyBean
     private lateinit var multiQueueAuthenticator: MultiQueueAuthenticator
 
     private val gson: Gson = Gson()
@@ -77,9 +78,10 @@ class SettingsControllerTest
         Assertions.assertEquals(StorageMedium.IN_MEMORY.toString(), settings.storageMedium)
         Assertions.assertEquals(RestrictionMode.NONE.toString(), settings.restrictionMode)
 
-        Assertions.assertTrue(settings.redisPrefix.isEmpty())
-        Assertions.assertEquals(MessageQueueSettings.REDIS_ENDPOINT_DEFAULT, settings.redisEndpoint)
-        Assertions.assertEquals("false", settings.redisUseSentinels)
+        Assertions.assertTrue(settings.cachePrefix.isEmpty())
+        Assertions.assertEquals(MessageQueueSettings.REDIS_ENDPOINT_DEFAULT, settings.cacheEndpoint)
+        Assertions.assertEquals(RedisMode.STANDALONE.name, settings.redisMode)
+
         Assertions.assertEquals(MessageQueueSettings.REDIS_MASTER_NAME_DEFAULT, settings.redisMasterName)
 
         Assertions.assertTrue(settings.sqlEndpoint.isEmpty())

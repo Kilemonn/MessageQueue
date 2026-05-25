@@ -5,7 +5,9 @@ import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
 import org.slf4j.Logger
-import java.util.*
+import java.util.Optional
+import java.util.Queue
+
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicLong
@@ -33,22 +35,6 @@ open class InMemoryMultiQueue : MultiQueue(), HasLogger
     private val messageQueue: ConcurrentHashMap<String, Queue<QueueMessage>> = ConcurrentHashMap()
 
     private val maxQueueIndex: HashMap<String, AtomicLong> = HashMap()
-
-    /**
-     * This index is special compared to the other [au.kilemon.messagequeue.settings.StorageMedium] it will be incremented once retrieved.
-     * So we could be skipping indexes, but it should be fine since it's only used for message ordering.
-     */
-    override fun getNextSubQueueIndex(subQueue: String): Optional<Long>
-    {
-        var index = maxQueueIndex[subQueue]
-        if (index == null)
-        {
-            index = AtomicLong(1)
-            maxQueueIndex[subQueue] = index
-            LOG.trace("Creating new index for subQueue [{}], index starting at [{}].", subQueue, index)
-        }
-        return Optional.of(index.getAndIncrement())
-    }
 
     override fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
     {

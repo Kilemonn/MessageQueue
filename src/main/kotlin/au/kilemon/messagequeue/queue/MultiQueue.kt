@@ -9,7 +9,8 @@ import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
-import java.util.*
+import java.util.Optional
+import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.stream.Collectors
 
@@ -49,18 +50,6 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
             }
             return internalSize
         }
-
-    /**
-     * Get the next queue index.
-     * If it does not exist yet, a default value of 1 will be set and returned.
-     *
-     * This can be overridden to return [Optional.EMPTY] to not override the ID of the
-     * incoming messages even if it is empty as it is maintained by the underlying mechanism
-     * (in most cases a database).
-     *
-     * @return the current value of the index before it was incremented
-     */
-    abstract fun getNextSubQueueIndex(subQueue: String): Optional<Long>
 
     /**
      * A wrapper for the [MultiQueue.persistMessageInternal] so this method can be synchronised.
@@ -368,11 +357,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      */
     fun keys(includeEmpty: Boolean = true): Set<String>
     {
-        val keysSet = keysInternal(includeEmpty)
-
-        // Remove the restricted key(s)
-        multiQueueAuthenticator.getReservedSubQueues().forEach { reservedSubQueue -> keysSet.remove(reservedSubQueue) }
-        return keysSet
+        return keysInternal(includeEmpty)
     }
 
     /**
@@ -407,14 +392,6 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
         val subQueueMessageAlreadyExistsIn = containsUUID(element.uuid)
         if ( !subQueueMessageAlreadyExistsIn.isPresent)
         {
-            if (element.id == null)
-            {
-                val index = getNextSubQueueIndex(element.subQueue)
-                if (index.isPresent)
-                {
-                    element.id = index.get()
-                }
-            }
             val wasAdded = addInternal(element)
             return if (wasAdded)
             {

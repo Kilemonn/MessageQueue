@@ -20,7 +20,9 @@ import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import org.springframework.web.servlet.HandlerExceptionResolver
-import java.util.*
+import java.util.Optional
+import kotlin.jvm.optionals.getOrElse
+
 
 /**
  * A filter responsible for verifying provided Jwt tokens when sub-queues are being accessed.
@@ -97,7 +99,7 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
             }
             else if (authenticator.isInHybridMode())
             {
-                LOG.trace("Allowing request through for lower layer to check as authentication is set to [{}].", RestrictionMode.NONE)
+                LOG.trace("Allowing request through for lower layer to check as authentication is set to [{}].", RestrictionMode.HYBRID)
                 filterChain.doFilter(request, response)
             }
             else if (authenticator.isInRestrictedMode())
@@ -109,12 +111,18 @@ class JwtAuthenticationFilter: OncePerRequestFilter(), HasLogger
                 }
                 else
                 {
-                    val token = if (subQueue.isPresent) subQueue.get() else "null"
+                    val token = subQueue.getOrElse{ "null" }
                     LOG.error("Failed to manipulate sub-queue [{}] with provided token as the authentication level is set to [{}].", token, authenticator.getRestrictionMode())
                     handlerExceptionResolver.resolveException(request, response, null, MultiQueueAuthenticationException())
                     return
                 }
             }
+        }
+        catch (ex: MultiQueueAuthenticationException)
+        {
+            LOG.error("Provided token is invalid and failed to be verified.", ex)
+            handlerExceptionResolver.resolveException(request, response, null, ex)
+            return
         }
         finally
         {

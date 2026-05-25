@@ -2,9 +2,11 @@ package au.kilemon.messagequeue.queue.cache.redis
 
 import au.kilemon.messagequeue.configuration.QueueConfiguration
 import au.kilemon.messagequeue.configuration.cache.redis.RedisConfiguration
+import au.kilemon.messagequeue.configuration.cache.redis.RedisMode
 import au.kilemon.messagequeue.logging.LoggingConfiguration
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueueTest
+import au.kilemon.messagequeue.queue.cache.CacheMultiQueueTest
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
@@ -21,7 +23,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
-import java.util.*
+
 
 /**
  * A test class for the [RedisMultiQueue] `Component` class running in the Sentinel mode.
@@ -35,11 +37,11 @@ import java.util.*
 @Testcontainers
 @ContextConfiguration(initializers = [RedisSentinelMultiQueueTest.Initializer::class])
 @Import(*[LoggingConfiguration::class, RedisConfiguration::class, QueueConfiguration::class, MultiQueueTest.MultiQueueTestConfiguration::class])
-class RedisSentinelMultiQueueTest: MultiQueueTest()
+class RedisSentinelMultiQueueTest: CacheMultiQueueTest()
 {
     companion object
     {
-        private const val REDIS_CONTAINER: String = "redis:7.2.3-alpine"
+        private const val REDIS_CONTAINER: String = "redis:7.2.14-alpine"
         private const val REDIS_SENTINEL_CONTAINER: String = "s7anley/redis-sentinel-docker:3.2.12"
 
         lateinit var redis: GenericContainer<*>
@@ -86,8 +88,8 @@ class RedisSentinelMultiQueueTest: MultiQueueTest()
             sentinel.start()
 
             TestPropertyValues.of(
-                "${MessageQueueSettings.REDIS_ENDPOINT}=${sentinel.host}:${sentinel.getMappedPort(RedisConfiguration.REDIS_SENTINEL_DEFAULT_PORT.toInt())}",
-                "${MessageQueueSettings.REDIS_USE_SENTINELS}=true"
+                "${MessageQueueSettings.CACHE_ENDPOINT}=${sentinel.host}:${sentinel.getMappedPort(RedisConfiguration.REDIS_SENTINEL_DEFAULT_PORT.toInt())}",
+                "${MessageQueueSettings.REDIS_MODE}=${RedisMode.SENTINEL.name}"
             ).applyTo(configurableApplicationContext.environment)
         }
     }
@@ -96,8 +98,9 @@ class RedisSentinelMultiQueueTest: MultiQueueTest()
      * Check the container is running before each test as it's required for the methods to access the [RedisMultiQueue].
      */
     @BeforeEach
-    fun beforeEach()
+    override fun beforeEach()
     {
+        super.beforeEach()
         Assertions.assertTrue(redis.isRunning)
         Assertions.assertTrue(sentinel.isRunning)
         multiQueue.clear()

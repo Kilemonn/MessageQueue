@@ -1,15 +1,20 @@
 package au.kilemon.messagequeue.configuration.cache.redis
 
 import au.kilemon.messagequeue.authentication.AuthenticationMatrix
+import au.kilemon.messagequeue.authentication.RestrictionMode
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
+import au.kilemon.messagequeue.queue.cache.redis.RedisCacheKeyManager
 import au.kilemon.messagequeue.settings.MessageQueueSettings
+import io.lettuce.core.RedisURI
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.data.redis.connection.RedisClusterConfiguration
 import org.springframework.data.redis.connection.RedisConnectionFactory
+import org.springframework.data.redis.connection.RedisNode
 import org.springframework.data.redis.connection.RedisSentinelConfiguration
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
@@ -37,9 +42,14 @@ class RedisConfiguration: HasLogger
         const val REDIS_SENTINEL_DEFAULT_PORT: String = "26379"
 
         /**
-         * The default Redis port for standalone connections.
+         * The default Redis port.
          */
         const val REDIS_DEFAULT_PORT: String = "6379"
+
+        /**
+         * The default Redis gossip port when it is cluster mode.
+         */
+        const val REDIS_DEFAULT_GOSSIP_PORT: String = "16379"
 
         /**
          * A helper method which takes a comma separated list of endpoints and optionally ports in the format: `<endpoint>:<port>,<endpoint2>`.
@@ -82,8 +92,35 @@ class RedisConfiguration: HasLogger
     private lateinit var messageQueueSettings: MessageQueueSettings
 
     /**
+     * Parse the provided [MessageQueueSettings.redisMode] to a [RedisMode], defaulting to [RedisMode.STANDALONE] if it cannot be determined.
+     */
+    private fun getRedisMode(): RedisMode
+    {
+        val defaultMode = RedisMode.STANDALONE
+        val redisMode = messageQueueSettings.redisMode
+        try
+        {
+
+            if (redisMode.isNotBlank())
+            {
+                return RedisMode.valueOf(redisMode.uppercase())
+            }
+        }
+        catch (ex: Exception)
+        {
+            LOG.warn("No redis mode configured [{}], falling back to default [{}].", redisMode, defaultMode, ex)
+        }
+
+        return defaultMode
+    }
+
+    /**
      * Create the [RedisConnectionFactory] based on the loaded configuration.
-     * If [MessageQueueSettings.redisUseSentinels] is `true` then multiple endpoints are expected in [MessageQueueSettings.redisEndpoint] and will attempt to be parsed out
+<<<<<<< HEAD
+     * If [MessageQueueSettings.redisMode] is `true` then multiple endpoints are expected in [MessageQueueSettings.redisEndpoint] and will attempt to be parsed out
+=======
+     * If [MessageQueueSettings.redisUseSentinels] is `true` then multiple endpoints are expected in [MessageQueueSettings.cacheEndpoint] and will attempt to be parsed out
+>>>>>>> 36e6084 (Work through adding memcached support. Implementing most methods the same way redis is implemented for now.)
      * and set into the [RedisSentinelConfiguration].
      *
      * Otherwise, the first endpoint and port provided will be used to create a [RedisStandaloneConfiguration].
@@ -94,9 +131,14 @@ class RedisConfiguration: HasLogger
     @ConditionalOnProperty(name=[MessageQueueSettings.STORAGE_MEDIUM], havingValue="REDIS")
     fun getConnectionFactory(): RedisConnectionFactory
     {
-        return if (messageQueueSettings.redisUseSentinels.toBoolean())
+        val redisMode = getRedisMode()
+        return if (redisMode == RedisMode.SENTINEL)
         {
             LettuceConnectionFactory(getSentinelConfiguration())
+        }
+        else if (redisMode == RedisMode.CLUSTER)
+        {
+            LettuceConnectionFactory(getClusterConfiguration())
         }
         else
         {
@@ -110,10 +152,11 @@ class RedisConfiguration: HasLogger
     fun getSentinelConfiguration(): RedisSentinelConfiguration
     {
         LOG.info("Initialising redis sentinel configuration with the following configuration: Endpoints {}, master {}. With prefix {}.",
-            messageQueueSettings.redisEndpoint, messageQueueSettings.redisMasterName, messageQueueSettings.redisPrefix)
+            messageQueueSettings.cacheEndpoint, messageQueueSettings.redisMasterName, messageQueueSettings.cachePrefix)
+
         val redisSentinelConfiguration = RedisSentinelConfiguration()
         redisSentinelConfiguration.master(messageQueueSettings.redisMasterName)
-        val sentinelEndpoints = stringToInetSocketAddresses(messageQueueSettings.redisEndpoint, REDIS_SENTINEL_DEFAULT_PORT)
+        val sentinelEndpoints = stringToInetSocketAddresses(messageQueueSettings.cacheEndpoint, REDIS_SENTINEL_DEFAULT_PORT)
 
         if (sentinelEndpoints.isEmpty())
         {
@@ -134,10 +177,11 @@ class RedisConfiguration: HasLogger
      */
     fun getStandAloneConfiguration(): RedisStandaloneConfiguration
     {
-        LOG.info("Initialising redis configuration with the following configuration: Endpoint [{}], prefix [{}].",
-            messageQueueSettings.redisEndpoint, messageQueueSettings.redisPrefix)
+        LOG.info("Initialising redis standalone configuration with the following configuration: Endpoint [{}], prefix [{}].",
+            messageQueueSettings.cacheEndpoint, messageQueueSettings.cachePrefix)
+
         val redisConfiguration = RedisStandaloneConfiguration()
-        val redisEndpoints = stringToInetSocketAddresses(messageQueueSettings.redisEndpoint, REDIS_DEFAULT_PORT)
+        val redisEndpoints = stringToInetSocketAddresses(messageQueueSettings.cacheEndpoint, REDIS_DEFAULT_PORT)
         if (redisEndpoints.isEmpty())
         {
             LOG.error("No redis endpoints defined for standalone configuration. Unable to initialise redis configuration.")
@@ -151,6 +195,44 @@ class RedisConfiguration: HasLogger
         redisConfiguration.hostName = redisEndpoints[0].hostName
         redisConfiguration.port = redisEndpoints[0].port
         return redisConfiguration
+    }
+
+    fun getClusterConfiguration(): RedisClusterConfiguration
+    {
+        LOG.info("Initialising redis cluster configuration with the following configuration: Endpoint [{}], prefix [{}].",
+            messageQueueSettings.cacheEndpoint, messageQueueSettings.cachePrefix)
+
+        val configuration = RedisClusterConfiguration()
+        val nodes = endpointToNodes(messageQueueSettings.cacheEndpoint)
+        configuration.setClusterNodes(nodes)
+
+        return configuration
+    }
+
+    fun endpointToNodes(endpoints: String): List<RedisNode>
+    {
+        val nodes = ArrayList<RedisNode>()
+        var endpointString = endpoints
+
+        if (endpointString.startsWith(RedisURI.URI_SCHEME_REDIS + "s://"))
+        {
+            endpointString = endpointString.removePrefix(RedisURI.URI_SCHEME_REDIS + "s://")
+        }
+        else if (endpointString.startsWith(RedisURI.URI_SCHEME_REDIS + "://"))
+        {
+            endpointString = endpointString.removePrefix(RedisURI.URI_SCHEME_REDIS + "://")
+        }
+
+        val split = endpointString.split(",")
+        for (endpoint in split)
+        {
+            if (endpoint.isNotBlank())
+            {
+                nodes.add(RedisNode.fromString(endpoint, RedisNode.DEFAULT_PORT))
+            }
+        }
+
+        return nodes
     }
 
     /**
@@ -181,5 +263,22 @@ class RedisConfiguration: HasLogger
         template.connectionFactory = getConnectionFactory()
         template.keySerializer = StringRedisSerializer()
         return template
+    }
+
+    @Bean(name=["RedisCacheKeyManagerTemplate"])
+    @ConditionalOnProperty(name=[MessageQueueSettings.STORAGE_MEDIUM], havingValue="REDIS")
+    fun getRedisCacheKeyManagerRedisTemplate(): RedisTemplate<String, String>
+    {
+        val template = RedisTemplate<String, String>()
+        template.connectionFactory = getConnectionFactory()
+        template.keySerializer = StringRedisSerializer()
+        return template
+    }
+
+    @Bean
+    @ConditionalOnProperty(name=[MessageQueueSettings.STORAGE_MEDIUM], havingValue="REDIS")
+    fun getRedisCacheKeyManager(): RedisCacheKeyManager
+    {
+        return RedisCacheKeyManager()
     }
 }

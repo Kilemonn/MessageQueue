@@ -5,7 +5,7 @@
 # Push image to remote
 # docker push kilemon/message-queue:0.1.5
 
-FROM gradle:8.12.1-jdk17-alpine as builder
+FROM gradle:8.14.4-jdk17-alpine AS builder
 
 WORKDIR /builder
 
@@ -19,7 +19,10 @@ COPY settings.gradle.kts .
 # Run gradle build/package/tests
 RUN ["gradle", "build", "-x", "test"]
 
-FROM kilemon/openjdk-alpine:alpine-3.20.0-jdk-17.0.11 as runner
+FROM amazoncorretto:17-alpine3.23-jdk AS runner
+
+RUN apk update && apk upgrade --no-cache
+
 WORKDIR /messagequeue
 
 # Copy in artifact from above step

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.mockito.Mockito
 import org.slf4j.MDC
-import org.springframework.boot.test.mock.mockito.SpyBean
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 
 /**
  * An abstract test class for the [MultiQueueAuthenticator] class.
@@ -20,7 +20,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class MultiQueueAuthenticatorTest
 {
-    @SpyBean
+    @MockitoSpyBean
     protected lateinit var multiQueueAuthenticator: MultiQueueAuthenticator
 
     /**
@@ -334,5 +334,24 @@ abstract class MultiQueueAuthenticatorTest
         multiQueueAuthenticator.clearRestrictedSubQueues()
         val emptyIdentifiers = multiQueueAuthenticator.getRestrictedSubQueueIdentifiers()
         Assertions.assertTrue(emptyIdentifiers.isEmpty())
+    }
+
+    /**
+     * Ensure [MultiQueueAuthenticator.canAccessSubQueue] returns `false` or throws a [MultiQueueAuthorisationException]
+     * if a reserved sub-queue name is used.
+     */
+    @Test
+    fun testCanAccessSubQueue_UsingReservedSubQueue()
+    {
+        Mockito.doReturn(RestrictionMode.RESTRICTED).`when`(multiQueueAuthenticator).getRestrictionMode()
+        Assertions.assertEquals(RestrictionMode.RESTRICTED, multiQueueAuthenticator.getRestrictionMode())
+
+        if (multiQueueAuthenticator.getReservedSubQueues().isNotEmpty())
+        {
+            Assertions.assertFalse(multiQueueAuthenticator.canAccessSubQueue(multiQueueAuthenticator.getReservedSubQueues().first(), false))
+            Assertions.assertThrows(MultiQueueAuthorisationException::class.java, {
+                multiQueueAuthenticator.canAccessSubQueue(multiQueueAuthenticator.getReservedSubQueues().first(), true)
+            })
+        }
     }
 }

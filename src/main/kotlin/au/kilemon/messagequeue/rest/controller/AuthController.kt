@@ -139,24 +139,18 @@ open class AuthController : HasLogger
         {
             if (multiQueueAuthenticator.isRestricted(subQueue))
             {
-                return if (multiQueueAuthenticator.removeRestriction(subQueue))
+                if (clearQueue == true)
                 {
-                    if (clearQueue == true)
-                    {
-                        LOG.info("Restriction removed and clearing sub-queue [{}].", subQueue)
-                        multiQueue.clearSubQueue(subQueue)
-                    }
-                    else
-                    {
-                        LOG.info("Removed restriction from sub-queue [{}] without clearing stored messages.", subQueue)
-                    }
-                    ResponseEntity.ok().build()
+                    LOG.info("Removing restriction and clearing sub-queue [{}].", subQueue)
+                    multiQueue.clearSubQueue(subQueue)
                 }
                 else
                 {
-                    LOG.error("Failed to remove restriction for sub-queue [{}].", subQueue)
-                    ResponseEntity.internalServerError().build()
+                    LOG.info("Removing restriction from sub-queue [{}] without clearing stored messages.", subQueue)
                 }
+
+                multiQueueAuthenticator.removeRestriction(subQueue)
+                return ResponseEntity.ok().build()
             }
             else
             {

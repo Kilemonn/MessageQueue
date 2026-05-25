@@ -4,9 +4,11 @@ import au.kilemon.messagequeue.authentication.authenticator.MultiQueueAuthentica
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
+import au.kilemon.messagequeue.queue.cache.CacheMultiQueue
 import au.kilemon.messagequeue.queue.cache.redis.RedisMultiQueue
 import au.kilemon.messagequeue.queue.exception.DuplicateMessageException
 import au.kilemon.messagequeue.queue.exception.HealthCheckFailureException
+import au.kilemon.messagequeue.rest.controller.model.CreateMessage
 import au.kilemon.messagequeue.rest.response.KeysResponse
 import au.kilemon.messagequeue.rest.response.MessageResponse
 import au.kilemon.messagequeue.rest.response.OwnersMapResponse
@@ -29,7 +31,8 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
-import java.util.*
+import java.util.Queue
+
 import java.util.stream.Collectors
 
 /**
@@ -171,11 +174,11 @@ open class MessageQueueController : HasLogger
     }
 
     /**
-     * Get a message directly via [UUID] provided as a [String].
+     * Get a message directly via [java.util.UUID] provided as a [String].
      *
-     * @throws [HttpStatus.NO_CONTENT] if a [QueueMessage] with the provided [uuid] does not exist
+     * @throws [org.springframework.http.HttpStatus.NO_CONTENT] if a [QueueMessage] with the provided [uuid] does not exist
      *
-     * @param uuid the [UUID] of the message to retrieve
+     * @param uuid the [java.util.UUID] of the message to retrieve
      * @return [MessageResponse] containing the found [QueueMessage] otherwise a [HttpStatus.NO_CONTENT] exception will be thrown
      */
     @Operation(summary = "Retrieve a queue message by UUID.", description = "Retrieve a queue message regardless of its sub-queue, directly by UUID.")
@@ -203,8 +206,8 @@ open class MessageQueueController : HasLogger
      * Create a new [QueueMessage] with the provided [RequestBody].
      * The [QueueMessage] will not be created if a [QueueMessage] already exists with the same [QueueMessage.uuid].
      *
-     * @throws [HttpStatus.INTERNAL_SERVER_ERROR] if there is an issue adding the new [QueueMessage]
-     * @throws [HttpStatus.CONFLICT] if a [QueueMessage] already exists with the same [UUID]
+     * @throws [org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR] if there is an issue adding the new [QueueMessage]
+     * @throws [org.springframework.http.HttpStatus.CONFLICT] if a [QueueMessage] already exists with the same [java.util.UUID]
      *
      * @param queueMessage the new [QueueMessage] to create.
      * @return the created [QueueMessage] wrapped in a [MessageResponse]
@@ -216,17 +219,19 @@ open class MessageQueueController : HasLogger
         ApiResponse(responseCode = "409", description = "A queue message already exists with the same UUID.", content = [Content()]), // Add empty Content() to remove duplicate responses in swagger docs
         ApiResponse(responseCode = "500", description = "An internal system error occurred when adding the new queue message.", content = [Content()])
     )
-    fun createMessage(@io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, description = "The new queue message to create in the multi queue.") @Valid @RequestBody queueMessage: QueueMessage): ResponseEntity<MessageResponse>
+    fun createMessage(@io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, description = "The new queue message to create in the multi queue.") @Valid @RequestBody createMessage: CreateMessage): ResponseEntity<MessageResponse>
     {
+
+        authenticator.canAccessSubQueue(createMessage.subQueue)
+
+        if (createMessage.assignedTo != null && createMessage.assignedTo!!.isBlank())
+        {
+            createMessage.assignedTo = null
+        }
+
+        val queueMessage = QueueMessage(createMessage)
         try
         {
-            authenticator.canAccessSubQueue(queueMessage.subQueue)
-
-            if (queueMessage.assignedTo != null && queueMessage.assignedTo!!.isBlank())
-            {
-                queueMessage.assignedTo = null
-            }
-
             val wasAdded = messageQueue.add(queueMessage)
             if (wasAdded)
             {
@@ -261,9 +266,9 @@ open class MessageQueueController : HasLogger
                 @RequestParam(required = false, name = RestParameters.INCLUDE_EMPTY) includeEmpty: Boolean?): ResponseEntity<KeysResponse>
     {
         val keys = messageQueue.keys(includeEmpty != false)
-        if (messageQueue is RedisMultiQueue)
+        if (messageQueue is CacheMultiQueue)
         {
-            return ResponseEntity.ok(KeysResponse((messageQueue as RedisMultiQueue).removePrefix(keys)))
+            return ResponseEntity.ok(KeysResponse((messageQueue as CacheMultiQueue).removePrefix(keys)))
         }
         return ResponseEntity.ok(KeysResponse(keys))
     }
@@ -389,10 +394,10 @@ open class MessageQueueController : HasLogger
      * Mark as [QueueMessage] as `assigned` meaning that no other user is able to own the [QueueMessage] while its in this state.
      * Only a `non-assigned` [QueueMessage] can be marked as `assigned` successfully.
      *
-     * @throws [HttpStatus.NO_CONTENT] if a [QueueMessage] with the provided [uuid] does not exist
-     * @throws [HttpStatus.CONFLICT] if the [QueueMessage] is already assigned to another user
+     * @throws [org.springframework.http.HttpStatus.NO_CONTENT] if a [QueueMessage] with the provided [uuid] does not exist
+     * @throws [org.springframework.http.HttpStatus.CONFLICT] if the [QueueMessage] is already assigned to another user
      *
-     * @param uuid the [UUID] of the [QueueMessage] to assign
+     * @param uuid the [java.util.UUID] of the [QueueMessage] to assign
      * @param assignedTo the identifier of the user who will be assigned the [QueueMessage]
      * @return the [QueueMessage] object after it has been marked as `assigned`. Returns [HttpStatus.ACCEPTED] if the [QueueMessage] is already assigned to the current user, otherwise [HttpStatus.OK] if it was not `assigned` previously.
      */
@@ -478,10 +483,10 @@ open class MessageQueueController : HasLogger
      * Release an `assigned` [QueueMessage] so that other users are able be assigned the [QueueMessage].
      * Only an `assigned` [QueueMessage] can be `released` successfully.
      *
-     * @throws [HttpStatus.NO_CONTENT] if a [QueueMessage] with the provided [uuid] does not exist
-     * @throws [HttpStatus.CONFLICT] if the [QueueMessage] is assigned to another identifier
+     * @throws [org.springframework.http.HttpStatus.NO_CONTENT] if a [QueueMessage] with the provided [uuid] does not exist
+     * @throws [org.springframework.http.HttpStatus.CONFLICT] if the [QueueMessage] is assigned to another identifier
      *
-     * @param uuid the [UUID] of the [QueueMessage] to release
+     * @param uuid the [java.util.UUID] of the [QueueMessage] to release
      * @param assignedTo the identifier that **SHOULD** currently be assigned this message, if this identifier does not hold this message a [HttpStatus.CONFLICT] will be thrown
      * @return the [QueueMessage] object after it has been `released`. Returns [HttpStatus.ACCEPTED] if the [QueueMessage] is already `released`, otherwise [HttpStatus.OK] if it was `released` successfully.
      */
@@ -531,10 +536,10 @@ open class MessageQueueController : HasLogger
      * If an [assignedTo] identifier is provided then the found [QueueMessage] matching the provided [UUID] must also be [assignedTo] this same identifier.
      * Otherwise, if not provided the matching message will be removed regardless of the current assignee.
      *
-     * @throws [HttpStatus.NO_CONTENT] if a [QueueMessage] with the provided [uuid] does not exist
-     * @throws [HttpStatus.FORBIDDEN] if the found [QueueMessage] is `assigned` but the [QueueMessage.assignedTo] does match the [assignedTo]
+     * @throws [org.springframework.http.HttpStatus.NO_CONTENT] if a [QueueMessage] with the provided [uuid] does not exist
+     * @throws [org.springframework.http.HttpStatus.FORBIDDEN] if the found [QueueMessage] is `assigned` but the [QueueMessage.assignedTo] does match the [assignedTo]
      *
-     * @param uuid the [UUID] of the [QueueMessage] to remove
+     * @param uuid the [java.util.UUID] of the [QueueMessage] to remove
      * @param assignedTo the identifier of the user who **SHOULD** currently have the [QueueMessage] `assigned` to them, otherwise `null` if you want to force remove it
      * @return [HttpStatus.NO_CONTENT]
      */

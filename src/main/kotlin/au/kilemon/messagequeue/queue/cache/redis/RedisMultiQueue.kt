@@ -3,15 +3,20 @@ package au.kilemon.messagequeue.queue.cache.redis
 import au.kilemon.messagequeue.logging.HasLogger
 import au.kilemon.messagequeue.message.QueueMessage
 import au.kilemon.messagequeue.queue.MultiQueue
+import au.kilemon.messagequeue.queue.cache.CacheMultiQueue
+import au.kilemon.messagequeue.queue.exception.IllegalSubQueueIdentifierException
 import au.kilemon.messagequeue.queue.exception.MessageUpdateException
 import au.kilemon.messagequeue.settings.MessageQueueSettings
 import org.slf4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.RedisTemplate
-import org.springframework.data.redis.core.ScanOptions
-import java.util.*
+import java.util.Optional
+import java.util.Queue
+
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.stream.Collectors
 import kotlin.collections.HashSet
+import kotlin.jvm.Throws
 
 /**
  * A `Redis` specific implementation of the [MultiQueue].
@@ -20,69 +25,31 @@ import kotlin.collections.HashSet
  *
  * @author github.com/Kilemonn
  */
-class RedisMultiQueue(private val prefix: String = "", private val redisTemplate: RedisTemplate<String, QueueMessage>) : MultiQueue(), HasLogger
+class RedisMultiQueue(private val prefix: String) : MultiQueue(), HasLogger, CacheMultiQueue
 {
     override val LOG: Logger = this.initialiseLogger()
 
-    /**
-     * Append the [MessageQueueSettings.redisPrefix] to the provided [subQueue] [String].
-     *
-     * @param subQueue the [String] to add the prefix to
-     * @return a [String] with the provided [subQueue] with the [MessageQueueSettings.redisPrefix] appended to the beginning.
-     */
-    private fun appendPrefix(subQueue: String): String
-    {
-        if (hasPrefix() && !subQueue.startsWith(getPrefix()))
-        {
-            return "${getPrefix()}$subQueue"
-        }
-        return subQueue
-    }
+    @Autowired
+    private lateinit var redisTemplate: RedisTemplate<String, QueueMessage>
 
-    /**
-     * @return whether the [prefix] is [String.isNotBlank]
-     */
-    internal fun hasPrefix(): Boolean
-    {
-        return getPrefix().isNotBlank()
-    }
+    @Autowired
+    private lateinit var cacheKeyManager: RedisCacheKeyManager
 
     /**
      * @return [prefix]
      */
-    internal fun getPrefix(): String
+    override fun getPrefix(): String
     {
         return prefix
     }
 
-    /**
-     * If [prefix] is set, removes this from all provided [keys].
-     * If [prefix] is null or blank, then the provided [keys] [Set] is immediately returned.
-     *
-     * @param keys the [Set] of [String] to remove the [prefix] from
-     * @return the updated [Set] of [String] with the [prefix] removed
-     */
-    fun removePrefix(keys: Set<String>): Set<String>
-    {
-        if (!hasPrefix())
-        {
-            return keys
-        }
-
-        val prefixLength = getPrefix().length
-        return keys.stream().filter { key -> key.startsWith(getPrefix()) }.map { key -> key.substring(prefixLength) }.collect(Collectors.toSet())
-    }
-
-    /**
-     * Attempts to append the prefix before requesting the underlying redis entry if the provided [subQueue] is not prefixed with [MessageQueueSettings.redisPrefix].
-     */
     override fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
     {
         val queue = ConcurrentLinkedQueue<QueueMessage>()
         val set = redisTemplate.opsForSet().members(appendPrefix(subQueue))
         if (!set.isNullOrEmpty())
         {
-            queue.addAll(set.toSortedSet { message1, message2 -> (message1.id ?: 0).minus(message2.id ?: 0).toInt() })
+            queue.addAll(set.sortedBy { it.uuid })
         }
         return queue
     }
@@ -123,38 +90,18 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
         return Optional.empty()
     }
 
+    @Throws(IllegalSubQueueIdentifierException::class)
     override fun addInternal(element: QueueMessage): Boolean
     {
-        val result = redisTemplate.opsForSet().add(appendPrefix(element.subQueue), element)
-        return result != null && result > 0
-    }
+        if (cacheKeyManager.getReservedKeys().contains(element.subQueue)
+            || cacheKeyManager.getReservedKeys().contains(appendPrefix(element.subQueue)))
+        {
+            throw IllegalSubQueueIdentifierException(element.subQueue)
+        }
 
-    /**
-     * Overriding to pass in the [subQueue] into [appendPrefix].
-     */
-    override fun getNextSubQueueIndex(subQueue: String): Optional<Long>
-    {
-        val queue = getSubQueue(appendPrefix(subQueue))
-        return if (queue.isNotEmpty())
-        {
-            var lastIndex = queue.last().id
-            if (lastIndex == null)
-            {
-                LOG.warn("subQueue [{}] is not empty but last index is null. Returning index with value [{}].", subQueue, 1)
-                return Optional.of(1)
-            }
-            else
-            {
-                lastIndex++
-                LOG.trace("Incrementing and returning index for subQueue [{}]. Returning index with value [{}].", subQueue, lastIndex)
-                return Optional.of(lastIndex)
-            }
-        }
-        else
-        {
-            LOG.trace("subQueue [{}] is empty, returning index with value [{}].", subQueue, 1)
-            Optional.of(1)
-        }
+        val result = redisTemplate.opsForSet().add(appendPrefix(element.subQueue), element)
+        cacheKeyManager.add(appendPrefix(element.subQueue))
+        return result != null && result > 0
     }
 
     override fun removeInternal(element: QueueMessage): Boolean
@@ -177,6 +124,7 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
         {
             LOG.debug("Attempting to clear non-existent sub-queue [{}]. No messages cleared.", subQueue)
         }
+        cacheKeyManager.remove(appendPrefix(subQueue))
         return amountRemoved
     }
 
@@ -197,10 +145,7 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
 
     override fun keysInternal(includeEmpty: Boolean): HashSet<String>
     {
-        val scanOptions = ScanOptions.scanOptions().match(appendPrefix("*")).build()
-        val cursor = redisTemplate.scan(scanOptions)
-        val keys = HashSet<String>()
-        cursor.forEach { element -> keys.add(element) }
+        val keys = cacheKeyManager.getKeys()
         if (includeEmpty)
         {
             LOG.debug("Including all empty queue keys in call to keys(). Total queue keys [{}].", keys.size)
@@ -245,11 +190,9 @@ class RedisMultiQueue(private val prefix: String = "", private val redisTemplate
      */
     override fun persistMessageInternal(message: QueueMessage)
     {
-        val queue = getSubQueue(message.subQueue)
-        val matchingMessage = queue.stream().filter{ element -> element.uuid == message.uuid }.findFirst()
+        val matchingMessage = getMessageByUUID(message.uuid)
         if (matchingMessage.isPresent)
         {
-            message.id = matchingMessage.get().id
             val wasRemoved = removeInternal(matchingMessage.get())
             val wasReAdded = addInternal(message)
             if (wasRemoved && wasReAdded)

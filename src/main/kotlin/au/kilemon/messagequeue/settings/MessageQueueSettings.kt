@@ -1,5 +1,6 @@
 package au.kilemon.messagequeue.settings
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
 import io.swagger.v3.oas.annotations.media.Schema
@@ -35,12 +36,20 @@ class MessageQueueSettings
          * Start redis related properties
          */
         private const val REDIS: String = "redis"
-        const val REDIS_PREFIX: String = "$MESSAGE_QUEUE.$REDIS.prefix"
-        const val REDIS_ENDPOINT: String = "$MESSAGE_QUEUE.$REDIS.endpoint"
+
         const val REDIS_ENDPOINT_DEFAULT: String = "127.0.0.1"
+        const val REDIS_USERNAME: String = "$MESSAGE_QUEUE.$REDIS.username"
+        const val REDIS_PASSWORD: String = "$MESSAGE_QUEUE.$REDIS.password"
+
+        // Used by memcached
+        const val CACHE_PREFIX: String = "$MESSAGE_QUEUE.cache.prefix"
+        // Used by memcached
+        const val CACHE_ENDPOINT: String = "$MESSAGE_QUEUE.cache.endpoint"
+        const val CACHE_ENDPOINT_DEFAULT: String = "127.0.0.1"
 
         // Redis sentinel related properties
-        const val REDIS_USE_SENTINELS: String = "$MESSAGE_QUEUE.$REDIS.sentinel"
+        const val REDIS_MODE: String = "$MESSAGE_QUEUE.$REDIS.mode"
+        const val REDIS_MODE_DEFAULT: String = "STANDALONE"
 
         const val REDIS_MASTER_NAME: String = "$MESSAGE_QUEUE.$REDIS.master-name"
         const val REDIS_MASTER_NAME_DEFAULT: String = "mymaster"
@@ -116,57 +125,56 @@ class MessageQueueSettings
 
 
     /**
-     * `Optional` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
-     * Uses the [REDIS_PREFIX] to set a prefix used for all redis entry keys.
+     * `Optional` when [STORAGE_MEDIUM] is set to [StorageMedium.MEMCACHED].
+     * Uses the [CACHE_PREFIX] to set a prefix used for all cache entry keys.
      *
-     * E.g. if the initial value for the redis entry is "my-key" and no prefix is defined the entries would be stored under "my-key".
+     * E.g. if the initial value for the cache entry is "my-key" and no prefix is defined the entries would be stored under "my-key".
      * Using the same scenario if the prefix is "prefix" then the resultant key would be "prefixmy-key".
      */
-    @Schema(title = "Redis Prefix", example = "my-prefix-",
-        description = "Used to remove/reduce the likelihood of any collisions if this is being used in an existing redis instance. " +
-                "The prefix will be added to all entries made in the redis storage medium.")
-    @SerializedName(REDIS_PREFIX)
-    @JsonProperty(REDIS_PREFIX)
-    @Value("\${$REDIS_PREFIX:}")
+    @Schema(title = "Cache Prefix", example = "my-prefix-",
+        description = "Used to remove/reduce the likelihood of any collisions if this is being used in an existing cache instance. " +
+                "The prefix will be added to all entries made in the cache storage medium.")
+    @SerializedName(CACHE_PREFIX)
+    @JsonProperty(CACHE_PREFIX)
+    @Value("\${$CACHE_PREFIX:}")
     @get:Generated
     @set:Generated
-    lateinit var redisPrefix: String
+    lateinit var cachePrefix: String
 
     /**
-     * `Required` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
-     * The input endpoint string which is used for both standalone and the sentinel redis configurations.
-     * This supports a comma separated list or single definition of a redis endpoint in the following formats:
+     * `Required` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS] OR [StorageMedium.MEMCACHED].
+     * This supports a comma separated list or single definition of a endpoints in the following formats:
      * `<endpoint>:<port>,<endpoint2>:<port2>,<endpoint3>`
      *
-     * If not provided [REDIS_ENDPOINT_DEFAULT] will be used by default.
+     * If not provided [CACHE_ENDPOINT_DEFAULT] will be used by default.
      */
-    @Schema(title = "Redis Endpoint", example = "sentinel1.com:5545,sentinel2.org:9980",
-        description = "The endpoint string which is used for both standalone and the sentinel redis configurations.")
-    @SerializedName(REDIS_ENDPOINT)
-    @JsonProperty(REDIS_ENDPOINT)
-    @Value("\${$REDIS_ENDPOINT:$REDIS_ENDPOINT_DEFAULT}")
+    @Schema(title = "Cache Endpoint", example = "sentinel1.com:5545,sentinel2.org:9980",
+        description = "The endpoint string which can contain multiple comma separated endpoints and ports.")
+    @SerializedName(CACHE_ENDPOINT)
+    @JsonProperty(CACHE_ENDPOINT)
+    @Value("\${$CACHE_ENDPOINT:$CACHE_ENDPOINT_DEFAULT}")
     @get:Generated
     @set:Generated
-    lateinit var redisEndpoint: String
+    lateinit var cacheEndpoint: String
 
     /**
      * `Optional` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
-     * Indicates whether the `MultiQueue` should connect directly to the redis instance or connect via one or more sentinel instances.
-     * If set to `true` the `MultiQueue` will create a sentinel pool connection instead of a direct connection which is what would occur if this is left as `false`.
-     * By default, this is `false`.
+     * Indicates the configuration of the redis environment that this being connected to.
+     * By default, this is [au.kilemon.messagequeue.configuration.cache.redis.RedisMode.STANDALONE].
      */
-    @Schema(title = "Redis Sentinel Mode Enabled", example = "true",
-        description = "Indicates whether the `MultiQueue` should connect directly to the redis instance or connect via one or more sentinel instances.")
-    @SerializedName(REDIS_USE_SENTINELS)
-    @JsonProperty(REDIS_USE_SENTINELS)
-    @Value("\${$REDIS_USE_SENTINELS:false}")
+    @Schema(title = "Redis Mode", example = "cluster",
+        description = "Indicates the configuration of the redis environment that this being connected to.")
+    @SerializedName(REDIS_MODE)
+    @JsonProperty(REDIS_MODE)
+    @Value("\${$REDIS_MODE:$REDIS_MODE_DEFAULT}")
     @get:Generated
     @set:Generated
-    lateinit var redisUseSentinels: String
+    lateinit var redisMode: String
 
     /**
      * `Optional` when [STORAGE_MEDIUM] is set to [StorageMedium.REDIS].
-     * `Required` when [redisUseSentinels] is set to `true`. Is used to indicate the name of the redis master instance.
+     * `Required` when [redisMode] is set to [au.kilemon.messagequeue.configuration.cache.redis.RedisMode.SENTINEL].
+     * Is used to indicate the name of the redis master instance.
      * By default, this is [REDIS_MASTER_NAME_DEFAULT].
      */
     @Schema(title = "Redis Master Name", example = "not-my-master",
@@ -272,12 +280,11 @@ class MessageQueueSettings
      * Required when [StorageMedium.MONGO] is used and [mongoUri] is empty.
      * It specifies the password for the user that you wish to connect with.
      */
-    // TODO: Commenting out since it is unused and returned in the settings endpoint without masking
-    // @JsonIgnore
-    // @SerializedName(MONGO_PASSWORD)
-    // @JsonProperty(MONGO_PASSWORD)
-    // @Value("\${MONGO_PASSWORD:}")
-    // lateinit var mongoPassword: String
+     @JsonIgnore
+//     @SerializedName(MONGO_PASSWORD)
+//     @JsonProperty(MONGO_PASSWORD)
+     @Value("\${$MONGO_PASSWORD:}")
+     lateinit var mongoPassword: String
 
     /**
      * Required when [StorageMedium.MONGO] is used and the above mongo properties are empty.
