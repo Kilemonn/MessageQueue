@@ -52,14 +52,11 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
         }
 
     /**
-     * A wrapper for the [MultiQueue.persistMessageInternal] so this method can be synchronised.
-     *
-     * Synchronising so that multiple messages are not updated out of order.
+     * A wrapper for the [MultiQueue.persistMessageInternal] method.
      *
      * @param message the updated [QueueMessage] to persist
      * @return `true` if the [QueueMessage] was updated successfully, otherwise `false`
      */
-    @Synchronized
     @Throws(MessageUpdateException::class)
     fun persistMessage(message: QueueMessage)
     {
@@ -374,14 +371,10 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
     /**
      * Override [add] method to declare [Throws] [DuplicateMessageException] annotation.
      *
-     * [Synchronized] so that the call to [MultiQueue.getNextSubQueueIndex] does not cause issues, since retrieving the next index does
-     * not force it to be auto incremented or unusable by another thread.
-     *
      * @throws [DuplicateMessageException] if a message already exists with the same [QueueMessage.uuid] in `any` other queue.
      * @throws [IllegalSubQueueIdentifierException] if the [QueueMessage.subQueue] is invalid or reserved
      */
     @Throws(DuplicateMessageException::class, IllegalSubQueueIdentifierException::class)
-    @Synchronized
     override fun add(element: QueueMessage): Boolean
     {
         if (multiQueueAuthenticator.getReservedSubQueues().contains(element.subQueue))

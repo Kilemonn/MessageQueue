@@ -49,7 +49,7 @@ open class InMemoryMultiQueue : MultiQueue(), HasLogger
         {
             LOG.debug("Found existing sub-queue [{}] with size [{}].", subQueue, queue.size)
         }
-        return queue
+        return ConcurrentLinkedQueue(queue.sortedBy { it.uuid })
     }
 
     override fun performHealthCheckInternal()
