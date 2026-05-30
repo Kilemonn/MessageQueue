@@ -3,6 +3,7 @@ package au.kilemon.messagequeue.message
 import org.junit.jupiter.api.Assertions
 import java.time.Instant
 import java.util.UUID
+import java.util.stream.IntStream
 import kotlin.test.Test
 import kotlin.time.ExperimentalTime
 import kotlin.time.toKotlinInstant
@@ -56,5 +57,46 @@ class UuidUtilsTest
     {
         val parsedTime = UuidUtils.getUuidEpochTimestamp("not a UUID")
         Assertions.assertEquals(-1L, parsedTime)
+    }
+
+    @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
+    @Test
+    fun testUuidGeneration()
+    {
+        val timestamps = ArrayList<Long>()
+        val uuids = ArrayList<String>()
+
+        IntStream.range(0, 100).forEach { _ ->
+            val timeMs = System.currentTimeMillis()
+            val instant = Instant.ofEpochMilli(timeMs).toKotlinInstant()
+            Assertions.assertEquals(timeMs, instant.toEpochMilliseconds())
+            uuids.add(Uuid.generateV7NonMonotonicAt(instant).toString())
+            timestamps.add(timeMs)
+            Thread.sleep(1)
+        }
+
+        var previousUuid: String? = null
+        var previousScore: Long? = null
+        Assertions.assertEquals(timestamps.size, uuids.size)
+        for (i in uuids.indices)
+        {
+            val uuid = uuids[i]
+            val timeMs = timestamps[i]
+            val parsedTime = UuidUtils.getUuidEpochTimestamp(uuid)
+            Assertions.assertEquals(timeMs, parsedTime)
+
+            if (previousUuid != null && previousScore != null)
+            {
+                // Using org.assertj.core.api.Assertions for better assertion error messages
+                org.assertj.core.api.Assertions.assertThat(previousUuid)
+                    .isLessThan(uuid)
+                org.assertj.core.api.Assertions.assertThat(previousScore)
+                    .isLessThan(parsedTime)
+            }
+
+            previousUuid = uuid
+            previousScore = parsedTime
+        }
+
     }
 }

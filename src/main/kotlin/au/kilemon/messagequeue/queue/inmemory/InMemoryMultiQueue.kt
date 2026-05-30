@@ -49,7 +49,8 @@ open class InMemoryMultiQueue : MultiQueue(), HasLogger
         {
             LOG.debug("Found existing sub-queue [{}] with size [{}].", subQueue, queue.size)
         }
-        return ConcurrentLinkedQueue(queue.sortedBy { it.uuid })
+        // Don't need to sort since its stored in memory and in order
+        return queue
     }
 
     override fun getSubQueueSize(subQueue: String): Int

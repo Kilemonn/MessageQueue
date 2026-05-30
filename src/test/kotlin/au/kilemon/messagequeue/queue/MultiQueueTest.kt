@@ -250,7 +250,12 @@ abstract class MultiQueueTest
         Assertions.assertTrue(multiQueue.isEmpty())
         val subQueue = "testGetqueue_ordered"
 
-        val list = listOf(QueueMessage(81248, subQueue), QueueMessage("test data", subQueue), QueueMessage(false, subQueue))
+        val list = ArrayList<QueueMessage>()
+        list.add(QueueMessage(81248, subQueue))
+        Thread.sleep(1)
+        list.add(QueueMessage("test data", subQueue))
+        Thread.sleep(1)
+        list.add(QueueMessage(false, subQueue))
         Assertions.assertTrue(multiQueue.addAll(list))
         val queue = multiQueue.getSubQueue(subQueue)
         Assertions.assertEquals(list.size, queue.size)
@@ -275,7 +280,12 @@ abstract class MultiQueueTest
         Assertions.assertTrue(multiQueue.isEmpty())
         val subQueue = "testGetqueue_reordered"
 
-        val list = listOf(QueueMessage(81248, subQueue), QueueMessage("test data", subQueue), QueueMessage(false, subQueue))
+        val list = ArrayList<QueueMessage>()
+        list.add(QueueMessage(81248, subQueue))
+        Thread.sleep(1)
+        list.add(QueueMessage("test data", subQueue))
+        Thread.sleep(1)
+        list.add(QueueMessage(false, subQueue))
         Assertions.assertTrue(multiQueue.addAll(list))
 
         // Force an object change, which for some mechanisms would re-enqueue it at the end
