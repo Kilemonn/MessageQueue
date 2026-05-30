@@ -10,6 +10,7 @@ import jakarta.persistence.Table
 import jakarta.persistence.Transient
 import org.springframework.util.SerializationUtils
 import java.io.Serializable
+import java.util.UUID
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -18,8 +19,6 @@ import kotlin.uuid.Uuid
  * A base [QueueMessage] object which will wrap any object that is placed into the `MultiQueue`.
  * This object wraps an [Any] which is the payload to be stored in the queue. (This is actually a [Serializable] but causes issues in initialisation
  * if the type is an `interface`. This needs to be [Serializable] if you want to use it with `Redis` or anything else).
- *
- * This is used for `InMemory`, `Redis` and `SQL` queues.
  *
  * @author github.com/Kilemonn
  */
@@ -134,6 +133,11 @@ class QueueMessage: Serializable
         }
         resolvePayloadObject()
         return this
+    }
+
+    fun getUuidEpochTimestamp(): Double
+    {
+        return UuidUtils.getUuidEpochTimestamp(uuid).toDouble()
     }
 
     /**

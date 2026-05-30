@@ -71,6 +71,11 @@ class MongoMultiQueue : MultiQueue(), HasLogger
         return ConcurrentLinkedQueue(entries.map { entry -> QueueMessage(entry) })
     }
 
+    override fun getSubQueueSize(subQueue: String): Int
+    {
+        return queueMessageRepository.countBySubQueue(subQueue)
+    }
+
     override fun performHealthCheckInternal()
     {
         queueMessageRepository.existsById(1)

@@ -95,4 +95,6 @@ interface SqlQueueMessageRepository: JpaRepository<QueueMessage, Long>
     @Modifying
     @Transactional
     fun deleteByUuid(uuid: String): Int
+
+    fun countBySubQueue(subQueue: String): Long
 }

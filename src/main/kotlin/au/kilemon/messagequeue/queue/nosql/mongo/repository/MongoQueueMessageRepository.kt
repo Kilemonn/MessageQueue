@@ -85,4 +85,6 @@ interface MongoQueueMessageRepository: MongoRepository<QueueMessageDocument, Lon
      */
     @Transactional
     fun findBySubQueueAndAssignedToIsNullOrderByUuidAsc(subQueue: String): List<QueueMessageDocument>
+
+    fun countBySubQueue(subQueue: String): Int
 }

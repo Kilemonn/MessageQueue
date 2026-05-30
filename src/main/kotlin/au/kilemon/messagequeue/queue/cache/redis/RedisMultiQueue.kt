@@ -46,12 +46,17 @@ class RedisMultiQueue(private val prefix: String) : MultiQueue(), HasLogger, Cac
     override fun getSubQueueInternal(subQueue: String): Queue<QueueMessage>
     {
         val queue = ConcurrentLinkedQueue<QueueMessage>()
-        val set = redisTemplate.opsForSet().members(appendPrefix(subQueue))
+        val set = redisTemplate.opsForZSet().range(appendPrefix(subQueue), 0, getSubQueueSize(subQueue).toLong())
         if (!set.isNullOrEmpty())
         {
             queue.addAll(set.sortedBy { it.uuid })
         }
         return queue
+    }
+
+    override fun getSubQueueSize(subQueue: String): Int
+    {
+        return redisTemplate.opsForZSet().size(appendPrefix(subQueue)).toInt()
     }
 
     override fun getAssignedMessagesInSubQueue(subQueue: String, assignedTo: String?): Queue<QueueMessage>
@@ -74,7 +79,7 @@ class RedisMultiQueue(private val prefix: String) : MultiQueue(), HasLogger, Cac
 
     override fun performHealthCheckInternal()
     {
-        redisTemplate.opsForSet().members("")
+        redisTemplate.opsForZSet().range("", 0, 1)
     }
 
     override fun getMessageByUUID(uuid: String): Optional<QueueMessage>
@@ -99,14 +104,18 @@ class RedisMultiQueue(private val prefix: String) : MultiQueue(), HasLogger, Cac
             throw IllegalSubQueueIdentifierException(element.subQueue)
         }
 
-        val result = redisTemplate.opsForSet().add(appendPrefix(element.subQueue), element)
-        cacheKeyManager.add(appendPrefix(element.subQueue))
-        return result != null && result > 0
+        val result = redisTemplate.opsForZSet().add(appendPrefix(element.subQueue), element, element.getUuidEpochTimestamp())
+        if (result)
+        {
+            cacheKeyManager.add(appendPrefix(element.subQueue))
+        }
+
+        return result
     }
 
     override fun removeInternal(element: QueueMessage): Boolean
     {
-        val result = redisTemplate.opsForSet().remove(appendPrefix(element.subQueue), element)
+        val result = redisTemplate.opsForZSet().remove(appendPrefix(element.subQueue), element)
         return result != null && result > 0
     }
 
@@ -156,7 +165,7 @@ class RedisMultiQueue(private val prefix: String) : MultiQueue(), HasLogger, Cac
             val retainedKeys = HashSet<String>()
             for (key: String in keys)
             {
-                val sizeOfQueue = redisTemplate.opsForSet().size(key)
+                val sizeOfQueue = redisTemplate.opsForZSet().size(key)
                 if (sizeOfQueue != null && sizeOfQueue > 0)
                 {
                     LOG.trace("Sub-queue [{}] is not empty and will be returned in keys() call.", key)

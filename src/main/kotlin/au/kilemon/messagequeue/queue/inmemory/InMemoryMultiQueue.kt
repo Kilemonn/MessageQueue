@@ -52,6 +52,12 @@ open class InMemoryMultiQueue : MultiQueue(), HasLogger
         return ConcurrentLinkedQueue(queue.sortedBy { it.uuid })
     }
 
+    override fun getSubQueueSize(subQueue: String): Int
+    {
+        val queue: Queue<QueueMessage> = messageQueue[subQueue] ?: return 0
+        return queue.size
+    }
+
     override fun performHealthCheckInternal()
     {
         // Nothing to check for the in-memory storage since there is no external storage that needs to be checked

@@ -33,6 +33,11 @@ class SqlMultiQueue : MultiQueue(), HasLogger
         return ConcurrentLinkedQueue(entries.map { entry -> entry.resolvePayloadObject() })
     }
 
+    override fun getSubQueueSize(subQueue: String): Int
+    {
+        return queueMessageRepository.countBySubQueue(subQueue).toInt()
+    }
+
     /**
      * Overriding since we can filter via the DB query.
      */

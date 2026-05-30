@@ -68,6 +68,13 @@ class MemcachedMultiQueue(private val prefix: String): MultiQueue(), HasLogger, 
         return ConcurrentLinkedQueue(queue.sortedBy { it.uuid })
     }
 
+    override fun getSubQueueSize(subQueue: String): Int
+    {
+        val queue: Queue<QueueMessage> = client.get<Queue<QueueMessage>?>(appendPrefix(subQueue)) ?: return 0
+
+        return queue.size
+    }
+
     override fun performHealthCheckInternal()
     {
         client.get<Any?>("health-check-key")

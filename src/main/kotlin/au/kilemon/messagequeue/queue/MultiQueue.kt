@@ -46,7 +46,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
         get() {
             var internalSize = 0
             keys(false).forEach { key ->
-                internalSize += getSubQueue(key).size
+                internalSize += getSubQueueSize(key)
             }
             return internalSize
         }
@@ -112,6 +112,14 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
     }
 
     /**
+     * Gets the size of the [subQueue].
+     *
+     * @param subQueue the subqueue identifier to get the size of
+     * @return the size of the sub queue
+     */
+    abstract fun getSubQueueSize(subQueue: String): Int
+
+    /**
      * Retrieves only assigned messages in the sub-queue for the provided [subQueue].
      *
      * By default, this calls [getSubQueue] and iterates through this to determine if the [QueueMessage.assignedTo]
@@ -121,7 +129,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      * @param assignedTo to further filter the messages returned this can be provided
      * @return a limited version of the [Queue] containing only assigned messages
      */
-    open fun getAssignedMessagesInSubQueue(subQueue: String, assignedTo: String?, page: PageRequest): Queue<QueueMessage>
+    open fun getAssignedMessagesInSubQueue(subQueue: String, assignedTo: String?): Queue<QueueMessage>
     {
         val assignedMessages = ConcurrentLinkedQueue<QueueMessage>()
         val queue = getSubQueue(subQueue)
@@ -188,7 +196,7 @@ abstract class MultiQueue: Queue<QueueMessage>, HasLogger
      */
     fun getOwnersAndKeysMapForSubQueue(subQueue: String, responseMap: HashMap<String, HashSet<String>>)
     {
-        val queue: Queue<QueueMessage> = getAssignedMessagesInSubQueue(subQueue, null, PageRequest.of(0, 1000))
+        val queue: Queue<QueueMessage> = getAssignedMessagesInSubQueue(subQueue, null)
         queue.forEach { message ->
             val subQueueID = message.subQueue
             val assigned = message.assignedTo
