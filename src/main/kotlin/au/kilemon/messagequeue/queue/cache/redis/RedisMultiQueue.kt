@@ -49,7 +49,7 @@ class RedisMultiQueue(private val prefix: String) : MultiQueue(), HasLogger, Cac
         val set = redisTemplate.opsForZSet().range(appendPrefix(subQueue), 0, getSubQueueSize(subQueue).toLong())
         if (!set.isNullOrEmpty())
         {
-            queue.addAll(set.sortedBy { it.uuid })
+            queue.addAll(set)
         }
         return queue
     }

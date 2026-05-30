@@ -106,7 +106,6 @@ class QueueMessage: Serializable
     {
         if (payloadBytes != null && payload == null)
         {
-            // TODO: Don't use serialisation to store payload or add protective measures...
             payload = SerializationUtils.deserialize(payloadBytes)
         }
         return this
