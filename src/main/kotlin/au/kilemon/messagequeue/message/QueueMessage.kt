@@ -134,6 +134,7 @@ class QueueMessage: Serializable
         return this
     }
 
+    @JsonIgnore
     fun getUuidEpochTimestamp(): Double
     {
         return UuidUtils.getUuidEpochTimestamp(uuid).toDouble()
